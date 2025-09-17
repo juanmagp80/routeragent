@@ -1,5 +1,7 @@
 import { Model } from "../models/Model";
 import { Task } from "../models/Task";
+import { AIProviderManager, AIResponse } from "./aiProviders";
+import { CacheService } from "./cacheService";
 
 export interface RouteResult {
     selected_model: string;
@@ -10,57 +12,168 @@ export interface RouteResult {
 
 export class ModelRouter {
     private models: Model[] = [];
-    private cache: Map<string, RouteResult> = new Map();
+    private cacheService: CacheService;
+    private aiProviderManager: AIProviderManager;
 
     constructor(models: Model[]) {
         this.models = models;
+        this.aiProviderManager = new AIProviderManager();
+        this.cacheService = new CacheService(1000, 60); // 1000 entradas, 60 min TTL
+
+        // Integrar modelos reales de IA si están disponibles
+        this.integrateRealModels();
+
+        // Pre-calentar cache con consultas comunes
+        this.preWarmCache();
     }
 
-    async routeTask(task: Task): Promise<RouteResult> {
-        // Verificar cache
-        const cacheKey = `route:${task.id}`;
-        const cached = this.cache.get(cacheKey);
+    private integrateRealModels() {
+        const realModels = this.aiProviderManager.getAllModels();
+
+        // Convertir modelos de IA reales al formato interno
+        const convertedModels: Model[] = realModels.map(aiModel => ({
+            id: aiModel.id,
+            name: aiModel.name,
+            provider: aiModel.provider,
+            cost_per_token: aiModel.cost_per_1k_tokens / 1000, // Convertir a costo por token
+            max_tokens: aiModel.max_tokens,
+            speed_rating: aiModel.speed_rating,
+            quality_rating: aiModel.quality_rating,
+            availability: true,
+            supported_tasks: aiModel.supported_tasks
+        }));
+
+        // Reemplazar modelos mock con modelos reales si están disponibles
+        if (convertedModels.length > 0) {
+            this.models = convertedModels;
+            console.log(`🔄 Using ${convertedModels.length} real AI models instead of mock data`);
+        } else {
+            console.log('⚠️  No real AI models available, using mock data');
+        }
+    }
+
+    async routeTask(task: Task): Promise<RouteResult & { response?: string }> {
+        // Evaluar tarea primero para cache inteligente
+        const taskType = this.analyzeTaskType(task.input);
+
+        // Verificar cache inteligente
+        const cached = this.cacheService.get(task.input, taskType);
         if (cached) {
+            console.log(`⚡ Cache hit for task type: ${taskType}`);
             return cached;
         }
-
-        // Evaluar tarea
-        const taskType = this.analyzeTaskType(task.input);
 
         // Seleccionar modelo óptimo
         const selectedModel = this.selectBestModel(task, taskType);
 
-        // Calcular costo
-        const cost = this.calculateCost(selectedModel, task.input);
+        let result: RouteResult & { response?: string };
 
-        // Estimar tiempo
-        const estimatedTime = this.estimateTime(selectedModel);
+        // Intentar usar modelo real si está disponible
+        const realModels = this.aiProviderManager.getAllModels();
+        const isRealModel = realModels.some(m => m.id === selectedModel.id);
 
-        // Registrar en cache
-        const result: RouteResult = {
-            selected_model: selectedModel.name,
-            cost: cost,
-            estimated_time: estimatedTime,
-            task_type: taskType
-        };
+        if (isRealModel && this.aiProviderManager.getAvailableProviders().length > 0) {
+            try {
+                // Hacer request real a la IA
+                const aiResponse: AIResponse = await this.aiProviderManager.makeRequest(
+                    selectedModel.id,
+                    task.input,
+                    {
+                        max_tokens: Math.min(1000, selectedModel.max_tokens),
+                        temperature: 0.7
+                    }
+                );
 
-        this.cache.set(cacheKey, result);
+                result = {
+                    selected_model: selectedModel.name,
+                    cost: aiResponse.cost,
+                    estimated_time: aiResponse.latency_ms,
+                    task_type: taskType,
+                    response: aiResponse.content
+                };
 
+                console.log(`✅ Real AI response from ${selectedModel.name}: ${aiResponse.tokens_used} tokens, $${aiResponse.cost.toFixed(4)}`);
+
+            } catch (error) {
+                console.error(`❌ Real AI request failed for ${selectedModel.name}:`, error);
+
+                // Fallback a respuesta simulada
+                result = this.createMockResult(selectedModel, taskType, task.input);
+            }
+        } else {
+            // Usar respuesta simulada
+            result = this.createMockResult(selectedModel, taskType, task.input);
+        }
+
+        // Registrar en cache inteligente
+        this.cacheService.set(task.input, taskType, result);
         return result;
     }
 
+    private createMockResult(selectedModel: Model, taskType: string, input: string): RouteResult & { response?: string } {
+        const cost = this.calculateCost(selectedModel, input);
+        const estimatedTime = this.estimateTime(selectedModel);
+
+        return {
+            selected_model: selectedModel.name,
+            cost: cost,
+            estimated_time: estimatedTime,
+            task_type: taskType,
+            response: `Respuesta simulada usando ${selectedModel.name}. Costo estimado: $${cost.toFixed(3)}, Tiempo estimado: ${estimatedTime}ms`
+        };
+    }
+
     private analyzeTaskType(input: string): string {
-        // Implementar análisis de tipo de tarea
-        if (input.toLowerCase().includes("resume") || input.toLowerCase().includes("summarize")) {
-            return "summary";
+        const lowerInput = input.toLowerCase();
+
+        // Palabras clave para cada tipo de tarea
+        const taskKeywords = {
+            summary: [
+                'resume', 'resumen', 'summarize', 'summary', 'sintetiza', 'extracto',
+                'puntos clave', 'key points', 'tldr', 'brevemente', 'briefly'
+            ],
+            translation: [
+                'translate', 'traducir', 'traduce', 'translation', 'traducción',
+                'al español', 'to english', 'al inglés', 'to spanish', 'idioma'
+            ],
+            analysis: [
+                'analyze', 'analizar', 'analiza', 'analysis', 'análisis',
+                'evalúa', 'evaluate', 'examina', 'examine', 'estudia', 'study',
+                'compara', 'compare', 'contrasta', 'contrast'
+            ],
+            coding: [
+                'code', 'código', 'programming', 'programación', 'function',
+                'función', 'script', 'debug', 'fix', 'arregla', 'bug',
+                'javascript', 'python', 'typescript', 'react', 'node'
+            ]
+        };
+
+        // Contar coincidencias para cada tipo
+        let maxScore = 0;
+        let detectedType = 'general';
+
+        for (const [taskType, keywords] of Object.entries(taskKeywords)) {
+            const score = keywords.reduce((count, keyword) => {
+                return count + (lowerInput.includes(keyword) ? 1 : 0);
+            }, 0);
+
+            if (score > maxScore) {
+                maxScore = score;
+                detectedType = taskType;
+            }
         }
-        if (input.toLowerCase().includes("translate") || input.toLowerCase().includes("traducir")) {
-            return "translation";
+
+        // Análisis adicional por longitud y complejidad
+        if (detectedType === 'general') {
+            if (lowerInput.length > 500) {
+                detectedType = 'analysis'; // Textos largos probablemente necesitan análisis
+            } else if (lowerInput.includes('?') && lowerInput.length < 100) {
+                detectedType = 'general'; // Preguntas cortas son generales
+            }
         }
-        if (input.toLowerCase().includes("analyze") || input.toLowerCase().includes("analizar")) {
-            return "analysis";
-        }
-        return "general";
+
+        console.log(`🔍 Task analysis: "${input.substring(0, 50)}..." → Type: ${detectedType} (score: ${maxScore})`);
+        return detectedType;
     }
 
     private selectBestModel(task: Task, taskType: string): Model {
@@ -91,12 +204,56 @@ export class ModelRouter {
     }
 
     private calculateModelScore(model: Model, taskType: string): number {
-        // Ponderar por calidad/costo y velocidad
-        return (
-            (model.quality_rating * 0.5) +
-            (model.speed_rating * 0.3) +
-            (1 / model.cost_per_token * 0.2)
+        // Algoritmo de scoring avanzado basado en tipo de tarea
+        let qualityWeight = 0.4;
+        let speedWeight = 0.3;
+        let costWeight = 0.3;
+
+        // Ajustar pesos según el tipo de tarea
+        switch (taskType) {
+            case 'summary':
+                // Para resúmenes, priorizar velocidad y costo
+                qualityWeight = 0.3;
+                speedWeight = 0.4;
+                costWeight = 0.3;
+                break;
+            case 'translation':
+                // Para traducciones, priorizar calidad
+                qualityWeight = 0.6;
+                speedWeight = 0.2;
+                costWeight = 0.2;
+                break;
+            case 'analysis':
+                // Para análisis, priorizar calidad sobre todo
+                qualityWeight = 0.7;
+                speedWeight = 0.15;
+                costWeight = 0.15;
+                break;
+            case 'coding':
+                // Para código, balance entre calidad y velocidad
+                qualityWeight = 0.5;
+                speedWeight = 0.3;
+                costWeight = 0.2;
+                break;
+            default: // general
+                // Balance estándar
+                qualityWeight = 0.4;
+                speedWeight = 0.3;
+                costWeight = 0.3;
+        }
+
+        // Normalizar costo (invertir para que menor costo = mayor score)
+        const costScore = Math.max(0, 10 - (model.cost_per_token * 10000));
+
+        const score = (
+            (model.quality_rating * qualityWeight) +
+            (model.speed_rating * speedWeight) +
+            (costScore * costWeight)
         );
+
+        console.log(`📊 Model ${model.name} score for ${taskType}: ${score.toFixed(2)} (Q:${model.quality_rating} S:${model.speed_rating} C:${costScore.toFixed(1)})`);
+
+        return score;
     }
 
     private calculateCost(model: Model, input: string): number {
@@ -115,13 +272,71 @@ export class ModelRouter {
         return Math.ceil(input.length / 4);
     }
 
-    // Método para limpiar cache
-    clearCache(): void {
-        this.cache.clear();
+    // Pre-calentar cache con consultas comunes
+    private preWarmCache(): void {
+        const commonQueries = [
+            {
+                input: "¿Qué es la inteligencia artificial?",
+                taskType: "general",
+                result: {
+                    selected_model: "GPT-4o Mini",
+                    cost: 0.00002,
+                    estimated_time: 100,
+                    task_type: "general",
+                    response: "La inteligencia artificial es una tecnología que permite a las máquinas simular la inteligencia humana."
+                }
+            },
+            {
+                input: "Resume este texto en 3 puntos",
+                taskType: "summary",
+                result: {
+                    selected_model: "GPT-4o Mini",
+                    cost: 0.00001,
+                    estimated_time: 80,
+                    task_type: "summary"
+                }
+            }
+        ];
+
+        this.cacheService.preWarm(commonQueries);
     }
 
-    // Método para obtener tamaño de cache
-    getCacheSize(): number {
-        return this.cache.size;
+    // Método para limpiar cache
+    clearCache(): void {
+        this.cacheService.clear();
     }
+
+    // Método para obtener estadísticas de cache
+    getCacheStats(): any {
+        return this.cacheService.getStats();
+    }
+
+    // Obtener modelos disponibles (método público)
+    getAvailableModels(): Model[] {
+        return this.models.map(model => ({ ...model })); // Clonar para evitar mutaciones
+    }
+
+    // Obtener proveedores disponibles (método público)
+    getAvailableProviders(): string[] {
+        return this.aiProviderManager.getAvailableProviders();
+    }
+
+    // Invalidar cache por tipo de tarea
+    invalidateCacheByTaskType(taskType: string): number {
+        return this.cacheService.invalidateByTaskType(taskType);
+    }
+
+    // Obtener información del sistema
+    getSystemInfo(): {
+        total_models: number;
+        available_providers: string[];
+        cache_stats: any;
+    } {
+        return {
+            total_models: this.models.length,
+            available_providers: this.aiProviderManager.getAvailableProviders(),
+            cache_stats: this.cacheService.getStats()
+        };
+    }
+
 }

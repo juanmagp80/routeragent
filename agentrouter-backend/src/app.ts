@@ -8,7 +8,22 @@ import morgan from 'morgan';
 dotenv.config();
 
 // Importar controladores
-import { getMetrics, routeTask } from './controllers/routeController';
+import {
+    createApiKey,
+    deactivateApiKey,
+    getApiKeyStats,
+    listApiKeys,
+    validateApiKey
+} from './controllers/apiKeyController';
+import {
+    clearCache,
+    getMetrics,
+    getPerformanceStats,
+    routeTask
+} from './controllers/routeController';
+
+// Importar middleware
+import { authenticateApiKey, optionalAuth } from './middleware/auth';
 
 const app: Application = express();
 const PORT: number = parseInt(process.env.PORT || '3000', 10);
@@ -32,11 +47,22 @@ app.get('/', (req: Request, res: Response) => {
     });
 });
 
-// Ruta principal de ruteo
-app.post('/v1/route', routeTask);
+// Rutas de gestión de API Keys (sin autenticación para testing inicial)
+app.post('/v1/api-keys', createApiKey);
+app.get('/v1/api-keys', listApiKeys);
+app.delete('/v1/api-keys/:keyId', deactivateApiKey);
+app.get('/v1/api-keys/:keyId/stats', getApiKeyStats);
+app.post('/v1/api-keys/validate', validateApiKey);
 
-// Ruta de métricas
-app.get('/v1/metrics', getMetrics);
+// Ruta principal de ruteo (requiere API Key)
+app.post('/v1/route', authenticateApiKey, routeTask);
+
+// Ruta de métricas (autenticación opcional)
+app.get('/v1/metrics', optionalAuth, getMetrics);
+
+// Rutas de rendimiento y cache
+app.get('/v1/performance', getPerformanceStats);
+app.post('/v1/cache/clear', clearCache);
 
 // Manejador de errores
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {

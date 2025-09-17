@@ -1,0 +1,50 @@
+{
+    "name": "agentrouter-sdk",
+    "version": "1.0.0",
+    "description": "Official JavaScript/Node.js SDK for AgentRouter MCP - Intelligent AI model routing",
+    "main": "index.js",
+    "module": "index.js",
+    "types": "index.d.ts",
+    "files": [
+        "index.js",
+        "index.d.ts",
+        "README.md"
+    ],
+    "scripts": {
+        "test": "node test.js",
+        "build": "echo 'No build step required'",
+        "prepublishOnly": "npm test"
+    },
+    "keywords": [
+        "ai",
+        "artificial-intelligence",
+        "openai",
+        "anthropic",
+        "claude",
+        "gpt",
+        "router",
+        "mcp",
+        "model-context-protocol",
+        "cost-optimization",
+        "agentrouter"
+    ],
+    "author": "AgentRouter Team",
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/agentrouter/agentrouter-sdk-js"
+    },
+    "homepage": "https://agentrouter.com/docs",
+    "bugs": {
+        "url": "https://github.com/agentrouter/agentrouter-sdk-js/issues"
+    },
+    "engines": {
+        "node": ">=14.0.0"
+    },
+    "dependencies": {},
+    "devDependencies": {},
+    "peerDependencies": {},
+    "browser": {
+        "index.js": "./index.js"
+    }
+}

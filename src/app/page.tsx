@@ -3,23 +3,19 @@
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import {
+  Activity,
+  AlertTriangle,
   ArrowRight,
+  BarChart3,
   Brain,
   CheckCircle,
   Code,
+  DollarSign,
   Network,
+  RefreshCw,
   Target,
   Timer,
-  TrendingDown,
-  BarChart3,
-  Activity,
-  DollarSign,
-  Users,
-  Zap,
-  PieChart,
-  Gauge,
-  AlertTriangle,
-  RefreshCw
+  TrendingDown
 } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -68,6 +64,7 @@ const Navigation = () => {
             <a href="#router" className="text-slate-300 hover:text-emerald-400 transition-colors font-medium">Router</a>
             <a href="#ahorro" className="text-slate-300 hover:text-emerald-400 transition-colors font-medium">Ahorro</a>
             <a href="#dashboard" className="text-slate-300 hover:text-emerald-400 transition-colors font-medium">Dashboard</a>
+            <a href="/docs" className="text-slate-300 hover:text-emerald-400 transition-colors font-medium">API Docs</a>
             <a href="#precios" className="text-slate-300 hover:text-emerald-400 transition-colors font-medium">Precios</a>
           </div>
 
@@ -102,9 +99,6 @@ const HeroSection = () => {
 
   return (
     <section className="min-h-screen bg-slate-900 text-white flex items-center relative overflow-hidden pt-20">
-      {/* Grid pattern background */}
-      <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,.02)_1px,transparent_1px)] bg-[size:50px_50px]"></div>
-
       {/* Animated circuit lines */}
       <div className="absolute inset-0 z-0">
         <svg className="w-full h-full opacity-20">
@@ -177,13 +171,14 @@ const HeroSection = () => {
                 <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </motion.button>
 
-              <motion.button
+              <motion.a
+                href="/docs"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                className="border-2 border-slate-600 text-slate-300 px-8 py-4 rounded-lg font-bold text-lg hover:border-emerald-500 hover:text-emerald-400 transition-all duration-300"
+                className="border-2 border-slate-600 text-slate-300 px-8 py-4 rounded-lg font-bold text-lg hover:border-emerald-500 hover:text-emerald-400 transition-all duration-300 inline-flex items-center justify-center"
               >
                 Ver Documentación
-              </motion.button>
+              </motion.a>
             </div>
 
             {/* Stats en formato terminal */}
@@ -355,9 +350,10 @@ const RouterSection = () => {
                 <div className="text-blue-100 text-xs mt-2">
                   Óptimo para esta tarea
                 </div>
-                <div className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-bold">
+                <div className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-bold mt-2">
                   68% más barato
                 </div>
+              </div>
             </motion.div>
           </div>
         </div>
@@ -485,6 +481,8 @@ const SavingsSection = () => {
 // Componente de Dashboard con métricas en tiempo real
 const DashboardSection = () => {
   const [metrics, setMetrics] = useState<any[]>([]);
+  const [summary, setSummary] = useState<any>({});
+  const [recentTasks, setRecentTasks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
@@ -492,11 +490,13 @@ const DashboardSection = () => {
   const fetchMetrics = async () => {
     try {
       setLoading(true);
-      const response = await fetch('http://localhost:3000/v1/metrics');
+      const response = await fetch('http://localhost:3001/v1/metrics');
       const data = await response.json();
 
       if (data.success) {
         setMetrics(data.metrics || []);
+        setSummary(data.summary || {});
+        setRecentTasks(data.recent_tasks || []);
         setLastUpdated(new Date());
         setError(null);
       } else {
@@ -517,8 +517,9 @@ const DashboardSection = () => {
     return () => clearInterval(interval);
   }, []);
 
-  const totalCost = metrics.reduce((sum, metric) => sum + (metric.sum || 0), 0);
-  const totalRequests = metrics.reduce((sum, metric) => sum + (metric.count || 0), 0);
+  const totalCost = summary.total_cost || 0;
+  const totalRequests = summary.total_requests || 0;
+  const avgCostPerRequest = summary.avg_cost_per_request || 0;
 
   return (
     <section id="dashboard" className="py-24 bg-gradient-to-br from-slate-50 to-blue-50">
@@ -563,7 +564,7 @@ const DashboardSection = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-slate-600 text-sm">Total Costo</p>
-                <p className="text-3xl font-bold text-slate-900">${totalCost.toFixed(2)}</p>
+                <p className="text-3xl font-bold text-slate-900">${totalCost.toFixed(3)}</p>
               </div>
               <div className="w-12 h-12 bg-emerald-100 rounded-lg flex items-center justify-center">
                 <DollarSign className="w-6 h-6 text-emerald-600" />
@@ -598,8 +599,8 @@ const DashboardSection = () => {
           >
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-slate-600 text-sm">Ahorro Promedio</p>
-                <p className="text-3xl font-bold text-emerald-600">68%</p>
+                <p className="text-slate-600 text-sm">Costo Promedio</p>
+                <p className="text-3xl font-bold text-emerald-600">${avgCostPerRequest.toFixed(4)}</p>
               </div>
               <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
                 <TrendingDown className="w-6 h-6 text-green-600" />
@@ -690,36 +691,21 @@ const DashboardSection = () => {
                 </tr>
               </thead>
               <tbody>
-                <tr className="border-b border-slate-100">
-                  <td className="py-4 px-4 font-medium text-slate-900">Claude-3</td>
-                  <td className="py-4 px-4 text-emerald-600 font-bold">$0.003</td>
-                  <td className="py-4 px-4 text-slate-600">89ms</td>
-                  <td className="py-4 px-4">
-                    <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">
-                      Completado
-                    </span>
-                  </td>
-                </tr>
-                <tr className="border-b border-slate-100">
-                  <td className="py-4 px-4 font-medium text-slate-900">GPT-4</td>
-                  <td className="py-4 px-4 text-emerald-600 font-bold">$0.012</td>
-                  <td className="py-4 px-4 text-slate-600">156ms</td>
-                  <td className="py-4 px-4">
-                    <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">
-                      Completado
-                    </span>
-                  </td>
-                </tr>
-                <tr>
-                  <td className="py-4 px-4 font-medium text-slate-900">Llama-3</td>
-                  <td className="py-4 px-4 text-emerald-600 font-bold">$0.001</td>
-                  <td className="py-4 px-4 text-slate-600">167ms</td>
-                  <td className="py-4 px-4">
-                    <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">
-                      Completado
-                    </span>
-                  </td>
-                </tr>
+                {recentTasks.map((task, index) => (
+                  <tr key={index} className={index < recentTasks.length - 1 ? "border-b border-slate-100" : ""}>
+                    <td className="py-4 px-4 font-medium text-slate-900 capitalize">{task.model}</td>
+                    <td className="py-4 px-4 text-emerald-600 font-bold">${task.cost.toFixed(3)}</td>
+                    <td className="py-4 px-4 text-slate-600">{task.latency}ms</td>
+                    <td className="py-4 px-4">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${task.status === 'completed'
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-yellow-100 text-yellow-800'
+                        }`}>
+                        {task.status === 'completed' ? 'Completado' : 'Procesando'}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
@@ -855,7 +841,7 @@ const PricingSection = () => {
           <div className="inline-flex items-center px-6 py-3 bg-slate-800 border border-slate-700 rounded-full">
             <Timer className="w-4 h-4 text-emerald-400 mr-2" />
             <span className="text-slate-300 font-mono text-sm">
-              Integración: cambiar 1 línea de código • Tiempo: <10 minutos
+              Integración: cambiar 1 línea de código • Tiempo: &lt;10 minutos
             </span>
           </div>
         </motion.div>
@@ -954,7 +940,7 @@ const Footer = () => {
           </div>
 
           <div className="flex items-center space-x-8">
-            <a href="#" className="text-slate-400 hover:text-emerald-400 transition-colors font-mono text-sm">
+            <a href="/docs" className="text-slate-400 hover:text-emerald-400 transition-colors font-mono text-sm">
               API Docs
             </a>
             <a href="#" className="text-slate-400 hover:text-emerald-400 transition-colors font-mono text-sm">
