@@ -68,13 +68,22 @@ const Navigation = () => {
             <a href="#precios" className="text-slate-300 hover:text-emerald-400 transition-colors font-medium">Precios</a>
           </div>
 
-          <motion.button
-            whileHover={{ scale: 1.05, backgroundColor: "#10b981" }}
-            whileTap={{ scale: 0.95 }}
-            className="bg-emerald-500 text-slate-900 px-6 py-3 rounded-lg font-bold shadow-lg transition-all duration-300"
-          >
-            Probar API
-          </motion.button>
+          <div className="hidden md:flex items-center space-x-4">
+            <a
+              href="/login"
+              className="text-slate-300 hover:text-emerald-400 transition-colors font-medium px-4 py-2 rounded-lg hover:bg-slate-800/50"
+            >
+              Iniciar Sesión
+            </a>
+            <motion.a
+              href="/register"
+              whileHover={{ scale: 1.05, backgroundColor: "#10b981" }}
+              whileTap={{ scale: 0.95 }}
+              className="bg-emerald-500 text-slate-900 px-6 py-2 rounded-lg font-bold shadow-lg transition-all duration-300"
+            >
+              Registrarse
+            </motion.a>
+          </div>
         </div>
       </div>
     </motion.nav>

@@ -12,8 +12,13 @@ const protectedRoutes = [
     '/admin/billing',
     '/admin/notifications',
     '/admin/settings',
-    '/admin/help'
+    '/admin/help',
+    // '/user', // Comentado temporalmente - manejo client-side con Supabase
+    '/dashboard'
 ];
+
+// Rutas que solo usuarios no autenticados pueden acceder
+const authRoutes = ['/login', '/register'];
 
 export async function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl;
@@ -22,32 +27,38 @@ export async function middleware(request: NextRequest) {
     const isProtectedRoute = protectedRoutes.some(route =>
         pathname === route || pathname.startsWith(route)
     );
+    
+    // Verificar si es una ruta de autenticación
+    const isAuthRoute = authRoutes.some(route => pathname.startsWith(route));
 
-    // Permitir acceso a rutas públicas
+    // Verificar autenticación
+    let user = null;
+    try {
+        user = await authenticateUser(request);
+    } catch (error) {
+        console.error('Authentication error:', error);
+    }
+
+    // Si es una ruta de auth y el usuario ya está autenticado, redirigir al dashboard
+    if (isAuthRoute && user) {
+        return NextResponse.redirect(new URL('/user', request.url));
+    }
+
+    // Permitir acceso a rutas públicas y de auth
     if (!isProtectedRoute) {
         return NextResponse.next();
     }
 
     // Verificar autenticación para rutas protegidas
-    try {
-        const user = await authenticateUser(request);
-
-        if (!user) {
-            // Redirigir a login si no está autenticado
-            const loginUrl = new URL('/login', request.url);
-            loginUrl.searchParams.set('redirect', pathname);
-            return NextResponse.redirect(loginUrl);
-        }
-
-        // Usuario autenticado, permitir acceso
-        return NextResponse.next();
-
-    } catch (error) {
-        console.error('Authentication error:', error);
+    if (!user) {
+        // Redirigir a login si no está autenticado
         const loginUrl = new URL('/login', request.url);
         loginUrl.searchParams.set('redirect', pathname);
         return NextResponse.redirect(loginUrl);
     }
+
+    // Usuario autenticado, permitir acceso
+    return NextResponse.next();
 }
 
 // Configurar matcher para aplicar el middleware solo a ciertas rutas
@@ -56,7 +67,16 @@ export const config = {
         /*
          * Coincidir con:
          * - /admin/:path* (todas las rutas bajo /admin)
+         * - /dashboard/:path* (todas las rutas bajo /dashboard)
+         * - /login (página de login)
+         * - /register (página de registro)
+         * 
+         * Nota: /user/:path* comentado temporalmente para usar protección client-side con Supabase
          */
         '/admin/:path*',
+        // '/user/:path*', // Comentado - manejo client-side
+        '/dashboard/:path*',
+        '/login',
+        '/register'
     ],
 };

@@ -16,11 +16,27 @@ import {
     validateApiKey
 } from './controllers/apiKeyController';
 import {
+    getCurrentUser,
+    login,
+    logout,
+    register,
+    requestPasswordReset,
+    resetPassword,
+    verifyEmail
+} from './controllers/authController';
+import {
     clearCache,
     getMetrics,
     getPerformanceStats,
     routeTask
 } from './controllers/routeController';
+import {
+    createUser,
+    deleteUser,
+    getUserById,
+    getUsers,
+    updateUser
+} from './controllers/userController';
 
 // Importar middleware
 import { authenticateApiKey, optionalAuth } from './middleware/auth';
@@ -53,6 +69,22 @@ app.get('/v1/api-keys', listApiKeys);
 app.delete('/v1/api-keys/:keyId', deactivateApiKey);
 app.get('/v1/api-keys/:keyId/stats', getApiKeyStats);
 app.post('/v1/api-keys/validate', validateApiKey);
+
+// Rutas de gestión de usuarios
+app.get('/v1/users', getUsers);
+app.get('/v1/users/:id', getUserById);
+app.post('/v1/users', createUser);
+app.put('/v1/users/:id', updateUser);
+app.delete('/v1/users/:id', deleteUser);
+
+// Rutas de autenticación
+app.post('/v1/auth/register', register);
+app.post('/v1/auth/login', login);
+app.post('/v1/auth/logout', logout);
+app.get('/v1/auth/me', getCurrentUser);
+app.post('/v1/auth/verify-email', verifyEmail);
+app.post('/v1/auth/request-password-reset', requestPasswordReset);
+app.post('/v1/auth/reset-password', resetPassword);
 
 // Ruta principal de ruteo (requiere API Key)
 app.post('/v1/route', authenticateApiKey, routeTask);

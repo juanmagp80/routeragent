@@ -1,0 +1,55 @@
+#!/bin/bash
+
+# Script para mostrar ayuda sobre los scripts del backend de AgentRouter MCP
+
+echo "ℹ️  AgentRouter MCP Backend Scripts Help"
+echo "========================================"
+
+# Directorio del proyecto
+PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$PROJECT_DIR"
+
+echo "📁 Working directory: $PROJECT_DIR"
+echo ""
+
+echo "Available scripts:"
+echo "------------------"
+echo "  start.sh     - Start the backend in development mode"
+echo "  stop.sh      - Stop the backend"
+echo "  restart.sh   - Restart the backend"
+echo "  status.sh    - Check the backend status"
+echo "  logs.sh      - View backend logs"
+echo "  test.sh      - Run backend tests"
+echo "  lint.sh      - Run linter on backend code"
+echo "  format.sh    - Format backend code"
+echo "  maintain.sh  - Run all maintenance tasks (lint, format, test)"
+echo "  dev.sh       - Run backend in development mode with hot reloading"
+echo "  prod.sh      - Run backend in production mode"
+echo "  deploy.sh    - Deploy backend to production"
+echo "  clean.sh     - Clean backend (stop processes, remove containers, clean directories)"
+echo "  help.sh      - Show this help message"
+echo ""
+
+echo "Usage:"
+echo "------"
+echo "  ./scripts/<script-name>.sh"
+echo ""
+echo "Examples:"
+echo "---------"
+echo "  ./scripts/start.sh"
+echo "  ./scripts/stop.sh"
+echo "  ./scripts/restart.sh"
+echo "  ./scripts/status.sh"
+echo "  ./scripts/logs.sh"
+echo "  ./scripts/test.sh"
+echo "  ./scripts/lint.sh"
+echo "  ./scripts/format.sh"
+echo "  ./scripts/maintain.sh"
+echo "  ./scripts/dev.sh"
+echo "  ./scripts/prod.sh"
+echo "  ./scripts/deploy.sh"
+echo "  ./scripts/clean.sh"
+echo "  ./scripts/help.sh"
+echo ""
+
+echo "ℹ️  AgentRouter MCP Backend scripts help completed"
