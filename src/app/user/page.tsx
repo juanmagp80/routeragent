@@ -35,8 +35,8 @@ export default function UserDashboard() {
         }
     }, [user, authLoading, isHydrated, router]);
 
-    // Mostrar loader mientras se verifica autenticación
-    if (!isHydrated || authLoading) {
+    // Mostrar loader solo si no hay usuario y está cargando
+    if ((!isHydrated || authLoading) && !user) {
         console.log('🔄 Mostrando loader - isHydrated:', isHydrated, 'authLoading:', authLoading);
         return (
             <div className="min-h-screen bg-slate-900 flex items-center justify-center">

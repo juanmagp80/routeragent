@@ -18,29 +18,30 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-    const [user, setUser] = useState<User | null>(null);
+    const [user, setUser] = useState<User | null>(() => {
+        if (typeof window !== 'undefined') {
+            const storedUser = localStorage.getItem('agentrouter_user');
+            return storedUser ? JSON.parse(storedUser) : null;
+        }
+        return null;
+    });
     const [loading, setLoading] = useState(true);
     const [isHydrated, setIsHydrated] = useState(false);
     const router = useRouter();
 
     useEffect(() => {
-        // Marcar como hidratado en el cliente
+        // Solo ejecutar en el primer montaje
         setIsHydrated(true);
-        
-        // Verificar sesión inicial
         checkUserSession();
-
         // Escuchar cambios en la autenticación de Supabase
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
             async (event, session) => {
                 console.log('Auth state changed:', event, session);
-                
                 if (event === 'SIGNED_IN' && session?.user) {
                     console.log('SIGNED_IN detectado, cargando datos del usuario...');
                     setLoading(true);
                     await loadUserData(session.user.id);
                     setLoading(false);
-                    // Redirigir al dashboard después de login exitoso con redirección directa y robusta
                     if (window.location.pathname === '/login') {
                         console.log('🔄 Iniciando redirección robusta a /user...');
                         robustRedirect('/user');
@@ -56,11 +57,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 }
             }
         );
-
         return () => {
             subscription.unsubscribe();
         };
-    }, [router]);
+    }, []);
 
     const checkUserSession = async () => {
         console.log('🔍 Verificando sesión inicial...');
@@ -71,11 +71,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             if (result.success && result.user) {
                 console.log('✅ Sesión encontrada:', result.user);
                 setUser(result.user);
+                localStorage.setItem('agentrouter_user', JSON.stringify(result.user));
             } else {
                 console.log('❌ No se encontró sesión activa:', result.error);
+                localStorage.removeItem('agentrouter_user');
             }
         } catch (error) {
             console.error('❌ Error checking user session:', error);
+            localStorage.removeItem('agentrouter_user');
         } finally {
             console.log('🔍 Finalizando verificación de sesión, setting loading to false');
             setLoading(false);
@@ -90,12 +93,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             if (result.success && result.user) {
                 console.log('Datos del usuario cargados exitosamente:', result.user);
                 setUser(result.user);
+                localStorage.setItem('agentrouter_user', JSON.stringify(result.user));
             } else {
                 console.error('Error cargando datos del usuario:', result.error);
-                // Si no podemos cargar los datos, mantener la sesión pero sin datos completos
                 const { data: authData } = await supabase.auth.getUser();
                 if (authData.user) {
-                    // Crear un usuario mínimo con los datos de auth
                     const minimalUser: User = {
                         id: authData.user.id,
                         email: authData.user.email!,
@@ -110,6 +112,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                     };
                     console.log('Usando datos mínimos del usuario:', minimalUser);
                     setUser(minimalUser);
+                    localStorage.setItem('agentrouter_user', JSON.stringify(minimalUser));
+                } else {
+                    localStorage.removeItem('agentrouter_user');
                 }
             }
         } catch (error) {
@@ -185,6 +190,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             console.error('Error logging out:', error);
         } finally {
             setUser(null);
+            localStorage.removeItem('agentrouter_user');
             router.push('/');
         }
     };
