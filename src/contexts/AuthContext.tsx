@@ -2,8 +2,8 @@
 
 import { useRouter } from 'next/navigation';
 import { createContext, ReactNode, useContext, useEffect, useState } from 'react';
-import { frontendAuthService, User } from '../services/frontendAuthService';
 import { supabase } from '../config/database';
+import { frontendAuthService, User } from '../services/frontendAuthService';
 import { robustRedirect } from '../utils/redirect';
 
 interface AuthContextType {
@@ -67,7 +67,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         try {
             const result = await frontendAuthService.getCurrentUser();
             console.log('🔍 Resultado de verificación de sesión:', result);
-            
+
             if (result.success && result.user) {
                 console.log('✅ Sesión encontrada:', result.user);
                 setUser(result.user);
@@ -89,7 +89,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         try {
             console.log('Cargando datos del usuario:', userId);
             const result = await frontendAuthService.getCurrentUser();
-            
+
             if (result.success && result.user) {
                 console.log('Datos del usuario cargados exitosamente:', result.user);
                 setUser(result.user);
@@ -126,7 +126,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setLoading(true);
         try {
             console.log('Iniciando login con:', email);
-            
+
             // Solo hacer la autenticación, el listener onAuthStateChange se encargará del resto
             const { data, error } = await supabase.auth.signInWithPassword({
                 email,
@@ -136,13 +136,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             if (error) {
                 console.error('Error de login:', error);
                 let errorMessage = "Error al iniciar sesión";
-                
+
                 if (error.message === 'Invalid login credentials') {
                     errorMessage = "Email o contraseña incorrectos";
                 } else if (error.message === 'Email not confirmed' || error.message.includes('Email not confirmed')) {
                     errorMessage = "Por favor verifica tu email antes de iniciar sesión. Revisa tu bandeja de entrada.";
                 }
-                
+
                 throw new Error(errorMessage);
             }
 
@@ -155,7 +155,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             // 1. Cargar los datos del usuario
             // 2. Establecer el estado
             // 3. Redirigir al dashboard
-            
+
         } catch (error: any) {
             setLoading(false); // Solo establecer loading en false si hay error
             throw new Error(error.message || 'Error al iniciar sesión');
@@ -171,7 +171,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             if (!result.success) {
                 throw new Error(result.error || 'Error al registrarse');
             }
-            
+
             if (result.user) {
                 setUser(result.user);
                 router.push('/login?message=Registro exitoso. Por favor verifica tu email.');
