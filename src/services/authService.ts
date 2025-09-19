@@ -6,9 +6,9 @@ import { supabase } from '../config/database';
 import { CreateUserInput, LoginInput, UpdateUserInput, User } from '../models/User';
 
 // Clave secreta para JWT (en producción, usar variable de entorno)
-const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-minimum-32-characters-long';
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '24h';
-const REFRESH_TOKEN_EXPIRES_IN = process.env.REFRESH_TOKEN_EXPIRES_IN || '7d';
+const JWT_SECRET: string = process.env.JWT_SECRET || 'your-super-secret-jwt-key-minimum-32-characters-long';
+const JWT_EXPIRES_IN: string = process.env.JWT_EXPIRES_IN || '24h';
+const REFRESH_TOKEN_EXPIRES_IN: string = process.env.REFRESH_TOKEN_EXPIRES_IN || '7d';
 
 export class AuthService {
     // Registrar nuevo usuario
@@ -78,21 +78,13 @@ export class AuthService {
             }
 
             // Generar tokens JWT
-            const token = jwt.sign(
-                {
-                    userId: newUser.id,
-                    email: newUser.email,
-                    plan: newUser.plan
-                },
-                JWT_SECRET,
-                { expiresIn: JWT_EXPIRES_IN }
-            );
+            const token = jwt.sign({
+                userId: newUser.id,
+                email: newUser.email,
+                plan: newUser.plan
+            }, JWT_SECRET, { expiresIn: '24h' });
 
-            const refresh_token = jwt.sign(
-                { userId: newUser.id },
-                JWT_SECRET,
-                { expiresIn: REFRESH_TOKEN_EXPIRES_IN }
-            );
+            const refresh_token = jwt.sign({ userId: newUser.id }, JWT_SECRET, { expiresIn: '7d' });
 
             // Eliminar campos sensibles antes de devolver
             const { password_hash: _, ...safeUser } = newUser;
@@ -203,21 +195,13 @@ export class AuthService {
                 .eq('id', user.id);
 
             // Generar tokens JWT
-            const token = jwt.sign(
-                {
-                    userId: user.id,
-                    email: user.email,
-                    plan: user.plan
-                },
-                JWT_SECRET,
-                { expiresIn: JWT_EXPIRES_IN }
-            );
+            const token = jwt.sign({
+                userId: user.id,
+                email: user.email,
+                plan: user.plan
+            }, JWT_SECRET, { expiresIn: '24h' });
 
-            const refresh_token = jwt.sign(
-                { userId: user.id },
-                JWT_SECRET,
-                { expiresIn: REFRESH_TOKEN_EXPIRES_IN }
-            );
+            const refresh_token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '7d' });
 
             // Eliminar campos sensibles antes de devolver
             const { password_hash: _, ...safeUser } = user;
@@ -248,13 +232,13 @@ export class AuthService {
     }> {
         try {
             // Verificar token
-            const decoded: any = jwt.verify(token, JWT_SECRET);
+            const decoded = jwt.verify(token, JWT_SECRET);
 
             // Buscar usuario por ID
             const { data: user, error: userError } = await supabase
                 .from('users')
                 .select('*')
-                .eq('id', decoded.userId)
+                .eq('id', (decoded as any).userId)
                 .maybeSingle();
 
             if (userError) {
@@ -512,11 +496,7 @@ export class AuthService {
             }
 
             // Generar token de restablecimiento
-            const resetToken = jwt.sign(
-                { userId: user.id, action: 'reset_password' },
-                JWT_SECRET,
-                { expiresIn: '1h' } // Expira en 1 hora
-            );
+            const resetToken = jwt.sign({ userId: user.id, action: 'reset_password' }, JWT_SECRET, { expiresIn: '1h' });
 
             // Guardar token en la base de datos
             const { error: updateTokenError } = await supabase
@@ -576,7 +556,8 @@ export class AuthService {
             // Verificar token
             let decoded: any;
             try {
-                decoded = jwt.verify(token, JWT_SECRET);
+                const payload = jwt.verify(token, JWT_SECRET);
+                decoded = payload;
             } catch (error) {
                 return {
                     success: false,
@@ -669,7 +650,8 @@ export class AuthService {
             // Verificar token
             let decoded: any;
             try {
-                decoded = jwt.verify(token, JWT_SECRET);
+                const payload = jwt.verify(token, JWT_SECRET);
+                decoded = payload;
             } catch (error) {
                 return {
                     success: false,

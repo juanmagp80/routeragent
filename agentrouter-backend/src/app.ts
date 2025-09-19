@@ -43,7 +43,7 @@ import { authenticateApiKey, optionalAuth } from './middleware/auth';
 import { authenticateJWT } from './middleware/authJWT';
 
 const app: Application = express();
-const PORT: number = parseInt(process.env.PORT || '3000', 10);
+const PORT: number = parseInt(process.env.PORT || '3001', 10);
 
 // Middleware
 app.use(helmet()); // Seguridad

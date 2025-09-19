@@ -1,6 +1,7 @@
 import AuthWrapper from "@/components/admin/AuthWrapper";
 import AdminHeader from "@/components/admin/Header";
 import Sidebar from "@/components/admin/Sidebar";
+import React from "react";
 
 export default function AdminLayout({
     children,
