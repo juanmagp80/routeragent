@@ -18,13 +18,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-    const [user, setUser] = useState<User | null>(() => {
-        if (typeof window !== 'undefined') {
-            const storedUser = localStorage.getItem('agentrouter_user');
-            return storedUser ? JSON.parse(storedUser) : null;
-        }
-        return null;
-    });
+    const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
     const [isHydrated, setIsHydrated] = useState(false);
     const router = useRouter();
@@ -32,6 +26,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     useEffect(() => {
         // Solo ejecutar en el primer montaje
         setIsHydrated(true);
+        
+        // Cargar usuario del localStorage después de la hidratación
+        const storedUser = localStorage.getItem('agentrouter_user');
+        if (storedUser) {
+            setUser(JSON.parse(storedUser));
+        }
+        
         checkUserSession();
         // Escuchar cambios en la autenticación de Supabase
         const { data: { subscription } } = supabase.auth.onAuthStateChange(

@@ -1,33 +1,43 @@
 import { Request, Response } from 'express';
 import { ApiKeyService } from '../services/apiKeyService';
+import { AuthenticatedRequest } from '../types/request';
 
 const apiKeyService = new ApiKeyService();
 
 // Crear nueva API Key
-export const createApiKey = async (req: Request, res: Response) => {
+export const createApiKey = async (req: AuthenticatedRequest, res: Response) => {
     try {
-        const { name, plan } = req.body;
+        const { name, plan, usage_limit } = req.body;
 
         // Validar entrada
-        if (!name || !plan) {
+        if (!name) {
             return res.status(400).json({
-                error: 'Name and plan are required',
+                error: 'Name is required',
                 success: false
             });
         }
 
-        if (!['starter', 'pro', 'enterprise'].includes(plan)) {
+        // Usar plan por defecto si no se proporciona
+        const apiKeyPlan = plan || 'free';
+
+        if (!['free', 'starter', 'pro', 'enterprise'].includes(apiKeyPlan)) {
             return res.status(400).json({
-                error: 'Invalid plan. Must be: starter, pro, or enterprise',
+                error: 'Invalid plan. Must be: free, starter, pro, or enterprise',
                 success: false
             });
         }
 
-        // Por ahora, crear sin user_id (para testing)
-        // En producción esto vendría del usuario autenticado
-        const userId = req.body.user_id || null;
+        // Obtener user_id del token JWT
+        const userId = req.user?.id;
+        
+        if (!userId) {
+            return res.status(401).json({
+                error: 'User not authenticated',
+                success: false
+            });
+        }
 
-        const { apiKey, rawKey } = await apiKeyService.generateApiKey(userId, name, plan);
+        const { apiKey, rawKey } = await apiKeyService.generateApiKey(userId, name, apiKeyPlan, usage_limit);
 
         res.status(201).json({
             success: true,
@@ -38,6 +48,7 @@ export const createApiKey = async (req: Request, res: Response) => {
                 plan: apiKey.plan,
                 usage_limit: apiKey.usage_limit,
                 usage_count: apiKey.usage_count,
+                is_active: apiKey.is_active,
                 created_at: apiKey.created_at,
                 // Solo devolver la key completa una vez
                 key: rawKey
@@ -55,13 +66,13 @@ export const createApiKey = async (req: Request, res: Response) => {
 };
 
 // Listar API Keys del usuario
-export const listApiKeys = async (req: Request, res: Response) => {
+export const listApiKeys = async (req: AuthenticatedRequest, res: Response) => {
     try {
-        const userId = req.query.user_id as string || null;
+        const userId = req.user?.id;
 
         if (!userId) {
-            return res.status(400).json({
-                error: 'user_id is required',
+            return res.status(401).json({
+                error: 'User not authenticated',
                 success: false
             });
         }
@@ -89,21 +100,28 @@ export const listApiKeys = async (req: Request, res: Response) => {
     } catch (error) {
         console.error('List API keys error:', error);
         res.status(500).json({
-            error: 'Failed to fetch API keys',
+            error: 'Failed to list API keys',
             success: false
         });
     }
 };
 
-// Desactivar API Key
-export const deactivateApiKey = async (req: Request, res: Response) => {
+// Desactivar una API Key
+export const deactivateApiKey = async (req: AuthenticatedRequest, res: Response) => {
     try {
         const { keyId } = req.params;
-        const userId = req.body.user_id;
+        const userId = req.user?.id;
 
         if (!userId) {
+            return res.status(401).json({
+                error: 'User not authenticated',
+                success: false
+            });
+        }
+
+        if (!keyId) {
             return res.status(400).json({
-                error: 'user_id is required',
+                error: 'Key ID is required',
                 success: false
             });
         }
@@ -124,59 +142,59 @@ export const deactivateApiKey = async (req: Request, res: Response) => {
     }
 };
 
-// Obtener estadísticas de uso de una API Key
-export const getApiKeyStats = async (req: Request, res: Response) => {
+// Obtener estadísticas de una API Key específica
+export const getApiKeyStats = async (req: AuthenticatedRequest, res: Response) => {
     try {
         const { keyId } = req.params;
+        const userId = req.user?.id;
 
-        const stats = await apiKeyService.getUsageStats(keyId);
+        if (!userId) {
+            return res.status(401).json({
+                error: 'User not authenticated',
+                success: false
+            });
+        }
+
+        if (!keyId) {
+            return res.status(400).json({
+                error: 'Key ID is required',
+                success: false
+            });
+        }
+
+        const stats = await apiKeyService.getApiKeyStats(keyId, userId);
 
         res.json({
             success: true,
-            stats: stats
+            stats
         });
 
     } catch (error) {
         console.error('Get API key stats error:', error);
         res.status(500).json({
-            error: 'Failed to fetch API key statistics',
+            error: 'Failed to get API key stats',
             success: false
         });
     }
 };
 
-// Validar API Key (endpoint público para testing)
+// Validar una API Key (para uso interno)
 export const validateApiKey = async (req: Request, res: Response) => {
     try {
         const { api_key } = req.body;
 
         if (!api_key) {
             return res.status(400).json({
-                error: 'api_key is required',
+                error: 'API key is required',
                 success: false
             });
         }
 
-        const validKey = await apiKeyService.validateApiKey(api_key);
-
-        if (!validKey) {
-            return res.status(401).json({
-                error: 'Invalid API key',
-                success: false
-            });
-        }
+        const isValid = await apiKeyService.validateApiKey(api_key);
 
         res.json({
             success: true,
-            valid: true,
-            key_info: {
-                id: validKey.id,
-                name: validKey.name,
-                plan: validKey.plan,
-                usage_count: validKey.usage_count,
-                usage_limit: validKey.usage_limit,
-                remaining: validKey.usage_limit === -1 ? 'unlimited' : validKey.usage_limit - validKey.usage_count
-            }
+            valid: !!isValid
         });
 
     } catch (error) {

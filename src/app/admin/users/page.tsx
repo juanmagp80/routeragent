@@ -318,21 +318,22 @@ export default function UsersPage() {
                                     <option value="enterprise">Enterprise</option>
                                 </select>
                             </div>
-                            <div className="mt-6 flex justify-end space-x-3">
-                                <button
-                                    type="button"
-                                    onClick={closeForms}
-                                    className="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    type="submit"
-                                    className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500"
-                                >
-                                    Add User
-                                </button>
-                            </div>
+                        </div>
+                        <div className="mt-6 flex justify-end space-x-3">
+                            <button
+                                type="button"
+                                onClick={closeForms}
+                                className="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="submit"
+                                className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500"
+                            >
+                                Add User
+                            </button>
+                        </div>
                     </form>
                 </div>
             )}

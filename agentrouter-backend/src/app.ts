@@ -40,13 +40,19 @@ import {
 
 // Importar middleware
 import { authenticateApiKey, optionalAuth } from './middleware/auth';
+import { authenticateJWT } from './middleware/authJWT';
 
 const app: Application = express();
 const PORT: number = parseInt(process.env.PORT || '3000', 10);
 
 // Middleware
 app.use(helmet()); // Seguridad
-app.use(cors()); // CORS
+app.use(cors({
+    origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+})); // CORS
 app.use(morgan('combined')); // Logging
 app.use(express.json()); // Parse JSON
 app.use(express.urlencoded({ extended: true })); // Parse URL-encoded
@@ -63,12 +69,12 @@ app.get('/', (req: Request, res: Response) => {
     });
 });
 
-// Rutas de gestión de API Keys (sin autenticación para testing inicial)
-app.post('/v1/api-keys', createApiKey);
-app.get('/v1/api-keys', listApiKeys);
-app.delete('/v1/api-keys/:keyId', deactivateApiKey);
-app.get('/v1/api-keys/:keyId/stats', getApiKeyStats);
-app.post('/v1/api-keys/validate', validateApiKey);
+// Rutas de gestión de API Keys (requieren autenticación JWT)
+app.post('/v1/api-keys', authenticateJWT as any, createApiKey as any);
+app.get('/v1/api-keys', authenticateJWT as any, listApiKeys as any);
+app.delete('/v1/api-keys/:keyId', authenticateJWT as any, deactivateApiKey as any);
+app.get('/v1/api-keys/:keyId/stats', authenticateJWT as any, getApiKeyStats as any);
+app.post('/v1/api-keys/validate', validateApiKey); // Esta ruta no necesita JWT
 
 // Rutas de gestión de usuarios
 app.get('/v1/users', getUsers);
@@ -88,6 +94,9 @@ app.post('/v1/auth/reset-password', resetPassword);
 
 // Ruta principal de ruteo (requiere API Key)
 app.post('/v1/route', authenticateApiKey, routeTask);
+
+// Ruta de testing temporal (sin autenticación)
+app.post('/v1/route-test', routeTask);
 
 // Ruta de métricas (autenticación opcional)
 app.get('/v1/metrics', optionalAuth, getMetrics);

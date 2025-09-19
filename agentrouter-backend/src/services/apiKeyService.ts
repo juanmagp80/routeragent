@@ -5,7 +5,7 @@ import { ApiKey, ApiKeyUsage } from "../models/ApiKey";
 export class ApiKeyService {
 
     // Generar una nueva API Key
-    async generateApiKey(userId: string | null, name: string, plan: 'starter' | 'pro' | 'enterprise'): Promise<{ apiKey: ApiKey, rawKey: string }> {
+    async generateApiKey(userId: string | null, name: string, plan: 'free' | 'starter' | 'pro' | 'enterprise' = 'free', usage_limit?: number): Promise<{ apiKey: ApiKey, rawKey: string }> {
         // Generar key aleatoria
         const rawKey = `ar_${crypto.randomBytes(32).toString('hex')}`;
         const keyHash = crypto.createHash('sha256').update(rawKey).digest('hex');
@@ -13,6 +13,7 @@ export class ApiKeyService {
 
         // Definir límites por plan
         const usageLimits = {
+            free: 100,
             starter: 1000,
             pro: 5000,
             enterprise: -1 // Ilimitado
@@ -24,7 +25,7 @@ export class ApiKeyService {
             key_prefix: keyPrefix,
             name: name,
             plan: plan,
-            usage_limit: usageLimits[plan],
+            usage_limit: usage_limit || usageLimits[plan],
             usage_count: 0,
             is_active: true,
             last_used_at: null,
@@ -204,6 +205,34 @@ export class ApiKeyService {
             };
         } catch (error) {
             console.error('Error fetching usage stats:', error);
+            throw error;
+        }
+    }
+
+    // Obtener estadísticas específicas de una API Key (verificando permisos)
+    async getApiKeyStats(apiKeyId: string, userId: string): Promise<any> {
+        try {
+            // Primero verificar que la API key pertenece al usuario
+            const { data: apiKey, error: keyError } = await supabase
+                .from('api_keys')
+                .select('id, name, usage_count, usage_limit, plan, created_at, last_used_at')
+                .eq('id', apiKeyId)
+                .eq('user_id', userId)
+                .single();
+
+            if (keyError || !apiKey) {
+                throw new Error('API key not found or access denied');
+            }
+
+            // Obtener estadísticas de uso
+            const usageStats = await this.getUsageStats(apiKeyId);
+
+            return {
+                api_key: apiKey,
+                usage_stats: usageStats
+            };
+        } catch (error) {
+            console.error('Error fetching API key stats:', error);
             throw error;
         }
     }

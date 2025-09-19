@@ -91,7 +91,7 @@ export const optionalAuth = async (req: Request, res: Response, next: NextFuncti
 };
 
 // Middleware para verificar plan específico
-export const requirePlan = (requiredPlan: 'starter' | 'pro' | 'enterprise') => {
+export const requirePlan = (requiredPlan: 'free' | 'starter' | 'pro' | 'enterprise') => {
     return (req: Request, res: Response, next: NextFunction) => {
         if (!req.apiKey) {
             return res.status(401).json({
@@ -100,7 +100,12 @@ export const requirePlan = (requiredPlan: 'starter' | 'pro' | 'enterprise') => {
             });
         }
 
-        const planHierarchy = { starter: 1, pro: 2, enterprise: 3 };
+        const planHierarchy: Record<'free' | 'starter' | 'pro' | 'enterprise', number> = { 
+            free: 0, 
+            starter: 1, 
+            pro: 2, 
+            enterprise: 3 
+        };
         const userPlanLevel = planHierarchy[req.apiKey.plan];
         const requiredPlanLevel = planHierarchy[requiredPlan];
 

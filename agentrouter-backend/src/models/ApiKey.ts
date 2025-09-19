@@ -4,7 +4,7 @@ export interface ApiKey {
     key_hash: string;
     key_prefix: string; // Primeros 8 caracteres para mostrar al usuario
     name: string;
-    plan: 'starter' | 'pro' | 'enterprise';
+    plan: 'free' | 'starter' | 'pro' | 'enterprise';
     usage_limit: number; // Límite de tareas por mes
     usage_count: number; // Contador actual
     is_active: boolean;

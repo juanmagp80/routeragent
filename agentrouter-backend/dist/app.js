@@ -11,12 +11,23 @@ const morgan_1 = __importDefault(require("morgan"));
 // Cargar variables de entorno
 dotenv_1.default.config();
 // Importar controladores
+const apiKeyController_1 = require("./controllers/apiKeyController");
+const authController_1 = require("./controllers/authController");
 const routeController_1 = require("./controllers/routeController");
+const userController_1 = require("./controllers/userController");
+// Importar middleware
+const auth_1 = require("./middleware/auth");
+const authJWT_1 = require("./middleware/authJWT");
 const app = (0, express_1.default)();
 const PORT = parseInt(process.env.PORT || '3000', 10);
 // Middleware
 app.use((0, helmet_1.default)()); // Seguridad
-app.use((0, cors_1.default)()); // CORS
+app.use((0, cors_1.default)({
+    origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+})); // CORS
 app.use((0, morgan_1.default)('combined')); // Logging
 app.use(express_1.default.json()); // Parse JSON
 app.use(express_1.default.urlencoded({ extended: true })); // Parse URL-encoded
@@ -31,10 +42,35 @@ app.get('/', (req, res) => {
         }
     });
 });
-// Ruta principal de ruteo
-app.post('/v1/route', routeController_1.routeTask);
-// Ruta de métricas
-app.get('/v1/metrics', routeController_1.getMetrics);
+// Rutas de gestión de API Keys (requieren autenticación JWT)
+app.post('/v1/api-keys', authJWT_1.authenticateJWT, apiKeyController_1.createApiKey);
+app.get('/v1/api-keys', authJWT_1.authenticateJWT, apiKeyController_1.listApiKeys);
+app.delete('/v1/api-keys/:keyId', authJWT_1.authenticateJWT, apiKeyController_1.deactivateApiKey);
+app.get('/v1/api-keys/:keyId/stats', authJWT_1.authenticateJWT, apiKeyController_1.getApiKeyStats);
+app.post('/v1/api-keys/validate', apiKeyController_1.validateApiKey); // Esta ruta no necesita JWT
+// Rutas de gestión de usuarios
+app.get('/v1/users', userController_1.getUsers);
+app.get('/v1/users/:id', userController_1.getUserById);
+app.post('/v1/users', userController_1.createUser);
+app.put('/v1/users/:id', userController_1.updateUser);
+app.delete('/v1/users/:id', userController_1.deleteUser);
+// Rutas de autenticación
+app.post('/v1/auth/register', authController_1.register);
+app.post('/v1/auth/login', authController_1.login);
+app.post('/v1/auth/logout', authController_1.logout);
+app.get('/v1/auth/me', authController_1.getCurrentUser);
+app.post('/v1/auth/verify-email', authController_1.verifyEmail);
+app.post('/v1/auth/request-password-reset', authController_1.requestPasswordReset);
+app.post('/v1/auth/reset-password', authController_1.resetPassword);
+// Ruta principal de ruteo (requiere API Key)
+app.post('/v1/route', auth_1.authenticateApiKey, routeController_1.routeTask);
+// Ruta de testing temporal (sin autenticación)
+app.post('/v1/route-test', routeController_1.routeTask);
+// Ruta de métricas (autenticación opcional)
+app.get('/v1/metrics', auth_1.optionalAuth, routeController_1.getMetrics);
+// Rutas de rendimiento y cache
+app.get('/v1/performance', routeController_1.getPerformanceStats);
+app.post('/v1/cache/clear', routeController_1.clearCache);
 // Manejador de errores
 app.use((err, req, res, next) => {
     console.error(err.stack);
