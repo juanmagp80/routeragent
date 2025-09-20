@@ -7,7 +7,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 
 export default function LoginPage() {
-    const { login, loading: authLoading, isHydrated } = useAuth();
+    const { login, loading: authLoading, isHydrated, authError } = useAuth();
     const router = useRouter();
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -43,6 +43,18 @@ export default function LoginPage() {
         return (
             <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+            </div>
+        );
+    }
+
+    if (authError) {
+        return (
+            <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
+                <div className="bg-red-500/10 border border-red-500/20 text-red-400 px-6 py-5 rounded-2xl text-lg shadow-xl max-w-md text-center">
+                    <div className="mb-2 font-bold text-red-400">Error de autenticación</div>
+                    <div>{authError}</div>
+                    <div className="mt-4 text-sm text-gray-300">Si el problema persiste, contacta soporte o intenta registrarte de nuevo.</div>
+                </div>
             </div>
         );
     }

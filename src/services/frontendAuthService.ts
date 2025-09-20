@@ -257,8 +257,10 @@ export class FrontendAuthService {
     try {
       // Obtener usuario actual de Supabase Auth
       const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
+      console.log('🔑 Supabase Auth user:', authUser ? authUser.id : null, authUser);
 
       if (authError || !authUser) {
+        console.error('❌ Error en Supabase Auth:', authError);
         return {
           success: false,
           error: "No hay sesión activa"
@@ -271,9 +273,10 @@ export class FrontendAuthService {
         .select('*')
         .eq('id', authUser.id)
         .single();
+      console.log('📦 Resultado consulta tabla users:', { user, userError, idBuscado: authUser.id });
 
       if (userError || !user) {
-        console.error('Database error:', userError);
+        console.error('❌ Database error:', userError);
         return {
           success: false,
           error: "Error obteniendo datos del usuario"
@@ -281,12 +284,14 @@ export class FrontendAuthService {
       }
 
       if (!user.is_active) {
+        console.warn('⚠️ Usuario desactivado:', user.id);
         return {
           success: false,
           error: "La cuenta está desactivada"
         };
       }
 
+      console.log('✅ Usuario encontrado y activo:', user.id);
       return {
         success: true,
         user: {
@@ -304,7 +309,7 @@ export class FrontendAuthService {
       };
 
     } catch (error) {
-      console.error('Get current user error:', error);
+      console.error('❌ Get current user error:', error);
       return {
         success: false,
         error: "Error obteniendo usuario actual"

@@ -70,6 +70,14 @@ export default function ApiKeysPage() {
         e.preventDefault();
         if (!user || !newKey.name.trim()) return;
 
+        // Verificar sesión activa en Supabase antes de crear la API key
+        const session = await import('@/config/database').then(m => m.supabase.auth.getSession());
+        if (!session.data.session) {
+            alert('Debes iniciar sesión para crear una API key.');
+            setCreating(false);
+            return;
+        }
+
         try {
             setCreating(true);
             const apiKey = await backendService.createApiKey(newKey);

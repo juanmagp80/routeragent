@@ -13,6 +13,7 @@ interface AuthContextType {
     logout: () => void;
     loading: boolean;
     isHydrated: boolean;
+    authError: string | null;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -21,18 +22,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
     const [isHydrated, setIsHydrated] = useState(false);
+    const [authError, setAuthError] = useState<string | null>(null);
     const router = useRouter();
 
     useEffect(() => {
-        // Solo ejecutar en el primer montaje
         setIsHydrated(true);
-        
-        // Cargar usuario del localStorage después de la hidratación
-        const storedUser = localStorage.getItem('agentrouter_user');
-        if (storedUser) {
-            setUser(JSON.parse(storedUser));
+        // Solo acceder a localStorage después de la hidratación
+        if (typeof window !== 'undefined') {
+            const storedUser = localStorage.getItem('agentrouter_user');
+            if (storedUser) {
+                setUser(JSON.parse(storedUser));
+            }
         }
-        
         checkUserSession();
         // Escuchar cambios en la autenticación de Supabase
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -43,7 +44,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                     setLoading(true);
                     await loadUserData(session.user.id);
                     setLoading(false);
-                    if (window.location.pathname === '/login') {
+                    if (typeof window !== 'undefined' && window.location.pathname === '/login') {
                         console.log('🔄 Iniciando redirección robusta a /user...');
                         robustRedirect('/user');
                     }
@@ -65,7 +66,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const checkUserSession = async () => {
         console.log('🔍 Verificando sesión inicial...');
+        let timeoutId: NodeJS.Timeout | null = null;
         try {
+            // Timeout de 8 segundos para detectar cuelgues
+            timeoutId = setTimeout(() => {
+                setAuthError('Timeout al consultar usuario. Verifica tu conexión o el backend.');
+                setLoading(false);
+                console.error('⏰ Timeout en checkUserSession');
+            }, 8000);
+
             const result = await frontendAuthService.getCurrentUser();
             console.log('🔍 Resultado de verificación de sesión:', result);
 
@@ -73,14 +82,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 console.log('✅ Sesión encontrada:', result.user);
                 setUser(result.user);
                 localStorage.setItem('agentrouter_user', JSON.stringify(result.user));
+                setAuthError(null);
             } else {
                 console.log('❌ No se encontró sesión activa:', result.error);
                 localStorage.removeItem('agentrouter_user');
+                setAuthError(result.error || 'No se pudo cargar el usuario');
             }
         } catch (error) {
             console.error('❌ Error checking user session:', error);
             localStorage.removeItem('agentrouter_user');
+            setAuthError('Error inesperado al cargar el usuario');
         } finally {
+            if (timeoutId) clearTimeout(timeoutId);
             console.log('🔍 Finalizando verificación de sesión, setting loading to false');
             setLoading(false);
         }
@@ -197,12 +210,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
 
     const value = {
-        user,
-        login,
-        register,
-        logout,
-        loading,
-        isHydrated
+    user,
+    login,
+    register,
+    logout,
+    loading,
+    isHydrated,
+    authError
     };
 
     return (

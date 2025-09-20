@@ -19,7 +19,7 @@ const userController_1 = require("./controllers/userController");
 const auth_1 = require("./middleware/auth");
 const authJWT_1 = require("./middleware/authJWT");
 const app = (0, express_1.default)();
-const PORT = parseInt(process.env.PORT || '3000', 10);
+const PORT = parseInt(process.env.PORT || '3001', 10);
 // Middleware
 app.use((0, helmet_1.default)()); // Seguridad
 app.use((0, cors_1.default)({
