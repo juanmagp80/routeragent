@@ -25,29 +25,40 @@ export class WebhookController {
    */
   public handleStripeWebhook = async (req: Request, res: Response): Promise<void> => {
     const sig = req.headers['stripe-signature'] as string;
+    
+    console.log('🚀 WEBHOOK: Starting Stripe webhook processing...');
+    console.log('🚀 WEBHOOK: Headers received:', req.headers);
+    console.log('🚀 WEBHOOK: Body type:', typeof req.body);
 
     let event: Stripe.Event;
 
     try {
       // Verificar el webhook con la firma de Stripe
       event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
+      console.log('✅ WEBHOOK: Signature verification successful');
     } catch (err: any) {
-      console.error(`❌ Webhook signature verification failed.`, err.message);
+      console.error(`❌ WEBHOOK: Signature verification failed.`, err.message);
       res.status(400).send(`Webhook Error: ${err.message}`);
       return;
     }
 
-    console.log(`✅ Webhook recibido: ${event.type}`);
+    console.log(`✅ WEBHOOK: Event received: ${event.type}`);
+    console.log(`✅ WEBHOOK: Event ID: ${event.id}`);
 
     // Procesar diferentes tipos de eventos
     try {
       switch (event.type) {
         case 'checkout.session.completed':
+          console.log('🎉 WEBHOOK: Processing checkout.session.completed...');
           await this.handleCheckoutCompleted(event.data.object as Stripe.Checkout.Session);
+          console.log('✅ WEBHOOK: checkout.session.completed processed successfully');
           break;
 
         case 'customer.subscription.created':
+          console.log('🆕 WEBHOOK: Processing customer.subscription.created...');
           await this.handleSubscriptionCreated(event.data.object as Stripe.Subscription);
+          console.log('✅ WEBHOOK: customer.subscription.created processed successfully');
+          break;
           break;
 
         case 'customer.subscription.updated':
@@ -81,8 +92,12 @@ export class WebhookController {
    * Manear checkout completado
    */
   private async handleCheckoutCompleted(session: Stripe.Checkout.Session): Promise<void> {
-    console.log('🎉 Checkout completado:', session.id);
-    console.log('🔍 Metadatos de sesión:', session.metadata);
+    console.log('🎉 CHECKOUT: Starting checkout completion process...');
+    console.log('🎉 CHECKOUT: Session ID:', session.id);
+    console.log('🎉 CHECKOUT: Customer ID:', session.customer);
+    console.log('🎉 CHECKOUT: Subscription ID:', session.subscription);
+    console.log('🎉 CHECKOUT: Payment status:', session.payment_status);
+    console.log('🎉 CHECKOUT: Metadata:', JSON.stringify(session.metadata, null, 2));
 
     const customerId = session.customer as string;
     const subscriptionId = session.subscription as string;
@@ -91,11 +106,15 @@ export class WebhookController {
     const planId = session.metadata?.plan_id;
     const userId = session.metadata?.user_id;
 
+    console.log(`📋 CHECKOUT: Plan ID from metadata: ${planId}`);
+    console.log(`👤 CHECKOUT: User ID from metadata: ${userId}`);
+
     if (planId) {
-      console.log(`📋 Actualizando usuario al plan ${planId} desde metadatos`);
+      console.log(`📋 CHECKOUT: Updating user to plan ${planId} from metadata`);
 
       // Si tenemos userId específico, usarlo; sino usar fallback para testing
       if (userId && userId !== 'user_dev_001') {
+        console.log('👤 CHECKOUT: Using specific user ID path...');
         await this.updateUserPlan(userId, planId, {
           customerId,
           subscriptionId,
@@ -104,6 +123,7 @@ export class WebhookController {
         });
       } else {
         // Fallback para testing - actualizar usuario de prueba
+        console.log('🔄 CHECKOUT: Using fallback test user path...');
         await this.updateTestUserPlan(planId, {
           customerId,
           subscriptionId,
@@ -111,12 +131,13 @@ export class WebhookController {
         });
       }
     } else if (subscriptionId) {
+      console.log('📋 CHECKOUT: No metadata found, trying subscription fallback...');
       // Fallback: obtener plan desde subscription si no hay metadatos
       const subscription = await stripe.subscriptions.retrieve(subscriptionId);
       const priceId = subscription.items.data[0]?.price.id;
       const plan = this.getPlanFromPriceId(priceId);
 
-      console.log(`📋 Actualizando usuario al plan ${plan} desde subscription`);
+      console.log(`📋 CHECKOUT: Plan from subscription: ${plan} (priceId: ${priceId})`);
       
       await this.updateTestUserPlan(plan, {
         customerId,
@@ -124,7 +145,12 @@ export class WebhookController {
         priceId,
         status: subscription.status
       });
+    } else {
+      console.error('❌ CHECKOUT: No plan_id in metadata and no subscription_id found');
+      throw new Error('Cannot determine plan from checkout session');
     }
+    
+    console.log('✅ CHECKOUT: Checkout completion process finished successfully');
   }
 
   /**
