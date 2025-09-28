@@ -82,28 +82,43 @@ export class WebhookController {
    */
   private async handleCheckoutCompleted(session: Stripe.Checkout.Session): Promise<void> {
     console.log('🎉 Checkout completado:', session.id);
+    console.log('🔍 Metadatos de sesión:', session.metadata);
 
     const customerId = session.customer as string;
     const subscriptionId = session.subscription as string;
-    const clientReferenceId = session.client_reference_id; // userId
+    
+    // Obtener plan desde los metadatos de la sesión
+    const planId = session.metadata?.plan_id;
+    const userId = session.metadata?.user_id;
 
-    if (clientReferenceId && subscriptionId) {
-      // Obtener detalles de la suscripción
+    if (planId) {
+      console.log(`📋 Actualizando usuario al plan ${planId} desde metadatos`);
+
+      // Si tenemos userId específico, usarlo; sino usar fallback para testing
+      if (userId && userId !== 'user_dev_001') {
+        await this.updateUserPlan(userId, planId, {
+          customerId,
+          subscriptionId,
+          priceId: null,
+          status: 'active'
+        });
+      } else {
+        // Fallback para testing - actualizar usuario de prueba
+        await this.updateTestUserPlan(planId, {
+          customerId,
+          subscriptionId,
+          status: 'active'
+        });
+      }
+    } else if (subscriptionId) {
+      // Fallback: obtener plan desde subscription si no hay metadatos
       const subscription = await stripe.subscriptions.retrieve(subscriptionId);
       const priceId = subscription.items.data[0]?.price.id;
+      const plan = this.getPlanFromPriceId(priceId);
 
-      // Determinar el plan basado en el precio
-      let plan = 'free';
-      if (priceId === 'price_1SCLNc2ULfqKVBqVKXWa5Va4') {
-        plan = 'pro';
-      } else if (priceId === 'price_1SCLO32ULfqKVBqV0CitIdp0') {
-        plan = 'enterprise';
-      }
-
-      console.log(`📋 Actualizando usuario ${clientReferenceId} al plan ${plan}`);
-
-      // Actualizar usuario en Supabase
-      await this.updateUserPlan(clientReferenceId, plan, {
+      console.log(`📋 Actualizando usuario al plan ${plan} desde subscription`);
+      
+      await this.updateTestUserPlan(plan, {
         customerId,
         subscriptionId,
         priceId,
@@ -213,6 +228,39 @@ export class WebhookController {
         return 'enterprise';
       default:
         return 'free';
+    }
+  }
+
+  /**
+   * Actualizar plan del usuario de prueba (fallback para testing)
+   */
+  private async updateTestUserPlan(plan: string, billingInfo: any): Promise<void> {
+    try {
+      console.log(`📝 Actualizando usuario de prueba al plan ${plan} en Supabase`);
+
+      // Actualizar en la tabla users - usuario de testing
+      const { data, error } = await supabase
+        .from('users')
+        .update({
+          plan: plan,
+          stripe_customer_id: billingInfo.customerId,
+          subscription_id: billingInfo.subscriptionId,
+          subscription_status: billingInfo.status,
+          updated_at: new Date().toISOString()
+        })
+        .eq('email', 'test@routerai.com') // Usuario de prueba
+        .select();
+
+      if (error) {
+        console.error('❌ Error actualizando usuario de prueba en Supabase:', error);
+        throw error;
+      }
+
+      console.log('✅ Usuario de prueba actualizado exitosamente en Supabase:', data);
+
+    } catch (error) {
+      console.error('Error actualizando plan del usuario de prueba:', error);
+      throw error;
     }
   }
 

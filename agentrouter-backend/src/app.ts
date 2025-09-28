@@ -3,9 +3,29 @@ import dotenv from 'dotenv';
 import express, { Application, NextFunction, Request, Response } from 'express';
 import helmet from 'helmet';
 import morgan from 'morgan';
+import Stripe from 'stripe';
+import { createClient } from '@supabase/supabase-js';
 
 // Cargar variables de entorno
 dotenv.config();
+
+// Verificar que tenemos la clave de Stripe
+if (!process.env.STRIPE_SECRET_KEY) {
+    console.error('❌ STRIPE_SECRET_KEY not found in environment variables');
+    process.exit(1);
+}
+
+console.log('✅ Stripe key loaded:', process.env.STRIPE_SECRET_KEY?.substring(0, 12) + '...');
+
+// Inicializar Stripe
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+    apiVersion: '2023-10-16',
+});
+
+// Configurar Supabase
+const supabaseUrl = process.env.SUPABASE_URL!;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 // Importar controladores
 import {
@@ -14,7 +34,12 @@ import {
     deleteApiKey,
     getApiKeyStats,
     listApiKeys,
-    validateApiKey
+    validateApiKey,
+    listApiKeysDev,
+    createApiKeyDev,
+    deleteApiKeyDev,
+    getMetricsDev,
+    getBillingDev
 } from './controllers/apiKeyController';
 import {
     getCurrentUser,
@@ -153,11 +178,179 @@ app.post('/v1/route', authenticateApiKey, routeTask);
 // Ruta de testing temporal (sin autenticación)
 app.post('/v1/route-test', routeTask);
 
+// ====== RUTAS TEMPORALES PARA DESARROLLO (SIN AUTENTICACIÓN) ======
+// TODO: Remover estas rutas una vez que la autenticación esté funcionando
+app.get('/v1/api-keys-dev', listApiKeysDev);
+app.post('/v1/api-keys-dev', createApiKeyDev);
+app.delete('/v1/api-keys-dev/:keyId', deleteApiKeyDev);
+app.get('/v1/api-keys-dev/:keyId/stats', getApiKeyStats);
+app.get('/v1/metrics-dev', getMetricsDev);
+app.get('/v1/billing-dev', getBillingDev);
+app.post('/v1/checkout-session-dev', async (req, res) => {
+    try {
+        console.log('💳 Creating Stripe checkout session...');
+        console.log('Request body:', req.body);
+        console.log('Stripe key exists:', !!process.env.STRIPE_SECRET_KEY);
+        
+        const { plan_id, success_url, cancel_url } = req.body;
+
+        if (!plan_id || !success_url || !cancel_url) {
+            return res.status(400).json({
+                error: 'Missing required fields: plan_id, success_url, cancel_url',
+                success: false
+            });
+        }
+
+        // Verificar que tenemos la clave de Stripe
+        if (!process.env.STRIPE_SECRET_KEY) {
+            console.error('❌ STRIPE_SECRET_KEY not found in environment variables');
+            return res.status(500).json({
+                error: 'Stripe configuration missing',
+                success: false
+            });
+        }
+
+        console.log('✅ All validations passed, creating Stripe session...');
+
+        // Definir precios según el plan (con recurrencia mensual)
+        const priceData = {
+            pro: {
+                unit_amount: 4900, // €49 en céntimos
+                currency: 'eur' as const,
+                recurring: {
+                    interval: 'month' as const
+                },
+                product_data: {
+                    name: 'Plan Pro',
+                    description: 'Hasta 5,000 requests/mes, acceso a todos los modelos de IA'
+                }
+            },
+            enterprise: {
+                unit_amount: 29900, // €299 en céntimos  
+                currency: 'eur' as const,
+                recurring: {
+                    interval: 'month' as const
+                },
+                product_data: {
+                    name: 'Plan Enterprise',
+                    description: 'Requests ilimitados, acceso a modelos premium, soporte dedicado'
+                }
+            }
+        };
+
+        const price = priceData[plan_id as keyof typeof priceData];
+        
+        if (!price) {
+            return res.status(400).json({
+                error: 'Invalid plan_id',
+                success: false
+            });
+        }
+
+        console.log('✅ Price data:', price);
+
+        // Crear sesión de Stripe Checkout
+        const session = await stripe.checkout.sessions.create({
+            payment_method_types: ['card'],
+            line_items: [
+                {
+                    price_data: price,
+                    quantity: 1,
+                },
+            ],
+            mode: 'subscription',
+            success_url: success_url,
+            cancel_url: cancel_url,
+            metadata: {
+                plan_id: plan_id,
+                user_id: 'user_dev_001' // En producción, usar el ID del usuario real
+            }
+        });
+
+        console.log('✅ Real Stripe checkout session created:', session.id);
+        
+        res.json({
+            checkout_session: {
+                id: session.id,
+                url: session.url,
+                payment_status: session.payment_status,
+                success_url: session.success_url,
+                cancel_url: session.cancel_url,
+                plan_id: plan_id,
+                amount: price.unit_amount,
+                currency: price.currency
+            },
+            success: true
+        });
+
+    } catch (error) {
+        console.error('❌ Error creating Stripe checkout session:', error);
+        console.error('Error details:', {
+            message: error instanceof Error ? error.message : 'Unknown error',
+            stack: error instanceof Error ? error.stack : 'No stack trace'
+        });
+        res.status(500).json({ 
+            error: 'Internal server error', 
+            details: error instanceof Error ? error.message : 'Unknown error',
+            success: false 
+        });
+    }
+});
+
 // Rutas de facturación con Stripe
 app.use('/v1/billing', billingRoutes);
 
 // Webhook de Stripe (debe ir ANTES de express.json() para recibir raw body)
 app.post('/webhook/stripe', webhookController.handleStripeWebhook);
+
+// Webhook de desarrollo (sin verificación de firma)
+app.post('/webhook/stripe-dev', async (req, res) => {
+    try {
+        console.log('🧪 Webhook de desarrollo recibido:', req.body.type);
+        
+        // Simular evento de Stripe
+        const event = req.body;
+        
+        // Procesar checkout completado
+        if (event.type === 'checkout.session.completed') {
+            const session = event.data.object;
+            const planId = session.metadata?.plan_id;
+            
+            if (planId) {
+                console.log(`🎉 Simulando actualización de plan a: ${planId}`);
+                
+                // Actualizar directamente en Supabase
+                const { data, error } = await supabase
+                    .from('users')
+                    .update({
+                        plan: planId,
+                        stripe_customer_id: session.customer,
+                        subscription_id: session.subscription,
+                        subscription_status: 'active',
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('email', 'test@routerai.com')
+                    .select();
+                
+                if (error) {
+                    console.error('❌ Error actualizando usuario:', error);
+                    res.status(500).json({ error: 'Error actualizando usuario' });
+                    return;
+                }
+                
+                console.log('✅ Usuario actualizado exitosamente:', data);
+                res.json({ success: true, updated_user: data });
+            } else {
+                res.status(400).json({ error: 'No plan_id en metadatos' });
+            }
+        } else {
+            res.json({ received: true, message: 'Evento no procesado en desarrollo' });
+        }
+    } catch (error) {
+        console.error('❌ Error en webhook de desarrollo:', error);
+        res.status(500).json({ error: 'Error interno' });
+    }
+});
 
 // Ruta de métricas (autenticación opcional)
 app.get('/v1/metrics', optionalAuth, getMetrics);
