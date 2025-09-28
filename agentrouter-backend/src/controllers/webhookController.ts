@@ -275,7 +275,7 @@ export class WebhookController {
           subscription_status: billingInfo.status,
           updated_at: new Date().toISOString()
         })
-        .eq('email', 'juangpdev@gmail.com') // Usuario real de desarrollo
+        .eq('email', 'juanmagp26@gmail.com') // Usuario real de desarrollo
         .select();
 
       if (error) {
