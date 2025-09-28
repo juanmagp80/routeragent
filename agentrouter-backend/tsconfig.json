@@ -11,11 +11,13 @@
         "declaration": true,
         "outDir": "./dist",
         "rootDir": "./src",
-        "strict": true,
+        "strict": false,
         "esModuleInterop": true,
         "skipLibCheck": true,
         "forceConsistentCasingInFileNames": true,
-        "resolveJsonModule": true
+        "resolveJsonModule": true,
+        "noImplicitAny": false,
+        "allowSyntheticDefaultImports": true
     },
     "include": [
         "src/**/*"

@@ -3,7 +3,7 @@ services:
     name: routerai-backend
     runtime: node
     plan: free
-    buildCommand: ./build.sh
+    buildCommand: ../deploy-backend.sh
     startCommand: npm start
     rootDir: agentrouter-backend
     envVars:

@@ -1,0 +1,17 @@
+# Ignorar frontend completo durante build del backend
+src/
+components/
+app/
+middleware.ts
+*.config.*
+public/
+.next/
+
+# Archivos de configuración del frontend
+next.config.ts
+tailwind.config.js
+postcss.config.js
+eslint.config.mjs
+
+# Solo procesar backend
+!agentrouter-backend/

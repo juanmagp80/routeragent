@@ -11,4 +11,4 @@ declare global {
         }
     }
 }
-export declare const authenticateJWT: (req: AuthenticatedRequest, res: Response, next: NextFunction) => Promise<Response<any, Record<string, any>> | undefined>;
+export declare const authenticateJWT: (req: AuthenticatedRequest, res: Response, next: NextFunction) => Promise<Response<any, Record<string, any>>>;

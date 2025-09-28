@@ -1,0 +1,10 @@
+# Renderignore - Excluir archivos del frontend durante el build
+src/
+components/
+app/
+public/
+.next/
+node_modules/
+*.md
+*.config.*
+eslint.config.mjs
