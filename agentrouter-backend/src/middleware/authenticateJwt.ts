@@ -1,14 +1,7 @@
 import { NextFunction, Request, Response } from 'express';
 import { jwtVerify } from 'jose';
 
-// Extiende el tipo Request para incluir user
-declare global {
-    namespace Express {
-        interface Request {
-            user?: any;
-        }
-    }
-}
+// Usamos la extensión de Request definida en authJWT.ts
 
 export const authenticateJwt = async (req: Request, res: Response, next: NextFunction) => {
     try {

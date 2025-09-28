@@ -29,7 +29,7 @@ export const createApiKey = async (req: AuthenticatedRequest, res: Response) => 
 
         // Obtener user_id del token JWT
         const userId = req.user?.id;
-        
+
         if (!userId) {
             return res.status(401).json({
                 error: 'User not authenticated',
@@ -201,6 +201,43 @@ export const validateApiKey = async (req: Request, res: Response) => {
         console.error('Validate API key error:', error);
         res.status(500).json({
             error: 'Failed to validate API key',
+            success: false
+        });
+    }
+};
+
+// Eliminar permanentemente una API Key
+export const deleteApiKey = async (req: AuthenticatedRequest, res: Response) => {
+    try {
+        const { keyId } = req.params;
+        const userId = req.user?.id;
+
+        if (!userId) {
+            return res.status(401).json({
+                error: 'User not authenticated',
+                success: false
+            });
+        }
+
+        if (!keyId) {
+            return res.status(400).json({
+                error: 'Key ID is required',
+                success: false
+            });
+        }
+
+        await apiKeyService.deleteApiKey(keyId, userId);
+
+        res.json({
+            success: true,
+            message: 'API key deleted permanently'
+        });
+
+    } catch (error) {
+        console.error('Delete API key error:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Failed to delete API key';
+        res.status(500).json({
+            error: errorMessage,
             success: false
         });
     }

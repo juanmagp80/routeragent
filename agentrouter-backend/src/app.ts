@@ -11,6 +11,7 @@ dotenv.config();
 import {
     createApiKey,
     deactivateApiKey,
+    deleteApiKey,
     getApiKeyStats,
     listApiKeys,
     validateApiKey
@@ -38,21 +39,74 @@ import {
     updateUser
 } from './controllers/userController';
 
+// Importar rutas
+import billingRoutes from './routes/billing';
+
+// Importar webhook controller
+import { WebhookController } from './controllers/webhookController';
+
 // Importar middleware
 import { authenticateApiKey, optionalAuth } from './middleware/auth';
-import { authenticateJWT } from './middleware/authJWT';
+import { authenticateSupabase } from './middleware/authSupabase';
 
 const app: Application = express();
-const PORT: number = parseInt(process.env.PORT || '3001', 10);
+// Render usa el puerto 10000, pero también soportamos 3003 para desarrollo local
+const PORT: number = parseInt(process.env.PORT || '3003', 10);
+
+// Inicializar controladores
+const webhookController = new WebhookController();
+
+// Middleware especial para webhooks de Stripe (antes del parser JSON)
+app.use('/webhook/stripe', express.raw({ type: 'application/json' }));
 
 // Middleware
 app.use(helmet()); // Seguridad
-app.use(cors({
-    origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],
+
+// CORS configurado para producción y desarrollo
+const corsOptions = {
+    origin: function (origin: any, callback: any) {
+        // Permitir requests sin origin (como mobile apps, Postman)
+        if (!origin) return callback(null, true);
+
+        // Lista de dominios permitidos
+        const allowedOrigins = [
+            'http://localhost:3000',
+            'http://localhost:3001',
+            'http://127.0.0.1:3000',
+            'http://127.0.0.1:3001',
+            process.env.FRONTEND_URL, // URL del frontend en producción
+            'https://routeragent.vercel.app', // Frontend en Vercel
+            'https://routerai.vercel.app', // Alternativa del frontend
+            'https://routerai-backend.onrender.com' // Backend en Render
+        ].filter(Boolean);
+
+        // Patrones regex para dominios dinámicos
+        const allowedPatterns = [
+            /^https:\/\/.*\.onrender\.com$/,
+            /^https:\/\/.*\.vercel\.app$/
+        ];
+
+        // Verificar dominios exactos
+        if (allowedOrigins.includes(origin)) {
+            return callback(null, true);
+        }
+
+        // Verificar patrones regex
+        for (const pattern of allowedPatterns) {
+            if (pattern.test(origin)) {
+                return callback(null, true);
+            }
+        }
+
+        console.log('CORS blocked origin:', origin);
+        callback(new Error('Not allowed by CORS'));
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
-})); // CORS
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'stripe-signature']
+};
+
+app.use(cors(corsOptions));
 app.use(morgan('combined')); // Logging
 app.use(express.json()); // Parse JSON
 app.use(express.urlencoded({ extended: true })); // Parse URL-encoded
@@ -69,12 +123,13 @@ app.get('/', (req: Request, res: Response) => {
     });
 });
 
-// Rutas de gestión de API Keys (requieren autenticación JWT)
-app.post('/v1/api-keys', authenticateJWT as any, createApiKey as any);
-app.get('/v1/api-keys', authenticateJWT as any, listApiKeys as any);
-app.delete('/v1/api-keys/:keyId', authenticateJWT as any, deactivateApiKey as any);
-app.get('/v1/api-keys/:keyId/stats', authenticateJWT as any, getApiKeyStats as any);
-app.post('/v1/api-keys/validate', validateApiKey); // Esta ruta no necesita JWT
+// Rutas de gestión de API Keys (requieren autenticación Supabase)
+app.post('/v1/api-keys', authenticateSupabase as any, createApiKey as any);
+app.get('/v1/api-keys', authenticateSupabase as any, listApiKeys as any);
+app.delete('/v1/api-keys/:keyId', authenticateSupabase as any, deactivateApiKey as any);
+app.delete('/v1/api-keys/:keyId/permanent', authenticateSupabase as any, deleteApiKey as any);
+app.get('/v1/api-keys/:keyId/stats', authenticateSupabase as any, getApiKeyStats as any);
+app.post('/v1/api-keys/validate', validateApiKey); // Esta ruta no necesita autenticación
 
 // Rutas de gestión de usuarios
 app.get('/v1/users', getUsers);
@@ -97,6 +152,12 @@ app.post('/v1/route', authenticateApiKey, routeTask);
 
 // Ruta de testing temporal (sin autenticación)
 app.post('/v1/route-test', routeTask);
+
+// Rutas de facturación con Stripe
+app.use('/v1/billing', billingRoutes);
+
+// Webhook de Stripe (debe ir ANTES de express.json() para recibir raw body)
+app.post('/webhook/stripe', webhookController.handleStripeWebhook);
 
 // Ruta de métricas (autenticación opcional)
 app.get('/v1/metrics', optionalAuth, getMetrics);
