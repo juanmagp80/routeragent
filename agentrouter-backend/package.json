@@ -31,7 +31,8 @@
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.0",
     "openai": "^5.20.3",
-    "redis": "^4.7.1"
+    "redis": "^4.7.1",
+    "stripe": "^14.25.0"
   },
   "devDependencies": {
     "@types/cors": "^2.8.17",
