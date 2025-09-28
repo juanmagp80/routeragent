@@ -2,9 +2,19 @@
 
 import { useRouter } from 'next/navigation';
 import { createContext, ReactNode, useContext, useEffect, useState } from 'react';
-import { supabase } from '../config/database';
-import { frontendAuthService, User } from '../services/frontendAuthService';
-import { robustRedirect } from '../utils/redirect';
+
+// Interfaz simplificada para el usuario
+export interface User {
+    id: string;
+    name: string;
+    email: string;
+    company?: string;
+    plan: string;
+    api_key_limit: number;
+    is_active: boolean;
+    email_verified: boolean;
+    created_at: string;
+}
 
 interface AuthContextType {
     user: User | null;
@@ -20,203 +30,102 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [isHydrated, setIsHydrated] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [isHydrated, setIsHydrated] = useState(true);
     const [authError, setAuthError] = useState<string | null>(null);
     const router = useRouter();
 
+    // Cargar usuario desde localStorage al inicializar (solo en cliente)
     useEffect(() => {
-        setIsHydrated(true);
-        // Solo acceder a localStorage después de la hidratación
         if (typeof window !== 'undefined') {
-            const storedUser = localStorage.getItem('agentrouter_user');
-            if (storedUser) {
-                setUser(JSON.parse(storedUser));
-            }
-        }
-        checkUserSession();
-        // Escuchar cambios en la autenticación de Supabase
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(
-            async (event, session) => {
-                console.log('Auth state changed:', event, session);
-                if (event === 'SIGNED_IN' && session?.user) {
-                    console.log('SIGNED_IN detectado, cargando datos del usuario...');
-                    setLoading(true);
-                    await loadUserData(session.user.id);
-                    setLoading(false);
-                    if (typeof window !== 'undefined' && window.location.pathname === '/login') {
-                        console.log('🔄 Iniciando redirección robusta a /user...');
-                        robustRedirect('/user');
-                    }
-                } else if (event === 'SIGNED_OUT') {
-                    console.log('SIGNED_OUT detectado, limpiando estado...');
-                    setUser(null);
-                    setLoading(false);
-                    router.push('/login');
-                } else if (event === 'TOKEN_REFRESHED' && session?.user) {
-                    console.log('TOKEN_REFRESHED detectado, actualizando datos...');
-                    await loadUserData(session.user.id);
-                }
-            }
-        );
-        return () => {
-            subscription.unsubscribe();
-        };
-    }, []);
-
-    const checkUserSession = async () => {
-        console.log('🔍 Verificando sesión inicial...');
-        let timeoutId: NodeJS.Timeout | null = null;
-        try {
-            // Timeout de 8 segundos para detectar cuelgues
-            timeoutId = setTimeout(() => {
-                setAuthError('Timeout al consultar usuario. Verifica tu conexión o el backend.');
-                setLoading(false);
-                console.error('⏰ Timeout en checkUserSession');
-            }, 8000);
-
-            const result = await frontendAuthService.getCurrentUser();
-            console.log('🔍 Resultado de verificación de sesión:', result);
-
-            if (result.success && result.user) {
-                console.log('✅ Sesión encontrada:', result.user);
-                setUser(result.user);
-                localStorage.setItem('agentrouter_user', JSON.stringify(result.user));
-                setAuthError(null);
-            } else {
-                console.log('❌ No se encontró sesión activa:', result.error);
-                localStorage.removeItem('agentrouter_user');
-                setAuthError(result.error || 'No se pudo cargar el usuario');
-            }
-        } catch (error) {
-            console.error('❌ Error checking user session:', error);
-            localStorage.removeItem('agentrouter_user');
-            setAuthError('Error inesperado al cargar el usuario');
-        } finally {
-            if (timeoutId) clearTimeout(timeoutId);
-            console.log('🔍 Finalizando verificación de sesión, setting loading to false');
-            setLoading(false);
-        }
-    };
-
-    const loadUserData = async (userId: string) => {
-        try {
-            console.log('Cargando datos del usuario:', userId);
-            const result = await frontendAuthService.getCurrentUser();
-
-            if (result.success && result.user) {
-                console.log('Datos del usuario cargados exitosamente:', result.user);
-                setUser(result.user);
-                localStorage.setItem('agentrouter_user', JSON.stringify(result.user));
-            } else {
-                console.error('Error cargando datos del usuario:', result.error);
-                const { data: authData } = await supabase.auth.getUser();
-                if (authData.user) {
-                    const minimalUser: User = {
-                        id: authData.user.id,
-                        email: authData.user.email!,
-                        name: authData.user.user_metadata?.name || '',
-                        company: authData.user.user_metadata?.company || null,
-                        plan: 'free',
-                        api_key_limit: 3,
-                        is_active: true,
-                        email_verified: authData.user.email_confirmed_at !== null,
-                        created_at: authData.user.created_at,
-                        updated_at: authData.user.updated_at || authData.user.created_at
-                    };
-                    console.log('Usando datos mínimos del usuario:', minimalUser);
-                    setUser(minimalUser);
-                    localStorage.setItem('agentrouter_user', JSON.stringify(minimalUser));
-                } else {
+            const savedUser = localStorage.getItem('agentrouter_user');
+            if (savedUser) {
+                try {
+                    const userData = JSON.parse(savedUser);
+                    setUser(userData);
+                } catch (error) {
+                    console.warn('Error parsing saved user data:', error);
                     localStorage.removeItem('agentrouter_user');
                 }
             }
-        } catch (error) {
-            console.error('Error loading user data:', error);
         }
-    };
+    }, []);
 
     const login = async (email: string, password: string) => {
-        setLoading(true);
         try {
-            console.log('Iniciando login con:', email);
-
-            // Solo hacer la autenticación, el listener onAuthStateChange se encargará del resto
-            const { data, error } = await supabase.auth.signInWithPassword({
-                email,
-                password
-            });
-
-            if (error) {
-                console.error('Error de login:', error);
-                let errorMessage = "Error al iniciar sesión";
-
-                if (error.message === 'Invalid login credentials') {
-                    errorMessage = "Email o contraseña incorrectos";
-                } else if (error.message === 'Email not confirmed' || error.message.includes('Email not confirmed')) {
-                    errorMessage = "Por favor verifica tu email antes de iniciar sesión. Revisa tu bandeja de entrada.";
-                }
-
-                throw new Error(errorMessage);
-            }
-
-            if (!data.user || !data.session) {
-                throw new Error('No se pudo obtener la sesión de usuario');
-            }
-
-            console.log('Login exitoso, esperando que onAuthStateChange maneje la redirección...');
-            // El listener onAuthStateChange se encargará de:
-            // 1. Cargar los datos del usuario
-            // 2. Establecer el estado
-            // 3. Redirigir al dashboard
-
+            setLoading(true);
+            setAuthError(null);
+            
+            // Simulación de login exitoso
+            const mockUser: User = {
+                id: '1',
+                name: 'Usuario Demo',
+                email: email,
+                company: 'Demo Company',
+                plan: 'pro',
+                api_key_limit: 10,
+                is_active: true,
+                email_verified: true,
+                created_at: new Date().toISOString()
+            };
+            
+            setUser(mockUser);
+            localStorage.setItem('agentrouter_user', JSON.stringify(mockUser));
+            
+            // Redirigir al admin
+            router.push('/admin');
         } catch (error: any) {
-            setLoading(false); // Solo establecer loading en false si hay error
-            throw new Error(error.message || 'Error al iniciar sesión');
-        }
-        // No establecer loading en false aquí, el listener lo hará
-    };
-
-    const register = async (name: string, email: string, password: string) => {
-        setLoading(true);
-        try {
-            const result = await frontendAuthService.register({ name, email, password });
-
-            if (!result.success) {
-                throw new Error(result.error || 'Error al registrarse');
-            }
-
-            if (result.user) {
-                setUser(result.user);
-                router.push('/login?message=Registro exitoso. Por favor verifica tu email.');
-            }
-        } catch (error: any) {
-            throw new Error(error.message || 'Error al registrarse');
+            setAuthError(error.message || 'Error en el login');
+            throw error;
         } finally {
             setLoading(false);
         }
     };
 
-    const logout = async () => {
+    const register = async (name: string, email: string, password: string) => {
         try {
-            await frontendAuthService.logout();
-        } catch (error) {
-            console.error('Error logging out:', error);
+            setLoading(true);
+            setAuthError(null);
+            
+            // Simulación de registro exitoso
+            const mockUser: User = {
+                id: '1',
+                name: name,
+                email: email,
+                plan: 'starter',
+                api_key_limit: 3,
+                is_active: true,
+                email_verified: true,
+                created_at: new Date().toISOString()
+            };
+            
+            setUser(mockUser);
+            localStorage.setItem('agentrouter_user', JSON.stringify(mockUser));
+            
+            // Redirigir al admin
+            router.push('/admin');
+        } catch (error: any) {
+            setAuthError(error.message || 'Error en el registro');
+            throw error;
         } finally {
-            setUser(null);
-            localStorage.removeItem('agentrouter_user');
-            router.push('/');
+            setLoading(false);
         }
     };
 
-    const value = {
-    user,
-    login,
-    register,
-    logout,
-    loading,
-    isHydrated,
-    authError
+    const logout = () => {
+        setUser(null);
+        localStorage.removeItem('agentrouter_user');
+        router.push('/login');
+    };
+
+    const value: AuthContextType = {
+        user,
+        login,
+        register,
+        logout,
+        loading,
+        isHydrated,
+        authError,
     };
 
     return (

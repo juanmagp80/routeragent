@@ -95,7 +95,7 @@ export default function RegisterPage() {
       setSuccess('¡Cuenta creada exitosamente! Redirigiendo...');
       
       setTimeout(() => {
-        router.push('/user');
+        router.push('/admin');
       }, 2000);
     } catch (err) {
       setError('Error al crear la cuenta. Por favor, inténtalo de nuevo.');

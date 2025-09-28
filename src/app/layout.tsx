@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import { AuthProvider } from "../contexts/AuthContext";
-import RedirectHandler from "../components/RedirectHandler";
 import ClientOnly from "../components/ClientOnly";
+import RedirectHandler from "../components/RedirectHandler";
+import { AuthProvider } from "../contexts/AuthContext";
 import "./globals.css";
 
 const inter = Inter({

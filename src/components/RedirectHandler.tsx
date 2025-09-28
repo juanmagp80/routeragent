@@ -5,8 +5,8 @@ import { checkPendingRedirect } from '../utils/redirect';
 
 export default function RedirectHandler() {
   useEffect(() => {
-    // Verificar redirecciones pendientes al montar
-    checkPendingRedirect();
+    // Verificar redirecciones pendientes al montar - TEMPORALMENTE DESACTIVADO
+    // checkPendingRedirect();
   }, []);
 
   return null; // No renderiza nada

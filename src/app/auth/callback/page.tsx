@@ -40,7 +40,7 @@ export default function AuthCallbackPage() {
           
           // Redirigir al dashboard después de 2 segundos
           setTimeout(() => {
-            router.push('/user');
+            router.push('/admin');
           }, 2000);
 
         } else {

@@ -58,7 +58,7 @@ export const plans: Record<string, Plan> = {
     pro: {
         id: "pro",
         name: "Pro",
-        price: 99,
+        price: 49,
         request_limit: 5000,
         features: [
             "Up to 5,000 API requests/month",
@@ -92,7 +92,7 @@ export const plans: Record<string, Plan> = {
     enterprise: {
         id: "enterprise",
         name: "Enterprise",
-        price: -1, // Precio personalizado
+        price: 99, // Precio actualizado para Enterprise
         request_limit: -1, // Ilimitado
         features: [
             "Unlimited API requests",

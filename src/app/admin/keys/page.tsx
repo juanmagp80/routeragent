@@ -9,74 +9,64 @@ import {
     Trash2
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { backendServiceDev, ApiKeyData, CreateApiKeyRequest } from "@/services/backendServiceDev";
 
 export default function ApiKeysPage() {
-    const [keys, setKeys] = useState<any[]>([]);
+    const [keys, setKeys] = useState<ApiKeyData[]>([]);
     const [loading, setLoading] = useState(true);
     const [showCreateForm, setShowCreateForm] = useState(false);
     const [newKey, setNewKey] = useState({ name: "", plan: "starter" });
     const [copiedKey, setCopiedKey] = useState<string | null>(null);
     const [visibleKeys, setVisibleKeys] = useState<Set<string>>(new Set());
 
-    // Simular carga de API keys
+    // Cargar API keys reales del backend
     useEffect(() => {
-        // En una implementación real, esto vendría de una API
-        const mockKeys = [
-            {
-                id: "ak_1",
-                name: "Production Key",
-                key: "ar_prod_6f7ccf7894c970ee9012cd50d8096a3edf2fed8122f39b53d6c47fef9a69239a",
-                prefix: "ar_prod_6f7ccf789",
-                plan: "pro",
-                usage_count: 1247,
-                usage_limit: 5000,
-                created_at: "2025-09-15T10:30:00Z",
-                last_used: "2025-09-17T14:22:00Z",
-                is_active: true
-            },
-            {
-                id: "ak_2",
-                name: "Development Key",
-                key: "ar_dev_a1b2c3d4e5f67890123456789012345678901234567890123456789012345678",
-                prefix: "ar_dev_a1b2c3d4e",
-                plan: "starter",
-                usage_count: 89,
-                usage_limit: 1000,
-                created_at: "2025-09-10T09:15:00Z",
-                last_used: "2025-09-17T11:45:00Z",
-                is_active: true
-            }
-        ];
-
-        setTimeout(() => {
-            setKeys(mockKeys);
-            setLoading(false);
-        }, 500);
+        loadApiKeys();
     }, []);
 
-    const handleCreateKey = () => {
-        if (!newKey.name.trim()) return;
-
-        const createdKey = {
-            id: `ak_${Date.now()}`,
-            name: newKey.name,
-            key: `ar_${newKey.name.toLowerCase().replace(/\s+/g, '_')}_${Math.random().toString(36).substring(2, 15)}`,
-            prefix: `ar_${newKey.name.toLowerCase().substring(0, 8)}`,
-            plan: newKey.plan,
-            usage_count: 0,
-            usage_limit: newKey.plan === "starter" ? 1000 : newKey.plan === "pro" ? 5000 : -1,
-            created_at: new Date().toISOString(),
-            last_used: null,
-            is_active: true
-        };
-
-        setKeys([createdKey, ...keys]);
-        setNewKey({ name: "", plan: "starter" });
-        setShowCreateForm(false);
+    const loadApiKeys = async () => {
+        try {
+            console.log('🔄 Loading API keys...');
+            setLoading(true);
+            const apiKeys = await backendServiceDev.getApiKeys();
+            console.log('✅ API keys loaded:', apiKeys);
+            setKeys(apiKeys);
+        } catch (error) {
+            console.error('❌ Error loading API keys:', error);
+        } finally {
+            setLoading(false);
+        }
     };
 
-    const handleDeleteKey = (id: string) => {
-        setKeys(keys.filter(key => key.id !== id));
+    const handleCreateKey = async () => {
+        if (!newKey.name.trim()) return;
+
+        try {
+            const request: CreateApiKeyRequest = {
+                name: newKey.name,
+                plan: newKey.plan,
+            };
+            
+            const createdKey = await backendServiceDev.createApiKey(request);
+            setKeys([createdKey, ...keys]);
+            setNewKey({ name: "", plan: "starter" });
+            setShowCreateForm(false);
+        } catch (error) {
+            console.error('Error creating API key:', error);
+            alert('Error al crear la clave API');
+        }
+    };
+
+    const handleDeleteKey = async (id: string) => {
+        if (confirm('¿Estás seguro de que quieres eliminar esta clave API?')) {
+            try {
+                await backendServiceDev.deleteApiKey(id);
+                setKeys(keys.filter(key => key.id !== id));
+            } catch (error) {
+                console.error('Error deleting API key:', error);
+                alert('Error al eliminar la clave API');
+            }
+        }
     };
 
     const copyToClipboard = (text: string, id: string) => {
@@ -113,9 +103,9 @@ export default function ApiKeysPage() {
             {/* Page header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900">API Keys</h1>
+                    <h1 className="text-2xl font-bold text-gray-900">Claves API</h1>
                     <p className="mt-1 text-sm text-gray-600">
-                        Manage your API keys and track usage
+                        Gestiona tus claves API y supervisa su uso
                     </p>
                 </div>
                 <button
@@ -123,7 +113,7 @@ export default function ApiKeysPage() {
                     className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500"
                 >
                     <Plus className="-ml-1 mr-2 h-5 w-5" />
-                    Create API Key
+                    Crear Clave API
                 </button>
             </div>
 
@@ -175,7 +165,7 @@ export default function ApiKeysPage() {
             {/* API Keys list */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                 <div className="px-6 py-4 border-b border-gray-200">
-                    <h2 className="text-lg font-semibold text-gray-900">Your API Keys</h2>
+                    <h2 className="text-lg font-semibold text-gray-900">Tus Claves API</h2>
                     <p className="mt-1 text-sm text-gray-600">
                         {keys.length} API key{keys.length !== 1 ? "s" : ""} found
                     </p>
@@ -202,7 +192,7 @@ export default function ApiKeysPage() {
                                         </div>
                                         <div className="flex items-center mt-1">
                                             <code className="text-xs text-gray-500">
-                                                {visibleKeys.has(key.id) ? key.key : `${key.prefix}********************`}
+                                                {visibleKeys.has(key.id) ? `${key.key_prefix}*****` : `${key.key_prefix}********************`}
                                             </code>
                                             <button
                                                 onClick={() => toggleKeyVisibility(key.id)}
@@ -215,7 +205,7 @@ export default function ApiKeysPage() {
                                                 )}
                                             </button>
                                             <button
-                                                onClick={() => copyToClipboard(key.key, key.id)}
+                                                onClick={() => copyToClipboard(key.key_prefix, key.id)}
                                                 className="ml-2 text-gray-400 hover:text-gray-600"
                                             >
                                                 {copiedKey === key.id ? (
@@ -253,7 +243,7 @@ export default function ApiKeysPage() {
                                         style={{
                                             width: key.usage_limit === -1
                                                 ? "0%"
-                                                : `${(key.usage_count / key.usage_limit) * 100}%`
+                                                : `${(key.usage_count / (key.usage_limit || 1)) * 100}%`
                                         }}
                                     ></div>
                                 </div>
@@ -273,7 +263,7 @@ export default function ApiKeysPage() {
             {keys.length === 0 && !loading && (
                 <div className="text-center py-12">
                     <BarChart3 className="mx-auto h-12 w-12 text-gray-400" />
-                    <h3 className="mt-2 text-sm font-medium text-gray-900">No API keys</h3>
+                    <h3 className="mt-2 text-sm font-medium text-gray-900">Sin claves API</h3>
                     <p className="mt-1 text-sm text-gray-500">
                         Get started by creating a new API key.
                     </p>

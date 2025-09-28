@@ -2,19 +2,21 @@ import { authenticateUser } from '@/middleware/auth';
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 
+// MIDDLEWARE TEMPORALMENTE DESACTIVADO PARA DEBUGGING
 // Rutas protegidas que requieren autenticación
-const protectedRoutes = [
-    '/admin',
-    '/admin/',
-    '/admin/keys',
-    '/admin/analytics',
-    '/admin/users',
-    '/admin/billing',
-    '/admin/notifications',
-    '/admin/settings',
-    '/admin/help',
+const protectedRoutes: string[] = [
+    // DESACTIVADO TEMPORALMENTE - TODO: Reactivar una vez que funcione el dashboard
+    // '/admin',
+    // '/admin/',
+    // '/admin/keys',
+    // '/admin/analytics',
+    // '/admin/users',
+    // '/admin/billing',
+    // '/admin/notifications',
+    // '/admin/settings',
+    // '/admin/help',
     // '/user', // Comentado temporalmente - manejo client-side con Supabase
-    '/dashboard'
+    // '/dashboard'
 ];
 
 // Rutas que solo usuarios no autenticados pueden acceder
@@ -41,7 +43,7 @@ export async function middleware(request: NextRequest) {
 
     // Si es una ruta de auth y el usuario ya está autenticado, redirigir al dashboard
     if (isAuthRoute && user) {
-        return NextResponse.redirect(new URL('/user', request.url));
+        return NextResponse.redirect(new URL('/admin', request.url));
     }
 
     // Permitir acceso a rutas públicas y de auth

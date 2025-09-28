@@ -148,6 +148,41 @@ app.get('/', (req: Request, res: Response) => {
     });
 });
 
+// Endpoint temporal para probar Supabase
+app.get('/test-supabase', async (req: Request, res: Response) => {
+    try {
+        console.log('🔍 Testing Supabase connection...');
+        console.log('📍 URL:', supabaseUrl);
+        console.log('🔑 Service Key available:', !!supabaseServiceKey);
+        
+        const { data, error } = await supabase
+            .from('users')
+            .select('id, email, plan')
+            .limit(1);
+
+        if (error) {
+            console.error('❌ Supabase error:', error);
+            return res.status(500).json({ 
+                error: 'Supabase connection failed',
+                details: error
+            });
+        }
+
+        console.log('✅ Supabase connection successful');
+        res.json({ 
+            success: true,
+            message: 'Supabase connected',
+            sampleData: data 
+        });
+    } catch (err) {
+        console.error('❌ Connection error:', err);
+        res.status(500).json({ 
+            error: 'Connection failed',
+            details: err instanceof Error ? err.message : 'Unknown error'
+        });
+    }
+});
+
 // Rutas de gestión de API Keys (requieren autenticación Supabase)
 app.post('/v1/api-keys', authenticateSupabase as any, createApiKey as any);
 app.get('/v1/api-keys', authenticateSupabase as any, listApiKeys as any);
@@ -329,7 +364,7 @@ app.post('/webhook/stripe-dev', async (req, res) => {
                         subscription_status: 'active',
                         updated_at: new Date().toISOString()
                     })
-                    .eq('email', 'test@routerai.com')
+                    .eq('email', 'juangpdev@gmail.com')
                     .select();
                 
                 if (error) {

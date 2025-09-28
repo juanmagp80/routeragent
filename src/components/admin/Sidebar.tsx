@@ -7,26 +7,44 @@ import {
     HelpCircle,
     Key,
     LayoutDashboard,
+    LogOut,
     Settings,
     User,
     Users
 } from "lucide-react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 const navigation = [
-    { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
-    { name: "API Keys", href: "/admin/keys", icon: Key },
-    { name: "Analytics", href: "/admin/analytics", icon: BarChart3 },
-    { name: "Users", href: "/admin/users", icon: Users },
-    { name: "Billing", href: "/admin/billing", icon: CreditCard },
-    { name: "Notifications", href: "/admin/notifications", icon: Bell },
-    { name: "Settings", href: "/admin/settings", icon: Settings },
-    { name: "Help", href: "/admin/help", icon: HelpCircle },
+    { name: "Panel Principal", href: "/admin", icon: LayoutDashboard },
+    { name: "Claves API", href: "/admin/keys", icon: Key },
+    { name: "Analíticas", href: "/admin/analytics", icon: BarChart3 },
+    { name: "Usuarios", href: "/admin/users", icon: Users },
+    { name: "Facturación", href: "/admin/billing", icon: CreditCard },
+    { name: "Notificaciones", href: "/admin/notifications", icon: Bell },
+    { name: "Configuración", href: "/admin/settings", icon: Settings },
+    { name: "Ayuda", href: "/admin/help", icon: HelpCircle },
 ];
 
 export default function Sidebar() {
     const pathname = usePathname();
+    const router = useRouter();
+
+    const handleLogout = () => {
+        // Limpiar todas las sesiones y tokens
+        if (typeof window !== 'undefined') {
+            localStorage.clear();
+            sessionStorage.clear();
+            
+            // También limpiar cookies de Supabase si existen
+            document.cookie.split(";").forEach(function(c) { 
+                document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
+            });
+        }
+        
+        // Redirigir al login
+        router.push('/login');
+    };
 
     return (
         <div className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0">
@@ -63,20 +81,31 @@ export default function Sidebar() {
                 </div>
                 <div className="flex-shrink-0 flex border-t border-gray-200 p-4">
                     <div className="flex-shrink-0 w-full group block">
-                        <div className="flex items-center">
-                            <div>
-                                <div className="h-8 w-8 rounded-full bg-emerald-100 flex items-center justify-center">
-                                    <User className="h-5 w-5 text-emerald-600" />
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center">
+                                <div>
+                                    <div className="h-8 w-8 rounded-full bg-emerald-100 flex items-center justify-center">
+                                        <User className="h-5 w-5 text-emerald-600" />
+                                    </div>
+                                </div>
+                                <div className="ml-3">
+                                    <p className="text-xs font-medium text-gray-500 group-hover:text-gray-700">
+                                        Desarrollador
+                                    </p>
+                                    <p className="text-xs font-medium text-gray-500 group-hover:text-gray-700">
+                                        Ver perfil
+                                    </p>
                                 </div>
                             </div>
-                            <div className="ml-3">
-                                <p className="text-xs font-medium text-gray-500 group-hover:text-gray-700">
-                                    John Developer
-                                </p>
-                                <p className="text-xs font-medium text-gray-500 group-hover:text-gray-700">
-                                    View profile
-                                </p>
-                            </div>
+                            
+                            {/* Logout button */}
+                            <button
+                                onClick={handleLogout}
+                                className="p-2 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-colors duration-200"
+                                title="Cerrar sesión"
+                            >
+                                <LogOut className="h-4 w-4" />
+                            </button>
                         </div>
                     </div>
                 </div>

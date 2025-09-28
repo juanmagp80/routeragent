@@ -95,7 +95,7 @@ export class FrontendAuthService {
           id: authData.user.id,
           email: authData.user.email!,
           name: userData.name,
-          company: userData.company || null,
+          company: userData.company || undefined,
           plan: userData.plan || 'free',
           api_key_limit: 3,
           is_active: true,

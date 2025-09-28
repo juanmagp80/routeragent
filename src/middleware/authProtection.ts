@@ -45,7 +45,7 @@ export function authMiddleware(request: NextRequest) {
 
   // Si es una ruta de auth y el usuario ya está autenticado
   if (isAuthRoute && isAuthenticated) {
-    return NextResponse.redirect(new URL('/user', request.url));
+    return NextResponse.redirect(new URL('/admin', request.url));
   }
 
   // Agregar información del usuario a los headers para usar en los componentes
