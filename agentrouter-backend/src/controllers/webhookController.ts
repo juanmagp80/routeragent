@@ -238,7 +238,7 @@ export class WebhookController {
     try {
       console.log(`📝 Actualizando usuario de prueba al plan ${plan} en Supabase`);
 
-      // Actualizar en la tabla users - usuario de testing
+      // Actualizar en la tabla users - usuario real de desarrollo
       const { data, error } = await supabase
         .from('users')
         .update({
@@ -248,7 +248,7 @@ export class WebhookController {
           subscription_status: billingInfo.status,
           updated_at: new Date().toISOString()
         })
-        .eq('email', 'test@routerai.com') // Usuario de prueba
+        .eq('email', 'juangpdev@gmail.com') // Usuario real de desarrollo
         .select();
 
       if (error) {
@@ -328,7 +328,7 @@ export class WebhookController {
             subscription_status: billingInfo.status,
             updated_at: new Date().toISOString()
           })
-          .eq('email', 'test@routerai.com') // Usuario de prueba
+          .eq('email', 'juangpdev@gmail.com') // Usuario real de desarrollo
           .select();
 
         if (error) {
