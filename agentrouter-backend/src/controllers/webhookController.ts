@@ -231,14 +231,15 @@ export class WebhookController {
     }
   }
 
-  /**
+    /**
    * Actualizar plan del usuario de prueba (fallback para testing)
    */
   private async updateTestUserPlan(plan: string, billingInfo: any): Promise<void> {
     try {
-      console.log(`📝 Actualizando usuario de prueba al plan ${plan} en Supabase`);
+      console.log(`📝 Actualizando usuario de desarrollo al plan ${plan} en Supabase`);
 
-      // Actualizar en la tabla users - usuario real de desarrollo
+      // Para desarrollo, actualizamos directamente el usuario logueado principal
+      // En producción, esto debería usar el customer_id o user_id de los metadatos
       const { data, error } = await supabase
         .from('users')
         .update({
@@ -252,14 +253,36 @@ export class WebhookController {
         .select();
 
       if (error) {
-        console.error('❌ Error actualizando usuario de prueba en Supabase:', error);
-        throw error;
+        console.error('❌ Error actualizando usuario de desarrollo en Supabase:', error);
+        
+        // Fallback: buscar por cualquier usuario activo si no encuentra el específico
+        console.log('🔄 Intentando fallback: actualizar primer usuario activo...');
+        const { data: fallbackData, error: fallbackError } = await supabase
+          .from('users')
+          .update({
+            plan: plan,
+            stripe_customer_id: billingInfo.customerId,
+            subscription_id: billingInfo.subscriptionId,
+            subscription_status: billingInfo.status,
+            updated_at: new Date().toISOString()
+          })
+          .eq('is_active', true)
+          .limit(1)
+          .select();
+
+        if (fallbackError) {
+          console.error('❌ Error en fallback:', fallbackError);
+          throw fallbackError;
+        }
+        
+        console.log('✅ Usuario actualizado via fallback:', fallbackData);
+        return;
       }
 
-      console.log('✅ Usuario de prueba actualizado exitosamente en Supabase:', data);
+      console.log('✅ Usuario de desarrollo actualizado exitosamente en Supabase:', data);
 
     } catch (error) {
-      console.error('Error actualizando plan del usuario de prueba:', error);
+      console.error('Error actualizando plan del usuario de desarrollo:', error);
       throw error;
     }
   }
