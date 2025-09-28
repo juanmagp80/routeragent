@@ -244,7 +244,7 @@ export class WebhookController {
         .from('users')
         .update({
           plan: plan,
-          stripe_customer_id: billingInfo.customerId,
+          
           subscription_id: billingInfo.subscriptionId,
           subscription_status: billingInfo.status,
           updated_at: new Date().toISOString()
@@ -261,7 +261,7 @@ export class WebhookController {
           .from('users')
           .update({
             plan: plan,
-            stripe_customer_id: billingInfo.customerId,
+            
             subscription_id: billingInfo.subscriptionId,
             subscription_status: billingInfo.status,
             updated_at: new Date().toISOString()
@@ -299,7 +299,7 @@ export class WebhookController {
         .from('users')
         .update({
           plan: plan,
-          stripe_customer_id: billingInfo.customerId,
+          
           subscription_id: billingInfo.subscriptionId,
           subscription_status: billingInfo.status,
           updated_at: new Date().toISOString()
@@ -346,7 +346,7 @@ export class WebhookController {
           .from('users')
           .update({
             plan: plan,
-            stripe_customer_id: customerId,
+            
             subscription_id: billingInfo.subscriptionId,
             subscription_status: billingInfo.status,
             updated_at: new Date().toISOString()
