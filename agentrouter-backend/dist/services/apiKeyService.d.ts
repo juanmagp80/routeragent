@@ -10,4 +10,9 @@ export declare class ApiKeyService {
     deactivateApiKey(apiKeyId: string, userId: string): Promise<void>;
     getUsageStats(apiKeyId: string): Promise<any>;
     getApiKeyStats(apiKeyId: string, userId: string): Promise<any>;
+    canCreateApiKey(userId: string, requestedPlan: string): Promise<{
+        allowed: boolean;
+        reason?: string;
+    }>;
+    deleteApiKey(keyId: string, userId: string): Promise<void>;
 }

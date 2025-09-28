@@ -4,7 +4,7 @@
 ```bash
 git add .
 git commit -m "✅ Backend listo para Render"
-git push origin clean-deploy
+git push origin main
 ```
 
 ## 2. Crear servicio en Render.com
@@ -15,10 +15,10 @@ git push origin clean-deploy
 
 ## 3. Configuración del servicio
 - **Name**: `routerai-backend`
-- **Branch**: `clean-deploy`
+- **Branch**: `main`
 - **Root Directory**: `agentrouter-backend`
 - **Runtime**: `Node`
-- **Build Command**: `npm install && npm run build`
+- **Build Command**: `./build.sh`
 - **Start Command**: `npm start`
 
 ## 4. Variables de entorno

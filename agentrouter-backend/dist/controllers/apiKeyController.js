@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.validateApiKey = exports.getApiKeyStats = exports.deactivateApiKey = exports.listApiKeys = exports.createApiKey = void 0;
+exports.deleteApiKey = exports.validateApiKey = exports.getApiKeyStats = exports.deactivateApiKey = exports.listApiKeys = exports.createApiKey = void 0;
 const apiKeyService_1 = require("../services/apiKeyService");
 const apiKeyService = new apiKeyService_1.ApiKeyService();
 // Crear nueva API Key
@@ -183,3 +183,36 @@ const validateApiKey = async (req, res) => {
     }
 };
 exports.validateApiKey = validateApiKey;
+// Eliminar permanentemente una API Key
+const deleteApiKey = async (req, res) => {
+    try {
+        const { keyId } = req.params;
+        const userId = req.user?.id;
+        if (!userId) {
+            return res.status(401).json({
+                error: 'User not authenticated',
+                success: false
+            });
+        }
+        if (!keyId) {
+            return res.status(400).json({
+                error: 'Key ID is required',
+                success: false
+            });
+        }
+        await apiKeyService.deleteApiKey(keyId, userId);
+        res.json({
+            success: true,
+            message: 'API key deleted permanently'
+        });
+    }
+    catch (error) {
+        console.error('Delete API key error:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Failed to delete API key';
+        res.status(500).json({
+            error: errorMessage,
+            success: false
+        });
+    }
+};
+exports.deleteApiKey = deleteApiKey;

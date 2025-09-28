@@ -1,10 +1,11 @@
 services:
   - type: web
     name: routerai-backend
-    env: node
+    runtime: node
     plan: free
-    buildCommand: npm install && npm run build
+    buildCommand: ./build.sh
     startCommand: npm start
+    rootDir: agentrouter-backend
     envVars:
       - key: NODE_ENV
         value: production

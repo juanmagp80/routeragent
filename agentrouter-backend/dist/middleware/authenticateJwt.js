@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.authenticateJwt = void 0;
 const jose_1 = require("jose");
+// Usamos la extensión de Request definida en authJWT.ts
 const authenticateJwt = async (req, res, next) => {
     try {
         const authHeader = req.headers.authorization;

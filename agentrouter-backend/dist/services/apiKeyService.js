@@ -9,6 +9,13 @@ const database_1 = require("../config/database");
 class ApiKeyService {
     // Generar una nueva API Key
     async generateApiKey(userId, name, plan = 'free', usage_limit) {
+        // Primero verificar límites del plan del usuario
+        if (userId) {
+            const canCreate = await this.canCreateApiKey(userId, plan);
+            if (!canCreate.allowed) {
+                throw new Error(canCreate.reason);
+            }
+        }
         // Generar key aleatoria
         const rawKey = `ar_${crypto_1.default.randomBytes(32).toString('hex')}`;
         const keyHash = crypto_1.default.createHash('sha256').update(rawKey).digest('hex');
@@ -211,6 +218,108 @@ class ApiKeyService {
         }
         catch (error) {
             console.error('Error fetching API key stats:', error);
+            throw error;
+        }
+    }
+    // Verificar si el usuario puede crear una nueva API Key
+    async canCreateApiKey(userId, requestedPlan) {
+        try {
+            // Obtener información del usuario y su plan actual
+            const { data: userData, error: userError } = await database_1.supabase
+                .from('users')
+                .select('subscription_plan, subscription_status')
+                .eq('id', userId)
+                .single();
+            let currentPlan = 'free';
+            if (!userError && userData && userData.subscription_plan) {
+                currentPlan = userData.subscription_plan;
+            }
+            // Definir límites de API keys por plan
+            const planLimits = {
+                free: 1,
+                starter: 1,
+                pro: 5,
+                enterprise: -1 // Ilimitado
+            };
+            const maxKeys = planLimits[currentPlan] || 1;
+            // Verificar que el plan solicitado esté permitido para el usuario
+            const allowedPlans = {
+                free: ['free'],
+                starter: ['free', 'starter'],
+                pro: ['free', 'starter', 'pro'],
+                enterprise: ['free', 'starter', 'pro', 'enterprise']
+            };
+            const userAllowedPlans = allowedPlans[currentPlan] || ['free'];
+            if (!userAllowedPlans.includes(requestedPlan)) {
+                return {
+                    allowed: false,
+                    reason: `Plan ${requestedPlan} not available for your subscription. Upgrade to access this plan.`
+                };
+            }
+            // Si es ilimitado, permitir
+            if (maxKeys === -1) {
+                return { allowed: true };
+            }
+            // Contar API keys activas del usuario
+            const { data: existingKeys, error: countError } = await database_1.supabase
+                .from('api_keys')
+                .select('id')
+                .eq('user_id', userId)
+                .eq('is_active', true);
+            if (countError) {
+                throw new Error(`Failed to count existing API keys: ${countError.message}`);
+            }
+            const currentCount = existingKeys?.length || 0;
+            if (currentCount >= maxKeys) {
+                return {
+                    allowed: false,
+                    reason: `API key limit reached (${maxKeys} keys max for ${currentPlan} plan). Delete existing keys or upgrade your plan.`
+                };
+            }
+            return { allowed: true };
+        }
+        catch (error) {
+            console.error('Error checking API key creation limits:', error);
+            return {
+                allowed: false,
+                reason: 'Error checking API key limits. Please try again.'
+            };
+        }
+    }
+    // Eliminar permanentemente una API Key
+    async deleteApiKey(keyId, userId) {
+        try {
+            // Verificar que la key pertenece al usuario
+            const { data: apiKey, error: fetchError } = await database_1.supabase
+                .from('api_keys')
+                .select('id, user_id, name')
+                .eq('id', keyId)
+                .eq('user_id', userId)
+                .single();
+            if (fetchError || !apiKey) {
+                throw new Error('API key not found or access denied');
+            }
+            // Eliminar registros de uso asociados
+            const { error: usageError } = await database_1.supabase
+                .from('api_key_usage')
+                .delete()
+                .eq('api_key_id', keyId);
+            if (usageError) {
+                console.warn('Warning: Could not delete usage records:', usageError.message);
+            }
+            // Eliminar la API key
+            const { error: deleteError } = await database_1.supabase
+                .from('api_keys')
+                .delete()
+                .eq('id', keyId)
+                .eq('user_id', userId);
+            if (deleteError) {
+                throw new Error(`Failed to delete API key: ${deleteError.message}`);
+            }
+            console.log(`API key '${apiKey.name}' deleted successfully for user ${userId}`);
+        }
+        catch (error) {
+            console.error('Error deleting API key:', error);
             throw error;
         }
     }
