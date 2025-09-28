@@ -2,6 +2,7 @@
 import { Request } from 'express';
 import { ApiKey } from '../models/ApiKey';
 
+// Interfaz que extiende completamente Request con todas sus propiedades
 export interface AuthenticatedRequest extends Request {
   user?: {
     id: string;
@@ -11,6 +12,10 @@ export interface AuthenticatedRequest extends Request {
     [key: string]: any;
   };
   apiKey?: ApiKey;
+  // Asegurar que body, params y headers están disponibles
+  body: any;
+  params: any;
+  headers: any;
 }
 
 export interface JWTPayload {

@@ -6,7 +6,7 @@ export class StripeService {
     constructor() {
         // Usar la clave secreta de Stripe del entorno
         const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-            apiVersion: '2023-10-16',
+            apiVersion: '2025-08-27.basil',
         });
     }
 

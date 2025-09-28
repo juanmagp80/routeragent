@@ -9,6 +9,9 @@ export interface AuthenticatedRequest extends Request {
         [key: string]: any;
     };
     apiKey?: ApiKey;
+    body: any;
+    params: any;
+    headers: any;
 }
 export interface JWTPayload {
     sub: string;
