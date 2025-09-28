@@ -22,16 +22,19 @@ git push origin main
 - **Start Command**: `npm start`
 
 ## 4. Variables de entorno
-Añade estas variables en la sección Environment:
-```
-NODE_ENV=production
-PORT=10000
-SUPABASE_URL=tu_supabase_url
-SUPABASE_SERVICE_ROLE_KEY=tu_supabase_service_role_key
-STRIPE_SECRET_KEY=tu_stripe_secret_key_real
-STRIPE_WEBHOOK_SECRET=whsec_generado_en_stripe
-JWT_SECRET=tu_jwt_secret
-```
+En la sección Environment Variables de Render, añade las siguientes variables usando los valores de tu archivo `.env` local:
+
+| Variable | Descripción | Fuente |
+|----------|-------------|---------|
+| `NODE_ENV` | `production` | Render predefinido |
+| `PORT` | `10000` | Render predefinido |
+| `SUPABASE_URL` | Tu URL de Supabase | Del archivo .env |
+| `SUPABASE_SERVICE_ROLE_KEY` | Service role key | Del archivo .env |
+| `STRIPE_SECRET_KEY` | Clave secreta de Stripe | Del archivo .env |
+| `JWT_SECRET` | JWT secret | Del archivo .env |
+| `STRIPE_WEBHOOK_SECRET` | Secret del webhook | Se genera después |
+
+⚠️ **Importante**: Copia los valores exactos de tu archivo `agentrouter-backend/.env`
 
 ## 5. URL final
 Una vez desplegado obtendrás:
