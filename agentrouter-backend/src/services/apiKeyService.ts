@@ -1,6 +1,7 @@
 import crypto from 'crypto';
 import { supabase } from "../config/database";
 import { ApiKey, ApiKeyUsage } from "../models/ApiKey";
+import { notificationService } from "./notificationService";
 
 export class ApiKeyService {
 
@@ -77,11 +78,6 @@ export class ApiKeyService {
                 return null;
             }
 
-            // Verificar límites de uso
-            if (data.usage_limit !== -1 && data.usage_count >= data.usage_limit) {
-                return null; // Límite excedido
-            }
-
             // Verificar expiración
             if (data.expires_at && new Date(data.expires_at) < new Date()) {
                 return null; // Expirada
@@ -97,10 +93,10 @@ export class ApiKeyService {
     // Incrementar uso de API Key
     async incrementUsage(apiKeyId: string, cost: number, tokensUsed: number, modelUsed: string, endpoint: string): Promise<void> {
         try {
-            // Primero obtener el contador actual
-            const { data: currentData, error: fetchError } = await supabase
+            // Primero obtener la información completa de la API key
+            const { data: apiKeyData, error: fetchError } = await supabase
                 .from('api_keys')
-                .select('usage_count')
+                .select('usage_count, usage_limit, user_id, name, plan')
                 .eq('id', apiKeyId)
                 .single();
 
@@ -108,17 +104,82 @@ export class ApiKeyService {
                 throw new Error(`Failed to fetch current usage: ${fetchError.message}`);
             }
 
+            const newUsageCount = (apiKeyData?.usage_count || 0) + 1;
+            const usageLimit = apiKeyData?.usage_limit || -1;
+
             // Incrementar contador de uso
             const { error: updateError } = await supabase
                 .from('api_keys')
                 .update({
-                    usage_count: (currentData?.usage_count || 0) + 1,
+                    usage_count: newUsageCount,
                     last_used_at: new Date().toISOString()
                 })
                 .eq('id', apiKeyId);
 
             if (updateError) {
                 throw new Error(`Failed to update usage: ${updateError.message}`);
+            }
+
+            // 📧 Enviar notificaciones según umbrales de uso
+            if (usageLimit > 0 && apiKeyData?.user_id) {
+                const usagePercentage = (newUsageCount / usageLimit) * 100;
+                
+                // Notificación al 80% del límite
+                if (newUsageCount === Math.floor(usageLimit * 0.8)) {
+                    try {
+                        await notificationService.send({
+                            userId: apiKeyData.user_id,
+                            type: 'usage_alert',
+                            data: {
+                                keyName: apiKeyData.name,
+                                usageCount: newUsageCount,
+                                usageLimit: usageLimit,
+                                percentage: 80,
+                                plan: apiKeyData.plan
+                            }
+                        });
+                    } catch (notificationError) {
+                        console.error('⚠️ Failed to send 80% usage notification:', notificationError);
+                    }
+                }
+
+                // Notificación al 95% del límite
+                if (newUsageCount === Math.floor(usageLimit * 0.95)) {
+                    try {
+                        await notificationService.send({
+                            userId: apiKeyData.user_id,
+                            type: 'usage_alert',
+                            data: {
+                                keyName: apiKeyData.name,
+                                usageCount: newUsageCount,
+                                usageLimit: usageLimit,
+                                percentage: 95,
+                                plan: apiKeyData.plan
+                            }
+                        });
+                    } catch (notificationError) {
+                        console.error('⚠️ Failed to send 95% usage notification:', notificationError);
+                    }
+                }
+
+                // Notificación cuando se alcanza el límite (100%)
+                if (newUsageCount >= usageLimit) {
+                    try {
+                        await notificationService.send({
+                            userId: apiKeyData.user_id,
+                            type: 'usage_alert',
+                            data: {
+                                keyName: apiKeyData.name,
+                                usageCount: newUsageCount,
+                                usageLimit: usageLimit,
+                                percentage: 100,
+                                plan: apiKeyData.plan
+                            }
+                        });
+                    } catch (notificationError) {
+                        console.error('⚠️ Failed to send 100% usage notification:', notificationError);
+                    }
+                }
             }
 
             // Registrar uso detallado

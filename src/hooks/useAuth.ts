@@ -1,11 +1,13 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { BACKEND_URL } from '@/config/backend';
 
 interface User {
     id: string;
     name: string;
     email: string;
     role: string;
+    plan?: string;
 }
 
 export function useAuth() {
@@ -21,20 +23,52 @@ export function useAuth() {
         try {
             const token = localStorage.getItem('token');
 
-            if (!token) {
+            // En desarrollo, siempre intentar cargar datos del usuario
+            // En producción, solo si hay token
+            if (!token && process.env.NODE_ENV === 'production') {
                 setUser(null);
                 setLoading(false);
                 return;
             }
 
-            // En una implementación real, aquí se verificaría el token JWT
-            // Simular usuario autenticado
-            setUser({
-                id: '1',
-                name: 'Admin User',
-                email: 'admin@example.com',
-                role: 'admin'
+            // Si no hay token en desarrollo, crear uno temporal
+            if (!token) {
+                localStorage.setItem('token', 'dev-token-temp');
+            }
+
+            // Obtener datos reales del usuario desde el backend
+            console.log('🔍 Fetching user data from:', `${BACKEND_URL}/v1/user-dev`);
+            const response = await fetch(`${BACKEND_URL}/v1/user-dev`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
             });
+            console.log('📡 Response status:', response.status);
+            
+            if (response.ok) {
+                const data = await response.json();
+                console.log('📝 User data received:', data);
+                
+                if (data.success && data.user) {
+                    const userData = {
+                        id: data.user.id,
+                        name: data.user.name?.replace(/ - Test$/i, '') || data.user.name, // Limpiar " - Test" del nombre
+                        email: data.user.email,
+                        role: 'admin', // Por ahora todos son admin
+                        plan: data.user.plan
+                    };
+                    console.log('✅ Setting user data:', userData);
+                    setUser(userData);
+                } else {
+                    console.warn('❌ Invalid user data response:', data);
+                    setUser(null);
+                }
+            } else {
+                const errorText = await response.text();
+                console.error('❌ Failed to fetch user data, status:', response.status, 'response:', errorText);
+                setUser(null);
+            }
         } catch (error) {
             console.error('Authentication error:', error);
             setUser(null);

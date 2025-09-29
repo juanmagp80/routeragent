@@ -10,7 +10,8 @@ import {
     LogOut,
     Settings,
     User,
-    Users
+    Users,
+    Play
 } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
@@ -19,6 +20,7 @@ import { usePathname, useRouter } from "next/navigation";
 const navigation = [
     { name: "Panel Principal", href: "/admin", icon: LayoutDashboard },
     { name: "Claves API", href: "/admin/keys", icon: Key },
+    { name: "Prueba API", href: "/admin/test-api", icon: Play },
     { name: "Analíticas", href: "/admin/analytics", icon: BarChart3 },
     { name: "Usuarios", href: "/admin/users", icon: Users },
     { name: "Facturación", href: "/admin/billing", icon: CreditCard },

@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { createClient } from '@supabase/supabase-js';
 import { ApiKeyService } from '../services/apiKeyService';
+import { notificationService } from '../services/notificationService';
 import { AuthenticatedRequest } from '../types/request';
 
 const apiKeyService = new ApiKeyService();
@@ -44,6 +45,22 @@ export const createApiKey = async (req: AuthenticatedRequest, res: Response) => 
         }
 
         const { apiKey, rawKey } = await apiKeyService.generateApiKey(userId, name, apiKeyPlan, usage_limit);
+
+        // 📧 Enviar notificación de nueva API key creada
+        try {
+            await notificationService.send({
+                userId: userId,
+                type: 'api_key_created',
+                data: {
+                    keyName: name,
+                    plan: apiKeyPlan,
+                    keyPrefix: rawKey.substring(0, 12) + '...'
+                }
+            });
+        } catch (notificationError) {
+            console.error('⚠️ Failed to send API key creation notification:', notificationError);
+            // No fallar la creación de la API key si falla la notificación
+        }
 
         res.status(201).json({
             success: true,
@@ -273,12 +290,26 @@ export const listApiKeysDev = async (req: Request, res: Response) => {
             });
         }
 
+        // Calcular el uso total de todas las claves activas
+        const totalUsage = (apiKeys || []).reduce((sum: number, key: any) => sum + (key.usage_count || 0), 0);
+
+        // Límites globales por plan
+        const planLimits = {
+            free: 100,
+            starter: 1000,
+            pro: 5000,
+            enterprise: -1
+        };
+
+        // Obtener el plan del usuario (asumimos pro para desarrollo)
+        const userPlan = 'pro';
+        const planLimit = planLimits[userPlan as keyof typeof planLimits];
+
         const safeApiKeys = (apiKeys || []).map((key: any) => ({
             id: key.id,
             name: key.name,
             key_prefix: key.key_prefix,
             plan: key.plan || 'starter',
-            usage_limit: key.usage_limit,
             usage_count: key.usage_count || 0,
             is_active: key.is_active,
             created_at: key.created_at,
@@ -287,6 +318,9 @@ export const listApiKeysDev = async (req: Request, res: Response) => {
 
         res.json({
             api_keys: safeApiKeys,
+            total_usage: totalUsage,
+            plan_limit: planLimit,
+            user_plan: userPlan,
             success: true
         });
     } catch (error: any) {
@@ -300,8 +334,8 @@ export const listApiKeysDev = async (req: Request, res: Response) => {
 
 export const createApiKeyDev = async (req: Request, res: Response) => {
     try {
-        const userId = '1'; // Usuario temporal para desarrollo
-        const { name, plan = 'starter', usage_limit } = req.body;
+        const userId = '3a942f65-25e7-4de3-84cb-3df0268ff759'; // Usuario fijo para desarrollo
+        const { name, plan = 'pro' } = req.body; // Usar plan Pro por defecto
 
         if (!name) {
             return res.status(400).json({
@@ -310,25 +344,104 @@ export const createApiKeyDev = async (req: Request, res: Response) => {
             });
         }
 
-        const result = await apiKeyService.generateApiKey(userId, name, plan as any, usage_limit);
+        console.log(`🔑 Creating API key: name="${name}", plan="${plan}", userId="${userId}"`);
+
+        // Verificar límite de claves por plan ANTES de crear
+        const { data: existingKeys, error: countError } = await supabase
+            .from('api_keys')
+            .select('id')
+            .eq('user_id', userId)
+            .eq('is_active', true);
+
+        if (countError) {
+            console.error('Error checking existing keys:', countError);
+            return res.status(500).json({
+                error: 'Failed to check existing API keys',
+                success: false
+            });
+        }
+
+        // Límites de claves por plan
+        const keyLimits = {
+            free: 1,
+            starter: 3,
+            pro: 5,
+            enterprise: 20
+        };
+
+        const currentKeyCount = existingKeys?.length || 0;
+        const maxKeys = keyLimits[plan as keyof typeof keyLimits] || 1;
+
+        if (currentKeyCount >= maxKeys) {
+            return res.status(400).json({
+                error: `You have reached the maximum number of API keys for your ${plan} plan (${maxKeys} keys). Please delete an existing key or upgrade your plan.`,
+                success: false,
+                current_keys: currentKeyCount,
+                max_keys: maxKeys
+            });
+        }
+
+        // Generar key directamente sin validaciones complejas
+        const rawKey = `ar_${require('crypto').randomBytes(32).toString('hex')}`;
+        const keyHash = require('crypto').createHash('sha256').update(rawKey).digest('hex');
+        const keyPrefix = rawKey.substring(0, 12);
+
+        // IMPORTANTE: Los requests se comparten entre TODAS las claves del usuario
+        // No asignamos usage_limit por clave, sino que el límite es por plan del usuario
+        const apiKeyData = {
+            user_id: userId,
+            key_hash: keyHash,
+            key_prefix: keyPrefix,
+            name: name,
+            plan: plan,
+            usage_count: 0,
+            is_active: true,
+            last_used_at: null,
+            expires_at: null,
+            created_at: new Date().toISOString()
+        };
+
+        const { data, error } = await supabase
+            .from('api_keys')
+            .insert([apiKeyData])
+            .select()
+            .single();
+
+        if (error) {
+            console.error('❌ Supabase error creating API key:', error);
+            return res.status(500).json({
+                error: `Failed to create API key: ${error.message}`,
+                success: false
+            });
+        }
+
+        console.log('✅ API key created successfully:', data.id);
+
+        // Límites globales por plan (compartidos entre todas las claves)
+        const planLimits = {
+            free: 100,
+            starter: 1000,
+            pro: 5000,
+            enterprise: -1
+        };
 
         res.status(201).json({
             api_key: {
-                id: result.apiKey.id,
-                name: result.apiKey.name,
-                key_prefix: result.apiKey.key_prefix,
-                full_key: result.rawKey, // Incluir la clave completa solo en creación
-                plan: result.apiKey.plan,
-                usage_limit: result.apiKey.usage_limit,
+                id: data.id,
+                name: data.name,
+                key_prefix: data.key_prefix,
+                full_key: rawKey, // Incluir la clave completa solo en creación
+                plan: data.plan,
+                usage_limit: planLimits[plan as keyof typeof planLimits] || 5000, // Límite total del plan
                 usage_count: 0,
                 is_active: true,
-                created_at: result.apiKey.created_at,
+                created_at: data.created_at,
                 last_used: null
             },
             success: true
         });
     } catch (error: any) {
-        console.error('Error in createApiKeyDev:', error);
+        console.error('❌ Error in createApiKeyDev:', error);
         res.status(500).json({
             error: 'Internal server error',
             success: false
@@ -339,7 +452,7 @@ export const createApiKeyDev = async (req: Request, res: Response) => {
 export const deleteApiKeyDev = async (req: Request, res: Response) => {
     try {
         const { keyId } = req.params;
-        const userId = '1'; // Usuario temporal para desarrollo
+        const userId = '3a942f65-25e7-4de3-84cb-3df0268ff759'; // Usuario fijo para desarrollo
 
         if (!keyId) {
             return res.status(400).json({
@@ -348,10 +461,27 @@ export const deleteApiKeyDev = async (req: Request, res: Response) => {
             });
         }
 
-        await apiKeyService.deactivateApiKey(keyId, userId);
+        console.log(`🗑️ Deleting API key: keyId="${keyId}", userId="${userId}"`);
+
+        // Eliminar directamente de Supabase
+        const { error } = await supabase
+            .from('api_keys')
+            .update({ is_active: false })
+            .eq('id', keyId)
+            .eq('user_id', userId);
+
+        if (error) {
+            console.error('Error deactivating API key in Supabase:', error);
+            return res.status(500).json({
+                error: 'Failed to delete API key',
+                success: false
+            });
+        }
+
+        console.log('✅ API key deactivated successfully');
 
         res.json({
-            message: 'API key deactivated successfully',
+            message: 'API key deleted successfully',
             success: true
         });
     } catch (error: any) {
@@ -447,23 +577,12 @@ export const getBillingDev = async (req: Request, res: Response) => {
     try {
         console.log('📋 Getting billing info for development...');
 
-        // Obtener usuario actual con su plan real
-        const { data: users, error: userError } = await supabase
-            .from('users')
-            .select('id, email, plan, subscription_status, subscription_current_period_end')
-            .eq('email', 'juanmagp26@gmail.com')
-            .single();
-
-        if (userError || !users) {
-            console.error('Error fetching user for billing:', userError);
-            return res.status(500).json({ error: 'Failed to fetch user info', success: false });
-        }
-
-        const currentPlan = users.plan || 'free';
-        const subscriptionStatus = users.subscription_status || 'inactive';
-        const nextBillingDate = users.subscription_current_period_end;
+        // Para desarrollo, usar datos simulados con plan Pro
+        const currentPlan = 'pro';
+        const subscriptionStatus = 'active';
+        const nextBillingDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
         
-        console.log(`✅ Found user with plan: ${currentPlan}, status: ${subscriptionStatus}`);
+        console.log(`✅ Using development plan: ${currentPlan}, status: ${subscriptionStatus}`);
 
         // Obtener información de API keys activas para el usuario
         const { data: apiKeys, error: apiKeysError } = await supabase
@@ -512,13 +631,11 @@ export const getBillingDev = async (req: Request, res: Response) => {
         const billingInfo = {
             current_plan: {
                 id: currentPlan,
-                name: currentPlan === 'free' ? 'Plan Gratuito' : 
-                      currentPlan === 'starter' ? 'Plan Starter' :
-                      currentPlan === 'pro' ? 'Plan Pro' : 'Plan Enterprise',
+                name: 'Plan Pro', // Hardcodeado para desarrollo
                 price: currentPlanInfo.price,
                 currency: 'EUR',
                 billing_cycle: 'monthly',
-                next_billing_date: nextBillingDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+                next_billing_date: nextBillingDate,
                 status: subscriptionStatus
             },
             usage: {
@@ -620,11 +737,11 @@ export const getCurrentUserDev = async (req: Request, res: Response) => {
     try {
         console.log('👤 Getting current user info for development...');
 
-        // Obtener usuario actual con todos sus datos
+        // Obtener usuario actual con todos sus datos usando ID fijo
         const { data: user, error: userError } = await supabase
             .from('users')
             .select('*')
-            .eq('email', 'juanmagp26@gmail.com')
+            .eq('id', '3a942f65-25e7-4de3-84cb-3df0268ff759')
             .single();
 
         if (userError || !user) {
@@ -637,14 +754,18 @@ export const getCurrentUserDev = async (req: Request, res: Response) => {
         // Devolver datos del usuario en formato esperado por el frontend
         const userData = {
             id: user.id,
-            name: user.name || user.email.split('@')[0], // Fallback al email si no hay nombre
+            name: (user.name || user.email.split('@')[0]).replace(/ - Test$/i, ''), // Limpiar " - Test" del nombre
             email: user.email,
             company: user.company || '',
             plan: user.plan || 'free',
             api_key_limit: user.api_key_limit || 3,
             is_active: user.is_active !== false,
             email_verified: user.email_verified !== false,
-            created_at: user.created_at || new Date().toISOString()
+            created_at: user.created_at || new Date().toISOString(),
+            // Preferencias de notificaciones (ahora con columnas reales en DB)
+            email_notifications: user.email_notifications !== false, // leer de DB
+            slack_notifications: user.slack_notifications === true, // leer de DB
+            discord_notifications: user.discord_notifications === true // leer de DB
         };
 
         res.json({
@@ -654,6 +775,366 @@ export const getCurrentUserDev = async (req: Request, res: Response) => {
 
     } catch (error) {
         console.error('❌ Error fetching current user:', error);
+        res.status(500).json({ error: 'Internal server error', success: false });
+    }
+};
+
+export const updateCurrentUserDev = async (req: Request, res: Response) => {
+    try {
+        console.log('🔄 Updating current user info for development...');
+        const updateData = req.body;
+
+        // Usar UPSERT para crear o actualizar el usuario
+        const { data: updatedUser, error: updateError } = await supabase
+            .from('users')
+            .upsert({
+                id: '3a942f65-25e7-4de3-84cb-3df0268ff759', // ID fijo para desarrollo
+                name: updateData.name,
+                company: updateData.company,
+                email: updateData.email,
+                plan: updateData.plan || 'pro'
+            })
+            .select()
+            .single();
+
+        if (updateError || !updatedUser) {
+            console.error('Error updating user:', updateError);
+            return res.status(500).json({ error: 'Failed to update user', success: false });
+        }
+
+        console.log(`✅ User updated successfully: ${updatedUser.name} (${updatedUser.email})`);
+
+        // Devolver datos actualizados del usuario
+        const userData = {
+            id: updatedUser.id,
+            name: updatedUser.name || updatedUser.email.split('@')[0],
+            email: updatedUser.email,
+            company: updatedUser.company || '',
+            plan: updatedUser.plan || 'free',
+            api_key_limit: updatedUser.api_key_limit || 3,
+            is_active: updatedUser.is_active !== false,
+            email_verified: updatedUser.email_verified !== false,
+            created_at: updatedUser.created_at || new Date().toISOString()
+        };
+
+        res.json({
+            user: userData,
+            success: true,
+            message: 'Usuario actualizado exitosamente'
+        });
+
+    } catch (error) {
+        console.error('❌ Error updating current user:', error);
+        res.status(500).json({ error: 'Internal server error', success: false });
+    }
+};
+
+export const updateUserNotificationsDev = async (req: Request, res: Response) => {
+    try {
+        console.log('🔔 Updating user notification preferences...');
+        const { email_notifications, slack_notifications, discord_notifications, slack_webhook_url, discord_webhook_url } = req.body;
+
+        console.log('📝 Notification preferences received:', {
+            email: email_notifications,
+            slack: slack_notifications,
+            discord: discord_notifications,
+            slackWebhook: slack_webhook_url ? '***configured***' : 'not set',
+            discordWebhook: discord_webhook_url ? '***configured***' : 'not set'
+        });
+
+        // Actualizar preferencias de notificaciones en Supabase (ahora con columnas reales)
+        const updateData: any = {
+            updated_at: new Date().toISOString()
+        };
+
+        if (email_notifications !== undefined) updateData.email_notifications = email_notifications;
+        if (slack_notifications !== undefined) updateData.slack_notifications = slack_notifications;
+        if (discord_notifications !== undefined) updateData.discord_notifications = discord_notifications;
+        if (slack_webhook_url !== undefined) updateData.slack_webhook_url = slack_webhook_url;
+        if (discord_webhook_url !== undefined) updateData.discord_webhook_url = discord_webhook_url;
+
+        const { data: updatedUser, error: updateError } = await supabase
+            .from('users')
+            .update(updateData)
+            .eq('email', 'juanmagp26@gmail.com')
+            .select()
+            .single();
+
+        if (updateError || !updatedUser) {
+            console.error('Error updating notification preferences:', updateError);
+            return res.status(500).json({ error: 'Failed to update notification preferences', success: false });
+        }
+
+        console.log(`✅ Notification preferences updated successfully in database`);
+
+        res.json({
+            success: true,
+            message: 'Preferencias de notificación actualizadas exitosamente',
+            notifications: {
+                email: updatedUser.email_notifications,
+                slack: updatedUser.slack_notifications,
+                discord: updatedUser.discord_notifications,
+                slack_webhook_url: updatedUser.slack_webhook_url,
+                discord_webhook_url: updatedUser.discord_webhook_url
+            }
+        });
+
+    } catch (error) {
+        console.error('❌ Error updating notification preferences:', error);
+        res.status(500).json({ error: 'Internal server error', success: false });
+    }
+};
+
+// 🚫 SLACK DESHABILITADO TEMPORALMENTE
+export const validateSlackWebhook = async (req: Request, res: Response) => {
+    try {
+        console.log('⚠️ Slack webhook validation disabled');
+        
+        res.json({ 
+            success: false, 
+            valid: false,
+            message: 'Las notificaciones de Slack están temporalmente deshabilitadas',
+            disabled: true
+        });
+
+    } catch (error) {
+        console.error('❌ Error validating Slack webhook:', error);
+        res.status(500).json({ error: 'Internal server error', success: false });
+    }
+};
+
+// 🚫 DISCORD DESHABILITADO TEMPORALMENTE
+export const validateDiscordWebhook = async (req: Request, res: Response) => {
+    try {
+        console.log('⚠️ Discord webhook validation disabled');
+        
+        res.json({ 
+            success: false, 
+            valid: false,
+            message: 'Las notificaciones de Discord están temporalmente deshabilitadas',
+            disabled: true
+        });
+
+    } catch (error) {
+        console.error('❌ Error validating Discord webhook:', error);
+        res.status(500).json({ error: 'Internal server error', success: false });
+    }
+};
+
+// 🧪 ENDPOINTS DE PRUEBA PARA NOTIFICACIONES
+export const testNotificationApiKeyCreated = async (req: Request, res: Response) => {
+    try {
+        console.log('🧪 Testing API Key Created notification...');
+        
+        await notificationService.send({
+            userId: '3a942f65-25e7-4de3-84cb-3df0268ff759',
+            type: 'api_key_created',
+            data: {
+                keyName: 'Test API Key',
+                plan: 'pro',
+                keyPrefix: 'agr_test123...'
+            }
+        });
+
+        res.json({
+            success: true,
+            message: 'Notificación de API Key creada enviada exitosamente'
+        });
+
+    } catch (error) {
+        console.error('❌ Error testing API key created notification:', error);
+        res.status(500).json({ error: 'Internal server error', success: false });
+    }
+};
+
+export const testNotificationUsageAlert = async (req: Request, res: Response) => {
+    try {
+        const { percentage = 80 } = req.body;
+        console.log(`🧪 Testing Usage Alert notification at ${percentage}%...`);
+        
+        await notificationService.send({
+            userId: '3a942f65-25e7-4de3-84cb-3df0268ff759',
+            type: 'usage_alert',
+            data: {
+                keyName: 'Production API Key',
+                usageCount: Math.floor(1000 * (percentage / 100)),
+                usageLimit: 1000,
+                percentage: percentage,
+                plan: 'pro'
+            }
+        });
+
+        res.json({
+            success: true,
+            message: `Notificación de uso al ${percentage}% enviada exitosamente`
+        });
+
+    } catch (error) {
+        console.error('❌ Error testing usage alert notification:', error);
+        res.status(500).json({ error: 'Internal server error', success: false });
+    }
+};
+
+export const testNotificationWelcome = async (req: Request, res: Response) => {
+    try {
+        console.log('🧪 Testing Welcome notification...');
+        
+        await notificationService.send({
+            userId: '3a942f65-25e7-4de3-84cb-3df0268ff759',
+            type: 'welcome',
+            data: {}
+        });
+
+        res.json({
+            success: true,
+            message: 'Notificación de bienvenida enviada exitosamente'
+        });
+
+    } catch (error) {
+        console.error('❌ Error testing welcome notification:', error);
+        res.status(500).json({ error: 'Internal server error', success: false });
+    }
+};
+
+export const testNotificationPaymentSuccess = async (req: Request, res: Response) => {
+    try {
+        console.log('🧪 Testing Payment Success notification...');
+        
+        await notificationService.send({
+            userId: '3a942f65-25e7-4de3-84cb-3df0268ff759',
+            type: 'payment_success',
+            data: {
+                amount: '€49.00',
+                plan: 'Pro'
+            }
+        });
+
+        res.json({
+            success: true,
+            message: 'Notificación de pago exitoso enviada'
+        });
+
+    } catch (error) {
+        console.error('❌ Error testing payment success notification:', error);
+        res.status(500).json({ error: 'Internal server error', success: false });
+    }
+};
+
+// 🔔 ENDPOINTS PARA GESTIONAR NOTIFICACIONES EN PÁGINA
+export const getNotifications = async (req: Request, res: Response) => {
+    try {
+        const userId = '3a942f65-25e7-4de3-84cb-3df0268ff759'; // ID fijo para desarrollo
+        const { page = 1, limit = 20 } = req.query;
+        
+        const offset = (Number(page) - 1) * Number(limit);
+        
+        console.log(`📱 Getting notifications for user ${userId}...`);
+        console.log(`📊 Supabase URL: ${supabaseUrl ? 'SET' : 'NOT SET'}`);
+        console.log(`🔑 Supabase Key: ${supabaseServiceKey ? 'SET' : 'NOT SET'}`);
+
+        const { data: notifications, error } = await supabase
+            .from('notifications')
+            .select('*')
+            .eq('user_id', userId)
+            .order('created_at', { ascending: false })
+            .range(offset, offset + Number(limit) - 1);
+
+        if (error) {
+            console.error('❌ Supabase error:', error);
+            return res.status(500).json({ 
+                error: 'Failed to fetch notifications', 
+                success: false,
+                details: error.message 
+            });
+        }
+
+        // Contar total de notificaciones no leídas
+        const { count: unreadCount, error: countError } = await supabase
+            .from('notifications')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', userId)
+            .eq('is_read', false);
+
+        if (countError) {
+            console.error('❌ Error counting unread notifications:', countError);
+        }
+
+        console.log(`✅ Found ${notifications?.length || 0} notifications`);
+
+        res.json({
+            success: true,
+            notifications: notifications || [],
+            unreadCount: unreadCount || 0,
+            pagination: {
+                page: Number(page),
+                limit: Number(limit),
+                total: notifications?.length || 0
+            }
+        });
+
+    } catch (error) {
+        console.error('❌ Error fetching notifications:', error);
+        res.status(500).json({ 
+            error: 'Internal server error', 
+            success: false,
+            details: error instanceof Error ? error.message : 'Unknown error'
+        });
+    }
+};
+
+export const markNotificationAsRead = async (req: Request, res: Response) => {
+    try {
+        const { notificationId } = req.params;
+        const userId = '3a942f65-25e7-4de3-84cb-3df0268ff759'; // ID fijo para desarrollo
+
+        console.log(`📖 Marking notification ${notificationId} as read...`);
+
+        const { error } = await supabase
+            .from('notifications')
+            .update({ is_read: true })
+            .eq('id', notificationId)
+            .eq('user_id', userId);
+
+        if (error) {
+            console.error('Error marking notification as read:', error);
+            return res.status(500).json({ error: 'Failed to mark notification as read', success: false });
+        }
+
+        res.json({
+            success: true,
+            message: 'Notification marked as read'
+        });
+
+    } catch (error) {
+        console.error('❌ Error marking notification as read:', error);
+        res.status(500).json({ error: 'Internal server error', success: false });
+    }
+};
+
+export const markAllNotificationsAsRead = async (req: Request, res: Response) => {
+    try {
+        const userId = '3a942f65-25e7-4de3-84cb-3df0268ff759'; // ID fijo para desarrollo
+
+        console.log(`📖 Marking all notifications as read for user ${userId}...`);
+
+        const { error } = await supabase
+            .from('notifications')
+            .update({ is_read: true })
+            .eq('user_id', userId)
+            .eq('is_read', false);
+
+        if (error) {
+            console.error('Error marking all notifications as read:', error);
+            return res.status(500).json({ error: 'Failed to mark all notifications as read', success: false });
+        }
+
+        res.json({
+            success: true,
+            message: 'All notifications marked as read'
+        });
+
+    } catch (error) {
+        console.error('❌ Error marking all notifications as read:', error);
         res.status(500).json({ error: 'Internal server error', success: false });
     }
 };

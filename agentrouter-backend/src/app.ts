@@ -7,7 +7,8 @@ import Stripe from 'stripe';
 import { createClient } from '@supabase/supabase-js';
 
 // Cargar variables de entorno
-dotenv.config();
+dotenv.config({ path: '.env.local' });
+dotenv.config(); // fallback para .env
 
 // Verificar que tenemos la clave de Stripe
 if (!process.env.STRIPE_SECRET_KEY) {
@@ -16,6 +17,15 @@ if (!process.env.STRIPE_SECRET_KEY) {
 }
 
 console.log('✅ Stripe key loaded:', process.env.STRIPE_SECRET_KEY?.substring(0, 12) + '...');
+
+// Verificar que tenemos la clave de Resend
+if (!process.env.RESEND_API_KEY) {
+    console.error('❌ RESEND_API_KEY not found in environment variables');
+    console.error('Please check your .env.local file and ensure RESEND_API_KEY is set');
+    process.exit(1);
+}
+
+console.log('✅ Resend key loaded:', process.env.RESEND_API_KEY?.substring(0, 12) + '...');
 
 // Inicializar Stripe
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
@@ -40,7 +50,18 @@ import {
     deleteApiKeyDev,
     getMetricsDev,
     getBillingDev,
-    getCurrentUserDev
+    getCurrentUserDev,
+    updateCurrentUserDev,
+    updateUserNotificationsDev,
+    validateSlackWebhook,
+    validateDiscordWebhook,
+    testNotificationApiKeyCreated,
+    testNotificationUsageAlert,
+    testNotificationWelcome,
+    testNotificationPaymentSuccess,
+    getNotifications,
+    markNotificationAsRead,
+    markAllNotificationsAsRead
 } from './controllers/apiKeyController';
 import {
     getCurrentUser,
@@ -223,6 +244,26 @@ app.get('/v1/api-keys-dev/:keyId/stats', getApiKeyStats);
 app.get('/v1/metrics-dev', getMetricsDev);
 app.get('/v1/billing-dev', getBillingDev);
 app.get('/v1/user-dev', getCurrentUserDev);
+app.put('/v1/user-dev', updateCurrentUserDev);
+app.put('/v1/user-notifications-dev', updateUserNotificationsDev);
+
+// Rutas para validar webhooks
+app.post('/v1/validate-slack-webhook', validateSlackWebhook);
+app.post('/v1/validate-discord-webhook', validateDiscordWebhook);
+
+// 🧪 Rutas de prueba para notificaciones (temporal)
+app.post('/v1/test-notification-api-key-created', testNotificationApiKeyCreated);
+app.post('/v1/test-notification-usage-alert', testNotificationUsageAlert);
+app.post('/v1/test-notification-welcome', testNotificationWelcome);
+app.post('/v1/test-notification-payment-success', testNotificationPaymentSuccess);
+
+// 🔔 Rutas para gestionar notificaciones en página
+app.get('/v1/notifications', getNotifications);
+app.put('/v1/notifications/:notificationId/read', markNotificationAsRead);
+app.put('/v1/notifications/read-all', markAllNotificationsAsRead);
+
+// Ruta para enviar notificación de prueba
+
 app.post('/v1/checkout-session-dev', async (req, res) => {
     try {
         console.log('💳 Creating Stripe checkout session...');

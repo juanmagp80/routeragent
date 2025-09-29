@@ -2,8 +2,8 @@
  * Configuración de URL del backend con override forzado para producción
  */
 
-// TEMPORAL: Forzar uso de backend de producción
-const FORCE_PRODUCTION = true;
+// TEMPORAL: Forzar uso de backend de producción (desactivado para desarrollo)
+const FORCE_PRODUCTION = false;
 
 // Detectar entorno automáticamente - versión mejorada
 const isProduction = FORCE_PRODUCTION || 
@@ -14,7 +14,7 @@ const isProduction = FORCE_PRODUCTION ||
         window.location.hostname === 'routeragent.vercel.app' ||
         window.location.hostname.includes('vercel.app') ||
         window.location.hostname.includes('onrender.com') ||
-        window.location.hostname !== 'localhost'
+        (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1')
     ));
 
 export const BACKEND_URL = isProduction

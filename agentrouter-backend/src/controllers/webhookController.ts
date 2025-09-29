@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { Request, Response } from 'express';
 import Stripe from 'stripe';
+import { notificationService } from '../services/notificationService';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2023-10-16',
@@ -161,13 +162,30 @@ export class WebhookController {
 
     const customerId = subscription.customer as string;
     const priceId = subscription.items.data[0]?.price.id;
+    const plan = this.getPlanFromPriceId(priceId);
 
     // Buscar usuario por customerId y actualizar plan
-    await this.updateUserPlanByCustomerId(customerId, this.getPlanFromPriceId(priceId), {
+    const updatedUser = await this.updateUserPlanByCustomerId(customerId, plan, {
       subscriptionId: subscription.id,
       priceId,
       status: subscription.status
     });
+
+    // Enviar notificación de bienvenida si es un nuevo usuario
+    if (updatedUser) {
+      try {
+        await notificationService.send({
+          userId: updatedUser.id,
+          type: 'welcome',
+          data: {
+            plan: plan,
+            amount: `€${subscription.items.data[0]?.price.unit_amount ? subscription.items.data[0].price.unit_amount / 100 : 0}`
+          }
+        });
+      } catch (notificationError) {
+        console.error('❌ Error sending welcome notification:', notificationError);
+      }
+    }
   }
 
   /**
@@ -180,11 +198,28 @@ export class WebhookController {
     const priceId = subscription.items.data[0]?.price.id;
     const plan = this.getPlanFromPriceId(priceId);
 
-    await this.updateUserPlanByCustomerId(customerId, plan, {
+    const updatedUser = await this.updateUserPlanByCustomerId(customerId, plan, {
       subscriptionId: subscription.id,
       priceId,
       status: subscription.status
     });
+
+    // Enviar notificación de cambio de plan
+    if (updatedUser) {
+      try {
+        await notificationService.send({
+          userId: updatedUser.id,
+          type: 'plan_change',
+          data: {
+            newPlan: plan,
+            subscriptionId: subscription.id,
+            status: subscription.status
+          }
+        });
+      } catch (notificationError) {
+        console.error('❌ Error sending plan change notification:', notificationError);
+      }
+    }
   }
 
   /**
@@ -221,12 +256,34 @@ export class WebhookController {
     if (subscriptionId) {
       const subscription = await stripe.subscriptions.retrieve(subscriptionId);
       const priceId = subscription.items.data[0]?.price.id;
+      const plan = this.getPlanFromPriceId(priceId);
 
-      await this.updateUserPlanByCustomerId(customerId, this.getPlanFromPriceId(priceId), {
+      const updatedUser = await this.updateUserPlanByCustomerId(customerId, plan, {
         subscriptionId,
         priceId,
         status: 'active'
       });
+
+      // Enviar notificación de pago exitoso
+      if (updatedUser) {
+        try {
+          await notificationService.send({
+            userId: updatedUser.id,
+            type: 'payment_success',
+            data: {
+              amount: `€${invoice.amount_paid ? invoice.amount_paid / 100 : 0}`,
+              plan: plan,
+              invoiceId: invoice.id,
+              period: {
+                start: subscription.current_period_start,
+                end: subscription.current_period_end
+              }
+            }
+          });
+        } catch (notificationError) {
+          console.error('❌ Error sending payment success notification:', notificationError);
+        }
+      }
     }
   }
 
@@ -237,6 +294,31 @@ export class WebhookController {
     console.log('💥 Pago fallido:', invoice.id);
 
     const customerId = invoice.customer as string;
+
+    // Buscar usuario por customer ID para notificar
+    const { data: users, error } = await supabase
+      .from('users')
+      .select('id, email, name')
+      .eq('stripe_customer_id', customerId)
+      .limit(1);
+
+    if (!error && users && users.length > 0) {
+      const user = users[0];
+      try {
+        await notificationService.send({
+          userId: user.id,
+          type: 'payment_failed' as any,
+          data: {
+            amount: `€${invoice.amount_due ? invoice.amount_due / 100 : 0}`,
+            invoiceId: invoice.id,
+            attemptCount: invoice.attempt_count || 1,
+            nextPaymentAttempt: invoice.next_payment_attempt
+          }
+        });
+      } catch (notificationError) {
+        console.error('❌ Error sending payment failed notification:', notificationError);
+      }
+    }
 
     // Notificar al usuario sobre el fallo de pago
     // En producción, enviarías un email o notificación
@@ -254,6 +336,22 @@ export class WebhookController {
         return 'enterprise';
       default:
         return 'free';
+    }
+  }
+
+  /**
+   * Obtener precio del plan
+   */
+  private getPlanPrice(plan: string): string {
+    switch (plan.toLowerCase()) {
+      case 'pro':
+        return '€49.00';
+      case 'enterprise':
+        return '€99.00';
+      case 'starter':
+        return '€19.00';
+      default:
+        return '€0.00';
     }
   }
 
@@ -307,6 +405,23 @@ export class WebhookController {
 
       console.log('✅ Usuario de desarrollo actualizado exitosamente en Supabase:', data);
 
+      // 🔔 Enviar notificación de pago exitoso
+      if (data && data[0]) {
+        const user = data[0];
+        console.log('📧 Enviando notificación de pago exitoso...');
+        
+        await notificationService.send({
+          userId: user.id,
+          type: 'payment_success',
+          data: {
+            amount: this.getPlanPrice(plan),
+            plan: plan,
+            customerId: billingInfo.customerId,
+            subscriptionId: billingInfo.subscriptionId
+          }
+        });
+      }
+
     } catch (error) {
       console.error('Error actualizando plan del usuario de desarrollo:', error);
       throw error;
@@ -316,7 +431,7 @@ export class WebhookController {
   /**
    * Actualizar plan del usuario en Supabase
    */
-  private async updateUserPlan(userId: string, plan: string, billingInfo: any): Promise<void> {
+  private async updateUserPlan(userId: string, plan: string, billingInfo: any): Promise<any> {
     try {
       console.log(`📝 Actualizando usuario ${userId} al plan ${plan} en Supabase`);
 
@@ -330,7 +445,9 @@ export class WebhookController {
           subscription_status: billingInfo.status,
           updated_at: new Date().toISOString()
         })
-        .eq('id', userId);
+        .eq('id', userId)
+        .select()
+        .single();
 
       if (error) {
         console.error('❌ Error actualizando usuario en Supabase:', error);
@@ -338,6 +455,24 @@ export class WebhookController {
       }
 
       console.log('✅ Usuario actualizado exitosamente en Supabase:', data);
+
+      // 🔔 Enviar notificación de cambio de plan
+      if (data && data.id) {
+        console.log('📧 Enviando notificación de cambio de plan...');
+        
+        await notificationService.send({
+          userId: data.id,
+          type: 'plan_change',
+          data: {
+            newPlan: plan,
+            oldPlan: 'free', // En una implementación real, obtener el plan anterior
+            customerId: billingInfo.customerId,
+            subscriptionId: billingInfo.subscriptionId
+          }
+        });
+      }
+
+      return data;
 
     } catch (error) {
       console.error('Error actualizando plan del usuario:', error);
@@ -348,7 +483,7 @@ export class WebhookController {
   /**
    * Actualizar plan por Customer ID - buscar usuario por stripe_customer_id
    */
-  private async updateUserPlanByCustomerId(customerId: string, plan: string, billingInfo: any): Promise<void> {
+  private async updateUserPlanByCustomerId(customerId: string, plan: string, billingInfo: any): Promise<any> {
     try {
       console.log(`� Buscando usuario con stripe_customer_id: ${customerId}`);
 
@@ -386,13 +521,14 @@ export class WebhookController {
         }
 
         console.log('✅ Actualización fallback exitosa:', data);
-        return;
+        return data?.[0] || null;
       }
 
       const userId = users[0].id;
       console.log(`✅ Usuario encontrado: ${userId}`);
 
-      await this.updateUserPlan(userId, plan, billingInfo);
+      const updatedUser = await this.updateUserPlan(userId, plan, billingInfo);
+      return updatedUser;
 
     } catch (error) {
       console.error('Error actualizando plan por customerId:', error);

@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.requirePlan = exports.optionalAuth = exports.authenticateApiKey = void 0;
 const apiKeyService_1 = require("../services/apiKeyService");
+const database_1 = require("../config/database");
 const apiKeyService = new apiKeyService_1.ApiKeyService();
 const authenticateApiKey = async (req, res, next) => {
     try {
@@ -29,13 +30,43 @@ const authenticateApiKey = async (req, res, next) => {
                 success: false
             });
         }
-        // Verificar límites de uso
-        if (validApiKey.usage_limit !== -1 && validApiKey.usage_count >= validApiKey.usage_limit) {
-            return res.status(429).json({
-                error: `Usage limit exceeded. Current plan (${validApiKey.plan}) allows ${validApiKey.usage_limit} requests per month.`,
-                success: false,
-                upgrade_url: 'https://agentrouter.com/pricing'
-            });
+        // Verificar límites de uso compartidos por plan
+        try {
+            // Obtener el total de uso del usuario usando la misma lógica que el controlador
+            const { data: userKeys, error: keysError } = await database_1.supabase
+                .from('api_keys')
+                .select('usage_count')
+                .eq('user_id', validApiKey.user_id)
+                .eq('is_active', true);
+            if (keysError) {
+                console.error('Error checking user usage limits:', keysError);
+                // Continuar sin bloquear en caso de error de consulta
+            }
+            else {
+                // Calcular uso total del usuario
+                const totalUsage = userKeys.reduce((total, key) => total + (key.usage_count || 0), 0);
+                // Límites por plan
+                const planLimits = {
+                    free: 100,
+                    starter: 1000,
+                    pro: 5000,
+                    enterprise: -1 // Ilimitado
+                };
+                const planLimit = planLimits[validApiKey.plan];
+                if (planLimit !== -1 && totalUsage >= planLimit) {
+                    return res.status(429).json({
+                        error: `Usage limit exceeded. Current plan (${validApiKey.plan}) allows ${planLimit} requests total across all API keys. Current usage: ${totalUsage}/${planLimit}`,
+                        success: false,
+                        upgrade_url: 'https://agentrouter.com/pricing',
+                        total_usage: totalUsage,
+                        plan_limit: planLimit
+                    });
+                }
+            }
+        }
+        catch (limitError) {
+            console.error('Error checking shared usage limits:', limitError);
+            // Continuar sin bloquear en caso de error
         }
         // Agregar API key al request para uso posterior
         req.apiKey = validApiKey;

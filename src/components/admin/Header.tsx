@@ -1,14 +1,40 @@
 "use client";
 
 import { Bell, Search, User, LogOut } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function AdminHeader() {
     const [searchOpen, setSearchOpen] = useState(false);
+    const [unreadCount, setUnreadCount] = useState(0);
     const router = useRouter();
     const { user } = useAuth();
+
+    // Función para obtener notificaciones
+    const fetchNotifications = async () => {
+        try {
+            const response = await fetch('/api/v1/notifications');
+            if (response.ok) {
+                const data = await response.json();
+                setUnreadCount(data.unreadCount || 0);
+            }
+        } catch (error) {
+            console.error('Error fetching notifications:', error);
+        }
+    };
+
+    // Cargar notificaciones al montar el componente
+    useEffect(() => {
+        fetchNotifications();
+        // Actualizar cada 30 segundos
+        const interval = setInterval(fetchNotifications, 30000);
+        return () => clearInterval(interval);
+    }, []);
+
+    const handleNotificationClick = () => {
+        router.push('/admin/notifications');
+    };
 
     const handleLogout = () => {
         // Limpiar todas las sesiones y tokens
@@ -59,11 +85,19 @@ export default function AdminHeader() {
                     {/* Right side - Notifications and user menu */}
                     <div className="flex items-center space-x-4">
                         {/* Notifications */}
-                        <button className="p-1 rounded-full text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500">
+                        <button 
+                            onClick={handleNotificationClick}
+                            className="p-1 rounded-full text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500"
+                            title={unreadCount > 0 ? `${unreadCount} notificaciones sin leer` : 'Ver notificaciones'}
+                        >
                             <span className="sr-only">Ver notificaciones</span>
                             <div className="relative">
                                 <Bell className="h-6 w-6" />
-                                <span className="absolute top-0 right-0 block h-2 w-2 rounded-full ring-2 ring-white bg-red-400"></span>
+                                {unreadCount > 0 && (
+                                    <span className="absolute -top-1 -right-1 flex items-center justify-center h-4 w-4 text-xs font-bold text-white bg-red-500 rounded-full ring-2 ring-white">
+                                        {unreadCount > 9 ? '9+' : unreadCount}
+                                    </span>
+                                )}
                             </div>
                         </button>
 

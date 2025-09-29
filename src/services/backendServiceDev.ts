@@ -18,6 +18,7 @@ export interface ApiKeyData {
     // Propiedades adicionales para compatibilidad con el UI
     key?: string;
     prefix?: string;
+    full_key?: string; // Solo disponible cuando se crea la clave
 }
 
 export interface CreateApiKeyRequest {
@@ -126,18 +127,16 @@ class BackendServiceDev {
         return response.json();
     }
 
-    async getApiKeys(): Promise<ApiKeyData[]> {
+    async getApiKeys(): Promise<any> {
         try {
             console.log('🔑 Fetching API keys from backend...');
-            const response = await this.makeRequest<{ api_keys: ApiKeyData[]; success: boolean }>('/v1/api-keys-dev');
-            console.log('🔑 API keys response:', response);
-            // El endpoint devuelve un objeto con api_keys
-            const apiKeys = response.api_keys || [];
-            console.log('🔑 Processed API keys:', apiKeys);
-            return apiKeys;
+            const response = await this.makeRequest<any>('/v1/api-keys-dev');
+            console.log('🔑 API keys full response:', response);
+            // Devolver la respuesta completa para que el frontend pueda acceder a total_usage y plan_limit
+            return response;
         } catch (error) {
             console.error('❌ Error fetching API keys:', error);
-            return [];
+            return { api_keys: [], total_usage: 0, plan_limit: 0 };
         }
     }
 
@@ -182,9 +181,22 @@ class BackendServiceDev {
     async getBilling(): Promise<BillingInfo> {
         try {
             console.log('💳 Fetching billing info...');
-            const response = await this.makeRequest<{ billing: BillingInfo; success: boolean }>('/v1/billing-dev');
-            console.log('💳 Billing info response:', response);
-            return response.billing;
+            
+            // Llamar al API route del frontend en lugar del backend directamente
+            const response = await fetch('/api/v1/billing', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error(`API returned ${response.status}`);
+            }
+
+            const data = await response.json();
+            console.log('💳 Billing info response:', data);
+            return data.billing;
         } catch (error) {
             console.error('❌ Error fetching billing info:', error);
             // Retornar datos por defecto en caso de error

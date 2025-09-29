@@ -86,7 +86,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             console.log('👤 User data received:', data);
             
             if (data.success && data.user) {
-                return data.user;
+                // Limpiar " - Test" del nombre antes de devolver
+                const cleanUser = {
+                    ...data.user,
+                    name: data.user.name?.replace(/ - Test$/i, '') || data.user.name
+                };
+                return cleanUser;
             }
             
             return null;
