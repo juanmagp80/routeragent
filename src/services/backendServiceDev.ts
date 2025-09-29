@@ -3,12 +3,7 @@
  * TODO: Remover este archivo cuando la autenticación esté funcionando
  */
 
-// Detectar entorno automáticamente
-const BACKEND_URL = process.env.NODE_ENV === 'production' || typeof window !== 'undefined' && window.location.hostname !== 'localhost'
-    ? 'https://routeragent.onrender.com'  // Producción
-    : 'http://localhost:3003';             // Desarrollo local
-
-console.log(`🔧 Backend service configured for: ${BACKEND_URL}`);
+import { BACKEND_URL } from '@/config/backend';
 
 export interface ApiKeyData {
     id: string;
