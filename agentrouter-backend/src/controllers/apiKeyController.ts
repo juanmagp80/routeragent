@@ -451,7 +451,7 @@ export const getBillingDev = async (req: Request, res: Response) => {
         const { data: users, error: userError } = await supabase
             .from('users')
             .select('id, email, plan, subscription_status, subscription_current_period_end')
-            .eq('email', 'juangpdev@gmail.com')
+            .eq('email', 'juanmagp26@gmail.com')
             .single();
 
         if (userError || !users) {
