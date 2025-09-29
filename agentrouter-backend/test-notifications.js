@@ -8,20 +8,20 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey);
 async function testNotificationsTable() {
     try {
         console.log('🔍 Verificando tabla notifications...');
-        
+
         // 1. Verificar si la tabla existe
         const { data: existing, error: selectError } = await supabase
             .from('notifications')
             .select('*')
             .limit(1);
-            
+
         if (selectError) {
             console.log('❌ La tabla aún no existe:', selectError.message);
             return;
         }
-        
+
         console.log('✅ Tabla existe. Datos actuales:', existing?.length || 0, 'registros');
-        
+
         // 2. Insertar notificación de prueba
         const { data: inserted, error: insertError } = await supabase
             .from('notifications')
@@ -35,14 +35,14 @@ async function testNotificationsTable() {
                 }
             ])
             .select();
-            
+
         if (insertError) {
             console.log('❌ Error al insertar:', insertError.message);
             return;
         }
-        
+
         console.log('✅ Notificación de prueba creada:', inserted);
-        
+
         // 3. Verificar que se puede leer
         const { data: testRead, error: readError } = await supabase
             .from('notifications')
@@ -50,14 +50,14 @@ async function testNotificationsTable() {
             .eq('type', 'test')
             .order('created_at', { ascending: false })
             .limit(1);
-            
+
         if (readError) {
             console.log('❌ Error al leer:', readError.message);
             return;
         }
-        
+
         console.log('✅ Notificación leída correctamente:', testRead[0]);
-        
+
         // 4. Probar marcar como leída
         if (testRead[0]) {
             const { data: updated, error: updateError } = await supabase
@@ -65,18 +65,18 @@ async function testNotificationsTable() {
                 .update({ is_read: true })
                 .eq('id', testRead[0].id)
                 .select();
-                
+
             if (updateError) {
                 console.log('❌ Error al actualizar:', updateError.message);
                 return;
             }
-            
+
             console.log('✅ Notificación marcada como leída:', updated[0]);
         }
-        
+
         console.log('\n🎉 ¡ÉXITO! La tabla notifications funciona correctamente');
         console.log('🚀 Ahora puedes probar el sistema completo de notificaciones');
-        
+
     } catch (err) {
         console.error('❌ Error general:', err.message);
     }

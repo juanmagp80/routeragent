@@ -1,6 +1,6 @@
+import { BACKEND_URL } from '@/config/backend';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { BACKEND_URL } from '@/config/backend';
 
 interface User {
     id: string;
@@ -45,11 +45,11 @@ export function useAuth() {
                 },
             });
             console.log('📡 Response status:', response.status);
-            
+
             if (response.ok) {
                 const data = await response.json();
                 console.log('📝 User data received:', data);
-                
+
                 if (data.success && data.user) {
                     const userData = {
                         id: data.user.id,

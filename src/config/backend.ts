@@ -6,7 +6,7 @@
 const FORCE_PRODUCTION = false;
 
 // Detectar entorno automáticamente - versión mejorada
-const isProduction = FORCE_PRODUCTION || 
+const isProduction = FORCE_PRODUCTION ||
     process.env.NODE_ENV === 'production' ||  // Variable de entorno de Next.js
     process.env.VERCEL_ENV === 'production' || // En Vercel
     (typeof window !== 'undefined' && (

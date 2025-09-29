@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from 'express';
+import { supabase } from '../config/database';
 import { ApiKey } from '../models/ApiKey';
 import { ApiKeyService } from '../services/apiKeyService';
-import { supabase } from '../config/database';
 
 // Extender el tipo Request para incluir apiKey
 declare global {
@@ -61,7 +61,7 @@ export const authenticateApiKey = async (req: Request, res: Response, next: Next
             } else {
                 // Calcular uso total del usuario
                 const totalUsage = userKeys.reduce((total, key) => total + (key.usage_count || 0), 0);
-                
+
                 // Límites por plan
                 const planLimits = {
                     free: 100,
@@ -71,7 +71,7 @@ export const authenticateApiKey = async (req: Request, res: Response, next: Next
                 };
 
                 const planLimit = planLimits[validApiKey.plan as keyof typeof planLimits];
-                
+
                 if (planLimit !== -1 && totalUsage >= planLimit) {
                     return res.status(429).json({
                         error: `Usage limit exceeded. Current plan (${validApiKey.plan}) allows ${planLimit} requests total across all API keys. Current usage: ${totalUsage}/${planLimit}`,
@@ -133,11 +133,11 @@ export const requirePlan = (requiredPlan: 'free' | 'starter' | 'pro' | 'enterpri
             });
         }
 
-        const planHierarchy: Record<'free' | 'starter' | 'pro' | 'enterprise', number> = { 
-            free: 0, 
-            starter: 1, 
-            pro: 2, 
-            enterprise: 3 
+        const planHierarchy: Record<'free' | 'starter' | 'pro' | 'enterprise', number> = {
+            free: 0,
+            starter: 1,
+            pro: 2,
+            enterprise: 3
         };
         const userPlanLevel = planHierarchy[req.apiKey.plan];
         const requiredPlanLevel = planHierarchy[requiredPlan];

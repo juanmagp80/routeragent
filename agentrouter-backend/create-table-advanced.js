@@ -7,7 +7,7 @@ const supabaseServiceKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXB
 async function createTableWithRest() {
     try {
         console.log('🌐 Intentando crear tabla usando REST API...');
-        
+
         const response = await fetch('https://jmfegokyvaflwegtyaun.supabase.co/rest/v1/rpc/exec_sql', {
             method: 'POST',
             headers: {
@@ -31,18 +31,18 @@ async function createTableWithRest() {
                 `
             })
         });
-        
+
         if (response.ok) {
             console.log('✅ Tabla creada exitosamente');
         } else {
             const error = await response.text();
             console.log('❌ Error con REST:', error);
-            
+
             // Alternativa: crear registros directamente para "forzar" la tabla
             console.log('🔄 Intentando método alternativo...');
             await createTableAlternative();
         }
-        
+
     } catch (err) {
         console.error('❌ Error:', err.message);
         await createTableAlternative();
@@ -51,9 +51,9 @@ async function createTableWithRest() {
 
 async function createTableAlternative() {
     console.log('📊 Creando tabla mediante inserción directa...');
-    
+
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
-    
+
     try {
         // Intentar insertar un registro de prueba para crear la tabla automáticamente
         const { data, error } = await supabase
@@ -68,7 +68,7 @@ async function createTableAlternative() {
                 }
             ])
             .select();
-            
+
         if (error) {
             console.log('❌ Error al insertar:', error.message);
             console.log('💡 Por favor, ejecuta manualmente este SQL en el Dashboard de Supabase:');
@@ -95,7 +95,7 @@ ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
         } else {
             console.log('✅ Tabla creada e inicializada:', data);
         }
-        
+
     } catch (err) {
         console.error('❌ Error en método alternativo:', err.message);
     }

@@ -26,7 +26,7 @@ export class WebhookController {
    */
   public handleStripeWebhook = async (req: Request, res: Response): Promise<void> => {
     const sig = req.headers['stripe-signature'] as string;
-    
+
     console.log('🚀 WEBHOOK: Starting Stripe webhook processing...');
     console.log('🚀 WEBHOOK: Headers received:', req.headers);
     console.log('🚀 WEBHOOK: Body type:', typeof req.body);
@@ -102,7 +102,7 @@ export class WebhookController {
 
     const customerId = session.customer as string;
     const subscriptionId = session.subscription as string;
-    
+
     // Obtener plan desde los metadatos de la sesión
     const planId = session.metadata?.plan_id;
     const userId = session.metadata?.user_id;
@@ -139,7 +139,7 @@ export class WebhookController {
       const plan = this.getPlanFromPriceId(priceId);
 
       console.log(`📋 CHECKOUT: Plan from subscription: ${plan} (priceId: ${priceId})`);
-      
+
       await this.updateTestUserPlan(plan, {
         customerId,
         subscriptionId,
@@ -150,7 +150,7 @@ export class WebhookController {
       console.error('❌ CHECKOUT: No plan_id in metadata and no subscription_id found');
       throw new Error('Cannot determine plan from checkout session');
     }
-    
+
     console.log('✅ CHECKOUT: Checkout completion process finished successfully');
   }
 
@@ -355,9 +355,9 @@ export class WebhookController {
     }
   }
 
-    /**
-   * Actualizar plan del usuario de prueba (fallback para testing)
-   */
+  /**
+ * Actualizar plan del usuario de prueba (fallback para testing)
+ */
   private async updateTestUserPlan(plan: string, billingInfo: any): Promise<void> {
     try {
       console.log(`📝 Actualizando usuario de desarrollo al plan ${plan} en Supabase`);
@@ -368,7 +368,7 @@ export class WebhookController {
         .from('users')
         .update({
           plan: plan,
-          
+
           subscription_id: billingInfo.subscriptionId,
           subscription_status: billingInfo.status,
           updated_at: new Date().toISOString()
@@ -378,14 +378,14 @@ export class WebhookController {
 
       if (error) {
         console.error('❌ Error actualizando usuario de desarrollo en Supabase:', error);
-        
+
         // Fallback: buscar por cualquier usuario activo si no encuentra el específico
         console.log('🔄 Intentando fallback: actualizar primer usuario activo...');
         const { data: fallbackData, error: fallbackError } = await supabase
           .from('users')
           .update({
             plan: plan,
-            
+
             subscription_id: billingInfo.subscriptionId,
             subscription_status: billingInfo.status,
             updated_at: new Date().toISOString()
@@ -398,7 +398,7 @@ export class WebhookController {
           console.error('❌ Error en fallback:', fallbackError);
           throw fallbackError;
         }
-        
+
         console.log('✅ Usuario actualizado via fallback:', fallbackData);
         return;
       }
@@ -409,7 +409,7 @@ export class WebhookController {
       if (data && data[0]) {
         const user = data[0];
         console.log('📧 Enviando notificación de pago exitoso...');
-        
+
         await notificationService.send({
           userId: user.id,
           type: 'payment_success',
@@ -440,7 +440,7 @@ export class WebhookController {
         .from('users')
         .update({
           plan: plan,
-          
+
           subscription_id: billingInfo.subscriptionId,
           subscription_status: billingInfo.status,
           updated_at: new Date().toISOString()
@@ -459,7 +459,7 @@ export class WebhookController {
       // 🔔 Enviar notificación de cambio de plan
       if (data && data.id) {
         console.log('📧 Enviando notificación de cambio de plan...');
-        
+
         await notificationService.send({
           userId: data.id,
           type: 'plan_change',
@@ -507,7 +507,7 @@ export class WebhookController {
           .from('users')
           .update({
             plan: plan,
-            
+
             subscription_id: billingInfo.subscriptionId,
             subscription_status: billingInfo.status,
             updated_at: new Date().toISOString()

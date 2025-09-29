@@ -1,5 +1,5 @@
-import { Request, Response } from 'express';
 import { createClient } from '@supabase/supabase-js';
+import { Request, Response } from 'express';
 import { ApiKeyService } from '../services/apiKeyService';
 import { notificationService } from '../services/notificationService';
 import { AuthenticatedRequest } from '../types/request';
@@ -520,11 +520,11 @@ export const getMetricsDev = async (req: Request, res: Response) => {
 
         if (!usageError && usageData) {
             totalRequests = usageData.length;
-            
+
             usageData.forEach(record => {
                 const cost = parseFloat(record.cost) || 0;
                 totalCost += cost;
-                
+
                 const model = record.model_used || 'unknown';
                 if (!modelStats[model]) {
                     modelStats[model] = { count: 0, sum: 0 };
@@ -581,7 +581,7 @@ export const getBillingDev = async (req: Request, res: Response) => {
         const currentPlan = 'pro';
         const subscriptionStatus = 'active';
         const nextBillingDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
-        
+
         console.log(`✅ Using development plan: ${currentPlan}, status: ${subscriptionStatus}`);
 
         // Obtener información de API keys activas para el usuario
@@ -625,7 +625,7 @@ export const getBillingDev = async (req: Request, res: Response) => {
             starter: { requests: 1000, price: 29 },
             pro: { requests: 5000, price: 49 },
             enterprise: { requests: -1, price: 299 }
-        };        const currentPlanInfo = planLimits[currentPlan as keyof typeof planLimits] || planLimits.free;
+        }; const currentPlanInfo = planLimits[currentPlan as keyof typeof planLimits] || planLimits.free;
         const usagePercentage = currentPlanInfo.requests === -1 ? 0 : Math.round((totalRequests / currentPlanInfo.requests) * 100);
 
         const billingInfo = {
@@ -680,7 +680,7 @@ export const getBillingDev = async (req: Request, res: Response) => {
 export const createCheckoutSessionDev = async (req: Request, res: Response) => {
     try {
         console.log('💳 Creating Stripe checkout session for development...');
-        
+
         const { plan_id, success_url, cancel_url } = req.body;
 
         // Validar entrada
@@ -699,7 +699,7 @@ export const createCheckoutSessionDev = async (req: Request, res: Response) => {
         };
 
         const priceId = stripePrices[plan_id as keyof typeof stripePrices];
-        
+
         if (!priceId) {
             return res.status(400).json({
                 error: 'Invalid plan_id',
@@ -720,7 +720,7 @@ export const createCheckoutSessionDev = async (req: Request, res: Response) => {
         };
 
         console.log('✅ Mock Stripe checkout session created successfully');
-        
+
         res.json({
             checkout_session: mockCheckoutSession,
             success: true
@@ -889,9 +889,9 @@ export const updateUserNotificationsDev = async (req: Request, res: Response) =>
 export const validateSlackWebhook = async (req: Request, res: Response) => {
     try {
         console.log('⚠️ Slack webhook validation disabled');
-        
-        res.json({ 
-            success: false, 
+
+        res.json({
+            success: false,
             valid: false,
             message: 'Las notificaciones de Slack están temporalmente deshabilitadas',
             disabled: true
@@ -907,9 +907,9 @@ export const validateSlackWebhook = async (req: Request, res: Response) => {
 export const validateDiscordWebhook = async (req: Request, res: Response) => {
     try {
         console.log('⚠️ Discord webhook validation disabled');
-        
-        res.json({ 
-            success: false, 
+
+        res.json({
+            success: false,
             valid: false,
             message: 'Las notificaciones de Discord están temporalmente deshabilitadas',
             disabled: true
@@ -925,7 +925,7 @@ export const validateDiscordWebhook = async (req: Request, res: Response) => {
 export const testNotificationApiKeyCreated = async (req: Request, res: Response) => {
     try {
         console.log('🧪 Testing API Key Created notification...');
-        
+
         await notificationService.send({
             userId: '3a942f65-25e7-4de3-84cb-3df0268ff759',
             type: 'api_key_created',
@@ -951,7 +951,7 @@ export const testNotificationUsageAlert = async (req: Request, res: Response) =>
     try {
         const { percentage = 80 } = req.body;
         console.log(`🧪 Testing Usage Alert notification at ${percentage}%...`);
-        
+
         await notificationService.send({
             userId: '3a942f65-25e7-4de3-84cb-3df0268ff759',
             type: 'usage_alert',
@@ -978,7 +978,7 @@ export const testNotificationUsageAlert = async (req: Request, res: Response) =>
 export const testNotificationWelcome = async (req: Request, res: Response) => {
     try {
         console.log('🧪 Testing Welcome notification...');
-        
+
         await notificationService.send({
             userId: '3a942f65-25e7-4de3-84cb-3df0268ff759',
             type: 'welcome',
@@ -999,7 +999,7 @@ export const testNotificationWelcome = async (req: Request, res: Response) => {
 export const testNotificationPaymentSuccess = async (req: Request, res: Response) => {
     try {
         console.log('🧪 Testing Payment Success notification...');
-        
+
         await notificationService.send({
             userId: '3a942f65-25e7-4de3-84cb-3df0268ff759',
             type: 'payment_success',
@@ -1025,9 +1025,9 @@ export const getNotifications = async (req: Request, res: Response) => {
     try {
         const userId = '3a942f65-25e7-4de3-84cb-3df0268ff759'; // ID fijo para desarrollo
         const { page = 1, limit = 20 } = req.query;
-        
+
         const offset = (Number(page) - 1) * Number(limit);
-        
+
         console.log(`📱 Getting notifications for user ${userId}...`);
         console.log(`📊 Supabase URL: ${supabaseUrl ? 'SET' : 'NOT SET'}`);
         console.log(`🔑 Supabase Key: ${supabaseServiceKey ? 'SET' : 'NOT SET'}`);
@@ -1041,10 +1041,10 @@ export const getNotifications = async (req: Request, res: Response) => {
 
         if (error) {
             console.error('❌ Supabase error:', error);
-            return res.status(500).json({ 
-                error: 'Failed to fetch notifications', 
+            return res.status(500).json({
+                error: 'Failed to fetch notifications',
                 success: false,
-                details: error.message 
+                details: error.message
             });
         }
 
@@ -1074,8 +1074,8 @@ export const getNotifications = async (req: Request, res: Response) => {
 
     } catch (error) {
         console.error('❌ Error fetching notifications:', error);
-        res.status(500).json({ 
-            error: 'Internal server error', 
+        res.status(500).json({
+            error: 'Internal server error',
             success: false,
             details: error instanceof Error ? error.message : 'Unknown error'
         });

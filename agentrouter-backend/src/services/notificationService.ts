@@ -1,5 +1,5 @@
-import { Resend } from 'resend';
 import { createClient } from '@supabase/supabase-js';
+import { Resend } from 'resend';
 
 const supabaseUrl = process.env.SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -30,7 +30,7 @@ class NotificationService {
         if (!apiKey) {
             throw new Error('RESEND_API_KEY is required. Please check your environment variables.');
         }
-        
+
         // Configurar Resend con API key
         this.resend = new Resend(apiKey);
         console.log('✅ NotificationService initialized with Resend');
@@ -88,7 +88,7 @@ class NotificationService {
         try {
             console.log(`📧 Attempting to send email to: ${to}`);
             console.log(`📋 Template: ${template.subject}`);
-            
+
             const { data, error } = await this.resend.emails.send({
                 from: 'AgentRouter <onboarding@resend.dev>',  // Usar dominio por defecto de Resend
                 to: [to],
@@ -331,34 +331,34 @@ class NotificationService {
                                     <div style="background: ${data.percentage >= 100 ? '#dc2626' : data.percentage >= 95 ? '#ea580c' : '#f59e0b'}; height: 10px; width: ${Math.min(data.percentage || 80, 100)}%; transition: all 0.3s ease;"></div>
                                 </div>
                             </div>
-                            ${data.percentage >= 100 
-                                ? `<div style="background: #fef2f2; border: 1px solid #dc2626; padding: 15px; border-radius: 6px; margin: 20px 0;">
+                            ${data.percentage >= 100
+                        ? `<div style="background: #fef2f2; border: 1px solid #dc2626; padding: 15px; border-radius: 6px; margin: 20px 0;">
                                     <p style="margin: 0; color: #dc2626;">
                                         <strong>🚫 Límite alcanzado:</strong> Tu API key ha sido temporalmente desactivada. Considera actualizar tu plan para continuar usando AgentRouter.
                                     </p>
                                    </div>`
-                                : data.percentage >= 95
-                                ? `<div style="background: #fef3c7; border: 1px solid #f59e0b; padding: 15px; border-radius: 6px; margin: 20px 0;">
+                        : data.percentage >= 95
+                            ? `<div style="background: #fef3c7; border: 1px solid #f59e0b; padding: 15px; border-radius: 6px; margin: 20px 0;">
                                     <p style="margin: 0; color: #92400e;">
                                         <strong>⚠️ Límite casi alcanzado:</strong> Te quedan muy pocas requests. Considera actualizar tu plan pronto.
                                     </p>
                                    </div>`
-                                : `<div style="background: #fffbeb; border: 1px solid #f59e0b; padding: 15px; border-radius: 6px; margin: 20px 0;">
+                            : `<div style="background: #fffbeb; border: 1px solid #f59e0b; padding: 15px; border-radius: 6px; margin: 20px 0;">
                                     <p style="margin: 0; color: #92400e;">
                                         <strong>💡 Recomendación:</strong> Has usado el 80% de tu límite. Considera monitorear tu uso o actualizar tu plan.
                                     </p>
                                    </div>`
-                            }
+                    }
                             <div style="text-align: center; margin-top: 30px;">
                                 <a href="https://routeragent.onrender.com/admin/keys" style="background: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">
                                     Ver API Keys
                                 </a>
-                                ${data.percentage >= 80 
-                                    ? `<a href="https://routeragent.onrender.com/admin/billing" style="background: #10b981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; margin-left: 10px;">
+                                ${data.percentage >= 80
+                        ? `<a href="https://routeragent.onrender.com/admin/billing" style="background: #10b981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; margin-left: 10px;">
                                         Actualizar Plan
                                        </a>`
-                                    : ''
-                                }
+                        : ''
+                    }
                             </div>
                         </div>
                         <div style="background: #6b7280; color: white; padding: 20px; text-align: center; font-size: 12px;">

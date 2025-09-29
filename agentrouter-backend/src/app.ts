@@ -1,10 +1,10 @@
+import { createClient } from '@supabase/supabase-js';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import express, { Application, NextFunction, Request, Response } from 'express';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import Stripe from 'stripe';
-import { createClient } from '@supabase/supabase-js';
 
 // Cargar variables de entorno
 dotenv.config({ path: '.env.local' });
@@ -40,28 +40,28 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey);
 // Importar controladores
 import {
     createApiKey,
+    createApiKeyDev,
     deactivateApiKey,
     deleteApiKey,
-    getApiKeyStats,
-    listApiKeys,
-    validateApiKey,
-    listApiKeysDev,
-    createApiKeyDev,
     deleteApiKeyDev,
-    getMetricsDev,
+    getApiKeyStats,
     getBillingDev,
     getCurrentUserDev,
-    updateCurrentUserDev,
-    updateUserNotificationsDev,
-    validateSlackWebhook,
-    validateDiscordWebhook,
+    getMetricsDev,
+    getNotifications,
+    listApiKeys,
+    listApiKeysDev,
+    markAllNotificationsAsRead,
+    markNotificationAsRead,
     testNotificationApiKeyCreated,
+    testNotificationPaymentSuccess,
     testNotificationUsageAlert,
     testNotificationWelcome,
-    testNotificationPaymentSuccess,
-    getNotifications,
-    markNotificationAsRead,
-    markAllNotificationsAsRead
+    updateCurrentUserDev,
+    updateUserNotificationsDev,
+    validateApiKey,
+    validateDiscordWebhook,
+    validateSlackWebhook
 } from './controllers/apiKeyController';
 import {
     getCurrentUser,
@@ -176,7 +176,7 @@ app.get('/test-supabase', async (req: Request, res: Response) => {
         console.log('🔍 Testing Supabase connection...');
         console.log('📍 URL:', supabaseUrl);
         console.log('🔑 Service Key available:', !!supabaseServiceKey);
-        
+
         const { data, error } = await supabase
             .from('users')
             .select('id, email, plan')
@@ -184,21 +184,21 @@ app.get('/test-supabase', async (req: Request, res: Response) => {
 
         if (error) {
             console.error('❌ Supabase error:', error);
-            return res.status(500).json({ 
+            return res.status(500).json({
                 error: 'Supabase connection failed',
                 details: error
             });
         }
 
         console.log('✅ Supabase connection successful');
-        res.json({ 
+        res.json({
             success: true,
             message: 'Supabase connected',
-            sampleData: data 
+            sampleData: data
         });
     } catch (err) {
         console.error('❌ Connection error:', err);
-        res.status(500).json({ 
+        res.status(500).json({
             error: 'Connection failed',
             details: err instanceof Error ? err.message : 'Unknown error'
         });
@@ -269,7 +269,7 @@ app.post('/v1/checkout-session-dev', async (req, res) => {
         console.log('💳 Creating Stripe checkout session...');
         console.log('Request body:', req.body);
         console.log('Stripe key exists:', !!process.env.STRIPE_SECRET_KEY);
-        
+
         const { plan_id, success_url, cancel_url } = req.body;
 
         if (!plan_id || !success_url || !cancel_url) {
@@ -317,7 +317,7 @@ app.post('/v1/checkout-session-dev', async (req, res) => {
         };
 
         const price = priceData[plan_id as keyof typeof priceData];
-        
+
         if (!price) {
             return res.status(400).json({
                 error: 'Invalid plan_id',
@@ -346,7 +346,7 @@ app.post('/v1/checkout-session-dev', async (req, res) => {
         });
 
         console.log('✅ Real Stripe checkout session created:', session.id);
-        
+
         res.json({
             checkout_session: {
                 id: session.id,
@@ -367,10 +367,10 @@ app.post('/v1/checkout-session-dev', async (req, res) => {
             message: error instanceof Error ? error.message : 'Unknown error',
             stack: error instanceof Error ? error.stack : 'No stack trace'
         });
-        res.status(500).json({ 
-            error: 'Internal server error', 
+        res.status(500).json({
+            error: 'Internal server error',
             details: error instanceof Error ? error.message : 'Unknown error',
-            success: false 
+            success: false
         });
     }
 });
@@ -385,18 +385,18 @@ app.post('/webhook/stripe', webhookController.handleStripeWebhook);
 app.post('/webhook/stripe-dev', async (req, res) => {
     try {
         console.log('🧪 Webhook de desarrollo recibido:', req.body.type);
-        
+
         // Simular evento de Stripe
         const event = req.body;
-        
+
         // Procesar checkout completado
         if (event.type === 'checkout.session.completed') {
             const session = event.data.object;
             const planId = session.metadata?.plan_id;
-            
+
             if (planId) {
                 console.log(`🎉 Simulando actualización de plan a: ${planId}`);
-                
+
                 // Actualizar directamente en Supabase
                 const { data, error } = await supabase
                     .from('users')
@@ -409,13 +409,13 @@ app.post('/webhook/stripe-dev', async (req, res) => {
                     })
                     .eq('email', 'juangpdev@gmail.com')
                     .select();
-                
+
                 if (error) {
                     console.error('❌ Error actualizando usuario:', error);
                     res.status(500).json({ error: 'Error actualizando usuario' });
                     return;
                 }
-                
+
                 console.log('✅ Usuario actualizado exitosamente:', data);
                 res.json({ success: true, updated_user: data });
             } else {

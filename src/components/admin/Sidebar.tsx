@@ -1,5 +1,6 @@
 "use client";
 
+import { useAuth } from "@/contexts/AuthContext";
 import {
     BarChart3,
     Bell,
@@ -8,13 +9,12 @@ import {
     Key,
     LayoutDashboard,
     LogOut,
+    Play,
     Settings,
     User,
-    Users,
-    Play
+    Users
 } from "lucide-react";
 import Link from "next/link";
-import { useAuth } from "@/contexts/AuthContext";
 import { usePathname, useRouter } from "next/navigation";
 
 const navigation = [
@@ -39,13 +39,13 @@ export default function Sidebar() {
         if (typeof window !== 'undefined') {
             localStorage.clear();
             sessionStorage.clear();
-            
+
             // También limpiar cookies de Supabase si existen
-            document.cookie.split(";").forEach(function(c) { 
-                document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
+            document.cookie.split(";").forEach(function (c) {
+                document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
             });
         }
-        
+
         // Redirigir al login
         router.push('/login');
     };
@@ -69,8 +69,8 @@ export default function Sidebar() {
                                     key={item.name}
                                     href={item.href}
                                     className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md ${isActive
-                                            ? "bg-emerald-100 text-emerald-900"
-                                            : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                                        ? "bg-emerald-100 text-emerald-900"
+                                        : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                                         }`}
                                 >
                                     <Icon
@@ -101,7 +101,7 @@ export default function Sidebar() {
                                     </p>
                                 </div>
                             </div>
-                            
+
                             {/* Logout button */}
                             <button
                                 onClick={handleLogout}

@@ -1,8 +1,8 @@
 "use client";
 
+import { BACKEND_URL } from '@/config/backend';
 import { useRouter } from 'next/navigation';
 import { createContext, ReactNode, useContext, useEffect, useState } from 'react';
-import { BACKEND_URL } from '@/config/backend';
 
 // Interfaz simplificada para el usuario
 export interface User {
@@ -45,7 +45,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                     try {
                         const userData = JSON.parse(savedUser);
                         setUser(userData);
-                        
+
                         // Actualizar con datos reales del backend
                         const realUserData = await fetchUserData();
                         if (realUserData) {
@@ -68,7 +68,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 }
             }
         };
-        
+
         initializeUser();
     }, []);
 
@@ -77,14 +77,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         try {
             console.log('👤 Fetching real user data from user endpoint...');
             const response = await fetch(`${BACKEND_URL}/v1/user-dev`);
-            
+
             if (!response.ok) {
                 throw new Error(`Failed to fetch user data: ${response.status}`);
             }
-            
+
             const data = await response.json();
             console.log('👤 User data received:', data);
-            
+
             if (data.success && data.user) {
                 // Limpiar " - Test" del nombre antes de devolver
                 const cleanUser = {
@@ -93,7 +93,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 };
                 return cleanUser;
             }
-            
+
             return null;
         } catch (error) {
             console.error('❌ Error fetching user data:', error);
@@ -105,10 +105,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         try {
             setLoading(true);
             setAuthError(null);
-            
+
             // Obtener datos reales del usuario desde el backend
             const realUserData = await fetchUserData();
-            
+
             const mockUser: User = realUserData || {
                 id: '1',
                 name: 'Usuario Demo',
@@ -120,10 +120,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 email_verified: true,
                 created_at: new Date().toISOString()
             };
-            
+
             setUser(mockUser);
             localStorage.setItem('agentrouter_user', JSON.stringify(mockUser));
-            
+
             // Redirigir al admin
             router.push('/admin');
         } catch (error: any) {
@@ -138,7 +138,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         try {
             setLoading(true);
             setAuthError(null);
-            
+
             // Simulación de registro exitoso
             const mockUser: User = {
                 id: '1',
@@ -150,10 +150,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 email_verified: true,
                 created_at: new Date().toISOString()
             };
-            
+
             setUser(mockUser);
             localStorage.setItem('agentrouter_user', JSON.stringify(mockUser));
-            
+
             // Redirigir al admin
             router.push('/admin');
         } catch (error: any) {

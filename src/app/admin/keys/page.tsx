@@ -1,16 +1,16 @@
 "use client";
 
+import { useAuth } from "@/contexts/AuthContext";
+import { ApiKeyData, backendServiceDev, CreateApiKeyRequest } from "@/services/backendServiceDev";
 import {
+    Activity,
     BarChart3,
+    CheckCircle,
     Copy,
     Plus,
-    Trash2,
-    CheckCircle,
-    Activity
+    Trash2
 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { backendServiceDev, ApiKeyData, CreateApiKeyRequest } from "@/services/backendServiceDev";
-import { useAuth } from "@/contexts/AuthContext";
 
 interface CreatedApiKey {
     id: string;
@@ -58,7 +58,7 @@ export default function ApiKeysPage() {
             console.log('🔑 API Keys Response:', response);
             console.log('🔑 API Keys Array:', response.api_keys);
             console.log('🔑 Total Usage:', response.total_usage);
-            
+
             if (response.api_keys) {
                 setKeys(response.api_keys);
                 setTotalUsage(response.total_usage || 0);
@@ -89,11 +89,11 @@ export default function ApiKeysPage() {
             };
             const response = await backendServiceDev.createApiKey(keyData);
             console.log('🆕 Created API Key:', response);
-            
+
             // Guardar la clave recién creada para mostrarla
             // La respuesta debería ser directamente el ApiKeyData con full_key
             setNewlyCreatedKey(response as any);
-            
+
             await fetchKeys();
             setNewKey({ name: "" });
             setShowCreateForm(false);
@@ -175,7 +175,7 @@ export default function ApiKeysPage() {
                             <p className="text-green-700 mb-4">
                                 Guarda esta clave en un lugar seguro. <strong>No podrás verla nuevamente</strong> por motivos de seguridad.
                             </p>
-                            
+
                             <div className="bg-white rounded-lg p-4 border border-green-200">
                                 <div className="flex items-center justify-between">
                                     <div className="flex-1">
@@ -192,7 +192,7 @@ export default function ApiKeysPage() {
                                     </button>
                                 </div>
                             </div>
-                            
+
                             <div className="mt-4 flex space-x-3">
                                 <button
                                     onClick={() => copyToClipboard(newlyCreatedKey.full_key, 'new-key')}
@@ -246,11 +246,10 @@ export default function ApiKeysPage() {
                             <button
                                 onClick={handleCreateKey}
                                 disabled={!newKey.name.trim()}
-                                className={`w-full inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 ${
-                                    newKey.name.trim()
+                                className={`w-full inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 ${newKey.name.trim()
                                         ? 'bg-emerald-600 hover:bg-emerald-700'
                                         : 'bg-gray-400 cursor-not-allowed'
-                                }`}
+                                    }`}
                             >
                                 Crear Clave
                             </button>
@@ -285,16 +284,15 @@ export default function ApiKeysPage() {
                                         <div className="flex-1">
                                             <div className="flex items-center space-x-3">
                                                 <h4 className="text-lg font-medium text-gray-900">{key.name}</h4>
-                                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                                    key.is_active 
-                                                        ? 'bg-green-100 text-green-800' 
+                                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${key.is_active
+                                                        ? 'bg-green-100 text-green-800'
                                                         : 'bg-red-100 text-red-800'
-                                                }`}>
+                                                    }`}>
                                                     <Activity className="mr-1 h-3 w-3" />
                                                     {key.is_active ? 'Activa' : 'Inactiva'}
                                                 </span>
                                             </div>
-                                            
+
                                             <div className="mt-2 grid grid-cols-1 gap-4 sm:grid-cols-3">
                                                 <div>
                                                     <div className="text-sm text-gray-500">Prefijo</div>
@@ -316,7 +314,7 @@ export default function ApiKeysPage() {
                                                 </div>
                                             </div>
                                         </div>
-                                        
+
                                         <div className="flex items-center space-x-2">
                                             <button
                                                 onClick={() => handleDeleteKey(key.id)}

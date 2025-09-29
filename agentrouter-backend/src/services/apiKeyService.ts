@@ -123,7 +123,7 @@ export class ApiKeyService {
             // 📧 Enviar notificaciones según umbrales de uso
             if (usageLimit > 0 && apiKeyData?.user_id) {
                 const usagePercentage = (newUsageCount / usageLimit) * 100;
-                
+
                 // Notificación al 80% del límite
                 if (newUsageCount === Math.floor(usageLimit * 0.8)) {
                     try {

@@ -8,7 +8,7 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey);
 async function checkUserPlan() {
     try {
         console.log('🔍 Verificando usuario en la tabla users...');
-        
+
         // Buscar usuario por email
         const { data: users, error: userError } = await supabase
             .from('users')
@@ -23,7 +23,7 @@ async function checkUserPlan() {
         if (!users || users.length === 0) {
             console.log('❌ Usuario no encontrado en la tabla users');
             console.log('🔧 Creando usuario con plan Pro...');
-            
+
             // Crear usuario con plan Pro
             const { data: newUser, error: createError } = await supabase
                 .from('users')
@@ -39,20 +39,20 @@ async function checkUserPlan() {
                     }
                 ])
                 .select();
-                
+
             if (createError) {
                 console.error('❌ Error creando usuario:', createError);
                 return;
             }
-            
+
             console.log('✅ Usuario creado:', newUser);
         } else {
             console.log('✅ Usuario encontrado:', users[0]);
-            
+
             // Si el usuario existe pero no tiene plan Pro, actualizarlo
             if (users[0].plan !== 'pro') {
                 console.log('🔧 Actualizando plan a Pro...');
-                
+
                 const { data: updatedUser, error: updateError } = await supabase
                     .from('users')
                     .update({
@@ -62,18 +62,18 @@ async function checkUserPlan() {
                     })
                     .eq('email', 'juanmagp26@gmail.com')
                     .select();
-                    
+
                 if (updateError) {
                     console.error('❌ Error actualizando usuario:', updateError);
                     return;
                 }
-                
+
                 console.log('✅ Usuario actualizado:', updatedUser);
             } else {
                 console.log('✅ El usuario ya tiene plan Pro');
             }
         }
-        
+
     } catch (err) {
         console.error('❌ Error general:', err.message);
     }

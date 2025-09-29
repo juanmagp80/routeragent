@@ -1,8 +1,8 @@
 "use client";
 
 import { useAuth } from "@/hooks/useAuth";
-import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 interface Notification {
     id: string;
@@ -27,11 +27,11 @@ export default function NotificationsPage() {
             setLoading(true);
             setError(null);
             const response = await fetch('/api/v1/notifications');
-            
+
             if (!response.ok) {
                 throw new Error('Error al cargar notificaciones');
             }
-            
+
             const data = await response.json();
             setNotifications(data.notifications || []);
             setUnreadCount(data.unreadCount || 0);
@@ -51,11 +51,11 @@ export default function NotificationsPage() {
                 const response = await fetch(`/api/v1/notifications/${notification.id}/read`, {
                     method: 'PUT'
                 });
-                
+
                 if (response.ok) {
-                    setNotifications(prev => 
-                        prev.map(notif => 
-                            notif.id === notification.id 
+                    setNotifications(prev =>
+                        prev.map(notif =>
+                            notif.id === notification.id
                                 ? { ...notif, is_read: true }
                                 : notif
                         )
@@ -69,7 +69,7 @@ export default function NotificationsPage() {
 
         // Navegar según el tipo de notificación
         const actionUrl = notification.data?.action_url;
-        
+
         switch (notification.type) {
             case 'api_key_created':
                 router.push(actionUrl || '/admin/keys');
@@ -106,9 +106,9 @@ export default function NotificationsPage() {
             const response = await fetch('/api/v1/notifications/read-all', {
                 method: 'PUT'
             });
-            
+
             if (response.ok) {
-                setNotifications(prev => 
+                setNotifications(prev =>
                     prev.map(notif => ({ ...notif, is_read: true }))
                 );
                 setUnreadCount(0);
@@ -221,7 +221,7 @@ export default function NotificationsPage() {
                         Mantente al día con eventos importantes de tu cuenta
                     </p>
                 </div>
-                
+
                 {unreadCount > 0 && (
                     <button
                         onClick={markAllAsRead}
@@ -271,9 +271,8 @@ export default function NotificationsPage() {
                             return (
                                 <div
                                     key={notification.id}
-                                    className={`p-6 ${style.bgColor} ${style.borderColor} border-l-4 ${
-                                        !notification.is_read ? 'opacity-100' : 'opacity-75'
-                                    } cursor-pointer hover:bg-opacity-80 hover:shadow-md transition-all group relative`}
+                                    className={`p-6 ${style.bgColor} ${style.borderColor} border-l-4 ${!notification.is_read ? 'opacity-100' : 'opacity-75'
+                                        } cursor-pointer hover:bg-opacity-80 hover:shadow-md transition-all group relative`}
                                     onClick={() => handleNotificationClick(notification)}
                                 >
                                     <div className="flex items-start justify-between">

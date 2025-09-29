@@ -25,13 +25,13 @@ export default function SettingsPage() {
     useEffect(() => {
         console.log('⚙️ Settings: User data from hook:', user);
         console.log('⚙️ Settings: Loading state:', loading);
-        
+
         if (user && !loading) {
             console.log('✅ Settings: Loading user data into form');
-            
+
             // Limpiar " - Test" del nombre si existe
             const cleanName = user.name?.replace(/ - Test$/i, '') || "";
-            
+
             setProfile({
                 name: cleanName,
                 email: user.email || "",
@@ -94,7 +94,7 @@ export default function SettingsPage() {
 
     const handleNotificationChange = async (type: 'email', value: boolean) => {
         console.log(`🔔 Updating ${type} notification to:`, value);
-        
+
         // Actualizar estado local inmediatamente para feedback visual
         setNotifications(prev => ({ ...prev, [type]: value }));
 
@@ -293,8 +293,8 @@ export default function SettingsPage() {
                     onClick={handleSave}
                     disabled={saving}
                     className={`inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 ${saving
-                            ? 'bg-gray-400 cursor-not-allowed'
-                            : 'bg-emerald-600 hover:bg-emerald-700'
+                        ? 'bg-gray-400 cursor-not-allowed'
+                        : 'bg-emerald-600 hover:bg-emerald-700'
                         }`}
                 >
                     <Save className="h-5 w-5 mr-2" />

@@ -8,13 +8,13 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey);
 async function createNotificationsTable() {
     try {
         console.log('🗄️ Creando tabla notifications...');
-        
+
         // Intentar crear una notificación de prueba para ver si la tabla existe
         const { data: testData, error: testError } = await supabase
             .from('notifications')
             .select('*')
             .limit(1);
-            
+
         if (testError && testError.code === 'PGRST205') {
             console.log('❌ La tabla notifications no existe. Necesita ser creada manualmente en Supabase.');
             console.log('📋 SQL para crear la tabla:');
@@ -38,18 +38,18 @@ CREATE INDEX idx_notifications_created_at ON public.notifications(created_at);
 -- Habilitar RLS (Row Level Security)
 ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
             `);
-            
+
             return;
         }
-        
+
         if (testError) {
             console.error('❌ Error inesperado:', testError);
             return;
         }
-        
+
         console.log('✅ La tabla notifications ya existe');
         console.log('📊 Datos de prueba:', testData);
-        
+
     } catch (err) {
         console.error('❌ Error:', err);
     }

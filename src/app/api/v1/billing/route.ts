@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 
 export async function GET() {
     try {
         console.log('🔄 Fetching billing data from backend...');
-        
+
         const response = await fetch('http://localhost:3003/v1/billing-dev', {
             method: 'GET',
             headers: {
@@ -18,9 +18,9 @@ export async function GET() {
 
         const data = await response.json();
         console.log('✅ Billing data received from backend');
-        
+
         return NextResponse.json(data);
-        
+
     } catch (error) {
         console.error('❌ Error fetching billing data:', error);
         return NextResponse.json(

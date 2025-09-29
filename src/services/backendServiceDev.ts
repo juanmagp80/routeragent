@@ -105,12 +105,12 @@ export interface CheckoutSession {
 
 class BackendServiceDev {
     private async makeRequest<T>(
-        endpoint: string, 
+        endpoint: string,
         options: RequestInit = {}
     ): Promise<T> {
         const url = `${BACKEND_URL}${endpoint}`;
         console.log(`🌐 Making request to: ${url}`);
-        
+
         const response = await fetch(url, {
             headers: {
                 'Content-Type': 'application/json',
@@ -181,7 +181,7 @@ class BackendServiceDev {
     async getBilling(): Promise<BillingInfo> {
         try {
             console.log('💳 Fetching billing info...');
-            
+
             // Llamar al API route del frontend en lugar del backend directamente
             const response = await fetch('/api/v1/billing', {
                 method: 'GET',

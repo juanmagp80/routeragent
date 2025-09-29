@@ -1,19 +1,19 @@
 "use client";
 
+import { ApiKeyData, backendServiceDev } from "@/services/backendServiceDev";
 import {
+    AlertTriangle,
+    CheckCircle,
+    Code,
+    Copy,
+    ExternalLink,
+    FileText,
     Key,
     Play,
-    Copy,
-    CheckCircle,
-    XCircle,
-    AlertTriangle,
-    Code,
-    FileText,
-    ExternalLink
+    XCircle
 } from "lucide-react";
-import { useEffect, useState } from "react";
-import { backendServiceDev, ApiKeyData } from "@/services/backendServiceDev";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 
 interface TestRequest {
     prompt: string;
@@ -183,7 +183,7 @@ export default function TestApiPage() {
             {/* Configuración de la prueba */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                 <h2 className="text-lg font-semibold text-gray-900 mb-4">Configuración de Prueba</h2>
-                
+
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     {/* Formulario de prueba */}
                     <div className="space-y-4">
@@ -280,11 +280,10 @@ export default function TestApiPage() {
                         <button
                             onClick={handleTestRequest}
                             disabled={loading || !apiKeyValue.trim() || !testRequest.prompt.trim()}
-                            className={`w-full inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 ${
-                                loading || !apiKeyValue.trim() || !testRequest.prompt.trim()
+                            className={`w-full inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 ${loading || !apiKeyValue.trim() || !testRequest.prompt.trim()
                                     ? 'bg-gray-400 cursor-not-allowed'
                                     : 'bg-emerald-600 hover:bg-emerald-700'
-                            }`}
+                                }`}
                         >
                             {loading ? (
                                 <>

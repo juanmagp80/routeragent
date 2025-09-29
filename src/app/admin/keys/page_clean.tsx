@@ -1,5 +1,7 @@
 "use client";
 
+import { useAuth } from "@/contexts/AuthContext";
+import { ApiKeyData, backendServiceDev, CreateApiKeyRequest } from "@/services/backendServiceDev";
 import {
     BarChart3,
     Copy,
@@ -9,8 +11,6 @@ import {
     Trash2
 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { backendServiceDev, ApiKeyData, CreateApiKeyRequest } from "@/services/backendServiceDev";
-import { useAuth } from "@/contexts/AuthContext";
 
 export default function ApiKeysPage() {
     const [keys, setKeys] = useState<ApiKeyData[]>([]);
@@ -44,7 +44,7 @@ export default function ApiKeysPage() {
             setLoading(true);
             const response = await backendServiceDev.getApiKeys() as any;
             console.log('✅ API keys response:', response);
-            
+
             // El backend ahora devuelve un objeto con api_keys, total_usage y plan_limit
             if (response.api_keys) {
                 setKeys(response.api_keys);
@@ -177,11 +177,10 @@ export default function ApiKeysPage() {
                             <button
                                 onClick={handleCreateKey}
                                 disabled={!newKey.name.trim()}
-                                className={`w-full inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 ${
-                                    newKey.name.trim()
+                                className={`w-full inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 ${newKey.name.trim()
                                         ? 'bg-emerald-600 hover:bg-emerald-700'
                                         : 'bg-gray-400 cursor-not-allowed'
-                                }`}
+                                    }`}
                             >
                                 Crear Clave
                             </button>
@@ -224,11 +223,10 @@ export default function ApiKeysPage() {
                                         <div className="ml-4">
                                             <div className="flex items-center">
                                                 <h3 className="text-sm font-medium text-gray-900">{key.name}</h3>
-                                                <span className={`ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                                    key.is_active 
-                                                        ? 'bg-green-100 text-green-800' 
+                                                <span className={`ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${key.is_active
+                                                        ? 'bg-green-100 text-green-800'
                                                         : 'bg-red-100 text-red-800'
-                                                }`}>
+                                                    }`}>
                                                     {key.is_active ? 'Activa' : 'Inactiva'}
                                                 </span>
                                             </div>
@@ -241,8 +239,8 @@ export default function ApiKeysPage() {
                                                         onClick={() => toggleKeyVisibility(key.id)}
                                                         className="text-gray-400 hover:text-gray-600"
                                                     >
-                                                        {visibleKeys.has(key.id) ? 
-                                                            <EyeOff className="h-4 w-4" /> : 
+                                                        {visibleKeys.has(key.id) ?
+                                                            <EyeOff className="h-4 w-4" /> :
                                                             <Eye className="h-4 w-4" />
                                                         }
                                                     </button>

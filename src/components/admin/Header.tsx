@@ -1,9 +1,9 @@
 "use client";
 
-import { Bell, Search, User, LogOut } from "lucide-react";
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
+import { Bell, LogOut, Search, User } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 export default function AdminHeader() {
     const [searchOpen, setSearchOpen] = useState(false);
@@ -41,13 +41,13 @@ export default function AdminHeader() {
         if (typeof window !== 'undefined') {
             localStorage.clear();
             sessionStorage.clear();
-            
+
             // También limpiar cookies de Supabase si existen
-            document.cookie.split(";").forEach(function(c) { 
-                document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
+            document.cookie.split(";").forEach(function (c) {
+                document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
             });
         }
-        
+
         // Redirigir al login
         router.push('/login');
     };
@@ -85,7 +85,7 @@ export default function AdminHeader() {
                     {/* Right side - Notifications and user menu */}
                     <div className="flex items-center space-x-4">
                         {/* Notifications */}
-                        <button 
+                        <button
                             onClick={handleNotificationClick}
                             className="p-1 rounded-full text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500"
                             title={unreadCount > 0 ? `${unreadCount} notificaciones sin leer` : 'Ver notificaciones'}
@@ -109,7 +109,7 @@ export default function AdminHeader() {
                                 </div>
                                 <span className="ml-2 hidden md:block text-sm font-medium text-gray-700">{user?.name || 'Usuario'}</span>
                             </div>
-                            
+
                             {/* Logout Button */}
                             <button
                                 onClick={handleLogout}
