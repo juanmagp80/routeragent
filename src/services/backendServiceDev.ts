@@ -3,7 +3,12 @@
  * TODO: Remover este archivo cuando la autenticación esté funcionando
  */
 
-const BACKEND_URL = 'http://localhost:3003'; // Puerto del backend
+// Detectar entorno automáticamente
+const BACKEND_URL = process.env.NODE_ENV === 'production' || typeof window !== 'undefined' && window.location.hostname !== 'localhost'
+    ? 'https://routeragent.onrender.com'  // Producción
+    : 'http://localhost:3003';             // Desarrollo local
+
+console.log(`🔧 Backend service configured for: ${BACKEND_URL}`);
 
 export interface ApiKeyData {
     id: string;
@@ -108,6 +113,7 @@ class BackendServiceDev {
         options: RequestInit = {}
     ): Promise<T> {
         const url = `${BACKEND_URL}${endpoint}`;
+        console.log(`🌐 Making request to: ${url}`);
         
         const response = await fetch(url, {
             headers: {
