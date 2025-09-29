@@ -614,3 +614,46 @@ export const createCheckoutSessionDev = async (req: Request, res: Response) => {
         res.status(500).json({ error: 'Internal server error', success: false });
     }
 };
+
+// Función temporal para obtener información del usuario actual (sin autenticación)
+export const getCurrentUserDev = async (req: Request, res: Response) => {
+    try {
+        console.log('👤 Getting current user info for development...');
+
+        // Obtener usuario actual con todos sus datos
+        const { data: user, error: userError } = await supabase
+            .from('users')
+            .select('*')
+            .eq('email', 'juanmagp26@gmail.com')
+            .single();
+
+        if (userError || !user) {
+            console.error('Error fetching current user:', userError);
+            return res.status(500).json({ error: 'Failed to fetch user info', success: false });
+        }
+
+        console.log(`✅ Found current user: ${user.name} (${user.email}) with plan: ${user.plan}`);
+
+        // Devolver datos del usuario en formato esperado por el frontend
+        const userData = {
+            id: user.id,
+            name: user.name || user.email.split('@')[0], // Fallback al email si no hay nombre
+            email: user.email,
+            company: user.company || '',
+            plan: user.plan || 'free',
+            api_key_limit: user.api_key_limit || 3,
+            is_active: user.is_active !== false,
+            email_verified: user.email_verified !== false,
+            created_at: user.created_at || new Date().toISOString()
+        };
+
+        res.json({
+            user: userData,
+            success: true
+        });
+
+    } catch (error) {
+        console.error('❌ Error fetching current user:', error);
+        res.status(500).json({ error: 'Internal server error', success: false });
+    }
+};

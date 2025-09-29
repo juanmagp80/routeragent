@@ -75,8 +75,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Función para obtener datos reales del usuario desde el backend
     const fetchUserData = async (): Promise<User | null> => {
         try {
-            console.log('👤 Fetching real user data from backend...');
-            const response = await fetch(`${BACKEND_URL}/test-supabase`);
+            console.log('👤 Fetching real user data from user endpoint...');
+            const response = await fetch(`${BACKEND_URL}/v1/user-dev`);
             
             if (!response.ok) {
                 throw new Error(`Failed to fetch user data: ${response.status}`);
@@ -85,19 +85,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const data = await response.json();
             console.log('👤 User data received:', data);
             
-            if (data.success && data.sampleData && data.sampleData.length > 0) {
-                const userData = data.sampleData[0];
-                return {
-                    id: userData.id,
-                    name: userData.name || userData.email.split('@')[0], // Usar email como fallback
-                    email: userData.email,
-                    company: userData.company || '',
-                    plan: userData.plan || 'free',
-                    api_key_limit: userData.api_key_limit || 3,
-                    is_active: userData.is_active || true,
-                    email_verified: userData.email_verified || true,
-                    created_at: userData.created_at || new Date().toISOString()
-                };
+            if (data.success && data.user) {
+                return data.user;
             }
             
             return null;

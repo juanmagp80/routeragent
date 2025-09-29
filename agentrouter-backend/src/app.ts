@@ -39,7 +39,8 @@ import {
     createApiKeyDev,
     deleteApiKeyDev,
     getMetricsDev,
-    getBillingDev
+    getBillingDev,
+    getCurrentUserDev
 } from './controllers/apiKeyController';
 import {
     getCurrentUser,
@@ -221,6 +222,7 @@ app.delete('/v1/api-keys-dev/:keyId', deleteApiKeyDev);
 app.get('/v1/api-keys-dev/:keyId/stats', getApiKeyStats);
 app.get('/v1/metrics-dev', getMetricsDev);
 app.get('/v1/billing-dev', getBillingDev);
+app.get('/v1/user-dev', getCurrentUserDev);
 app.post('/v1/checkout-session-dev', async (req, res) => {
     try {
         console.log('💳 Creating Stripe checkout session...');
