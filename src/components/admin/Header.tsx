@@ -3,10 +3,12 @@
 import { Bell, Search, User, LogOut } from "lucide-react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function AdminHeader() {
     const [searchOpen, setSearchOpen] = useState(false);
     const router = useRouter();
+    const { user } = useAuth();
 
     const handleLogout = () => {
         // Limpiar todas las sesiones y tokens
@@ -71,7 +73,7 @@ export default function AdminHeader() {
                                 <div className="h-8 w-8 rounded-full bg-emerald-100 flex items-center justify-center">
                                     <User className="h-5 w-5 text-emerald-600" />
                                 </div>
-                                <span className="ml-2 hidden md:block text-sm font-medium text-gray-700">Desarrollador</span>
+                                <span className="ml-2 hidden md:block text-sm font-medium text-gray-700">{user?.name || 'Usuario'}</span>
                             </div>
                             
                             {/* Logout Button */}

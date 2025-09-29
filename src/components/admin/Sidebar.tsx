@@ -13,6 +13,7 @@ import {
     Users
 } from "lucide-react";
 import Link from "next/link";
+import { useAuth } from "@/contexts/AuthContext";
 import { usePathname, useRouter } from "next/navigation";
 
 const navigation = [
@@ -29,6 +30,7 @@ const navigation = [
 export default function Sidebar() {
     const pathname = usePathname();
     const router = useRouter();
+    const { user } = useAuth();
 
     const handleLogout = () => {
         // Limpiar todas las sesiones y tokens
@@ -90,7 +92,7 @@ export default function Sidebar() {
                                 </div>
                                 <div className="ml-3">
                                     <p className="text-xs font-medium text-gray-500 group-hover:text-gray-700">
-                                        Desarrollador
+                                        {user?.name || 'Usuario'}
                                     </p>
                                     <p className="text-xs font-medium text-gray-500 group-hover:text-gray-700">
                                         Ver perfil

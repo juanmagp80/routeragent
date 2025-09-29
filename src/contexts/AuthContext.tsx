@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { createContext, ReactNode, useContext, useEffect, useState } from 'react';
+import { BACKEND_URL } from '@/config/backend';
 
 // Interfaz simplificada para el usuario
 export interface User {
@@ -35,29 +36,86 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [authError, setAuthError] = useState<string | null>(null);
     const router = useRouter();
 
-    // Cargar usuario desde localStorage al inicializar (solo en cliente)
+    // Cargar usuario desde localStorage al inicializar y actualizar con datos reales
     useEffect(() => {
-        if (typeof window !== 'undefined') {
-            const savedUser = localStorage.getItem('agentrouter_user');
-            if (savedUser) {
-                try {
-                    const userData = JSON.parse(savedUser);
-                    setUser(userData);
-                } catch (error) {
-                    console.warn('Error parsing saved user data:', error);
-                    localStorage.removeItem('agentrouter_user');
+        const initializeUser = async () => {
+            if (typeof window !== 'undefined') {
+                const savedUser = localStorage.getItem('agentrouter_user');
+                if (savedUser) {
+                    try {
+                        const userData = JSON.parse(savedUser);
+                        setUser(userData);
+                        
+                        // Actualizar con datos reales del backend
+                        const realUserData = await fetchUserData();
+                        if (realUserData) {
+                            setUser(realUserData);
+                            localStorage.setItem('agentrouter_user', JSON.stringify(realUserData));
+                        }
+                    } catch (error) {
+                        console.warn('Error parsing saved user data:', error);
+                        localStorage.removeItem('agentrouter_user');
+                    }
+                } else {
+                    // Si no hay usuario guardado pero estamos en una página admin, obtener datos
+                    if (window.location.pathname.startsWith('/admin')) {
+                        const realUserData = await fetchUserData();
+                        if (realUserData) {
+                            setUser(realUserData);
+                            localStorage.setItem('agentrouter_user', JSON.stringify(realUserData));
+                        }
+                    }
                 }
             }
-        }
+        };
+        
+        initializeUser();
     }, []);
+
+    // Función para obtener datos reales del usuario desde el backend
+    const fetchUserData = async (): Promise<User | null> => {
+        try {
+            console.log('👤 Fetching real user data from backend...');
+            const response = await fetch(`${BACKEND_URL}/test-supabase`);
+            
+            if (!response.ok) {
+                throw new Error(`Failed to fetch user data: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            console.log('👤 User data received:', data);
+            
+            if (data.success && data.sampleData && data.sampleData.length > 0) {
+                const userData = data.sampleData[0];
+                return {
+                    id: userData.id,
+                    name: userData.name || userData.email.split('@')[0], // Usar email como fallback
+                    email: userData.email,
+                    company: userData.company || '',
+                    plan: userData.plan || 'free',
+                    api_key_limit: userData.api_key_limit || 3,
+                    is_active: userData.is_active || true,
+                    email_verified: userData.email_verified || true,
+                    created_at: userData.created_at || new Date().toISOString()
+                };
+            }
+            
+            return null;
+        } catch (error) {
+            console.error('❌ Error fetching user data:', error);
+            return null;
+        }
+    };
 
     const login = async (email: string, password: string) => {
         try {
             setLoading(true);
             setAuthError(null);
             
-            // Simulación de login exitoso
-            const mockUser: User = {
+            // Obtener datos reales del usuario desde el backend
+            const realUserData = await fetchUserData();
+            
+            const mockUser: User = realUserData || {
                 id: '1',
                 name: 'Usuario Demo',
                 email: email,
