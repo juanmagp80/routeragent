@@ -2,20 +2,19 @@
 
 import { ApiKeyData, backendServiceDev } from "@/services/backendServiceDev";
 import {
-    AlertTriangle,
     CheckCircle,
+    Clock,
     Code,
     Copy,
+    DollarSign,
     ExternalLink,
     FileText,
     Key,
     Play,
-    XCircle,
-    Zap,
-    DollarSign,
-    Clock,
+    Sparkles,
     Target,
-    Sparkles
+    XCircle,
+    Zap
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -243,7 +242,7 @@ export default function TestApiPage() {
                     </h2>
                     <p className="text-gray-600 mt-1">Configura los parámetros para probar tu API key</p>
                 </div>
-                
+
                 <div className="p-8">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                         {/* Formulario de prueba */}
@@ -332,11 +331,10 @@ export default function TestApiPage() {
                                         return (
                                             <label
                                                 key={priority.value}
-                                                className={`flex items-center p-4 border-2 rounded-xl cursor-pointer transition-all duration-200 ${
-                                                    testRequest.priority === priority.value
+                                                className={`flex items-center p-4 border-2 rounded-xl cursor-pointer transition-all duration-200 ${testRequest.priority === priority.value
                                                         ? 'border-blue-500 bg-blue-50'
                                                         : 'border-gray-200 hover:border-gray-300 bg-white'
-                                                }`}
+                                                    }`}
                                             >
                                                 <input
                                                     type="radio"
@@ -363,11 +361,10 @@ export default function TestApiPage() {
                             <button
                                 onClick={handleTestRequest}
                                 disabled={loading || !apiKeyValue.trim() || !testRequest.prompt.trim()}
-                                className={`w-full flex items-center justify-center px-6 py-4 border border-transparent rounded-xl text-base font-bold text-white shadow-lg transition-all duration-200 transform ${
-                                    loading || !apiKeyValue.trim() || !testRequest.prompt.trim()
+                                className={`w-full flex items-center justify-center px-6 py-4 border border-transparent rounded-xl text-base font-bold text-white shadow-lg transition-all duration-200 transform ${loading || !apiKeyValue.trim() || !testRequest.prompt.trim()
                                         ? 'bg-gray-400 cursor-not-allowed'
                                         : 'bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 hover:scale-105 focus:outline-none focus:ring-4 focus:ring-purple-300'
-                                }`}
+                                    }`}
                             >
                                 {loading ? (
                                     <>
@@ -519,7 +516,7 @@ export default function TestApiPage() {
                                 <li>Copia y pega la clave aquí para hacer pruebas</li>
                                 <li>**Cada prueba cuenta como un uso real** y se descontará de tu límite de requests</li>
                             </ol>
-                            
+
                             <div className="bg-gradient-to-r from-emerald-50 to-green-50 border border-emerald-200 rounded-lg p-4 mt-4">
                                 <p className="font-bold text-emerald-800 mb-2">⚡ **Pruebas en Tiempo Real:**</p>
                                 <ul className="list-disc list-inside space-y-1 text-emerald-700 text-sm">

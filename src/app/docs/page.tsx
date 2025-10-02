@@ -138,8 +138,8 @@ console.log(result.response);`
                                             key={tab.id}
                                             onClick={() => setActiveTab(tab.id)}
                                             className={`w-full flex items-center px-4 py-3 rounded-lg text-left transition-all ${activeTab === tab.id
-                                                    ? "bg-emerald-500 text-white shadow-lg"
-                                                    : "bg-white text-slate-700 hover:bg-slate-100 border border-slate-200"
+                                                ? "bg-emerald-500 text-white shadow-lg"
+                                                : "bg-white text-slate-700 hover:bg-slate-100 border border-slate-200"
                                                 }`}
                                         >
                                             <Icon className="w-5 h-5 mr-3" />

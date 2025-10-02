@@ -1,24 +1,24 @@
 "use client";
 
-import { 
-    HelpCircle, 
-    MessageSquare, 
-    Mail, 
-    Phone, 
-    Book, 
-    Code, 
-    Zap, 
-    Brain, 
-    Search,
-    ExternalLink,
+import {
+    Book,
+    Brain,
+    CheckCircle,
     ChevronDown,
     ChevronUp,
-    CheckCircle,
-    PlayCircle,
+    Code,
+    ExternalLink,
     FileText,
-    Users,
+    HelpCircle,
     Lightbulb,
-    Star
+    Mail,
+    MessageSquare,
+    Phone,
+    PlayCircle,
+    Search,
+    Star,
+    Users,
+    Zap
 } from "lucide-react";
 import { useState } from "react";
 
@@ -105,10 +105,10 @@ export default function HelpPage() {
     const [selectedCategory, setSelectedCategory] = useState('Todos');
 
     const categories = ['Todos', ...Array.from(new Set(FAQ_DATA.map(item => item.category)))];
-    
+
     const filteredFAQ = FAQ_DATA.filter(item => {
         const matchesSearch = item.question.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                             item.answer.toLowerCase().includes(searchTerm.toLowerCase());
+            item.answer.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesCategory = selectedCategory === 'Todos' || item.category === selectedCategory;
         return matchesSearch && matchesCategory;
     });
@@ -179,7 +179,7 @@ export default function HelpPage() {
                         <Book className="h-8 w-8 text-emerald-500" />
                     </div>
                 </div>
-                
+
                 <div className="p-8">
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                         {RESOURCES.map((resource, index) => (
@@ -218,7 +218,7 @@ export default function HelpPage() {
                         <MessageSquare className="h-8 w-8 text-teal-500" />
                     </div>
                 </div>
-                
+
                 <div className="p-8">
                     {/* Category Filter */}
                     <div className="flex flex-wrap gap-2 mb-6">
@@ -226,11 +226,10 @@ export default function HelpPage() {
                             <button
                                 key={category}
                                 onClick={() => setSelectedCategory(category)}
-                                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                                    selectedCategory === category
+                                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${selectedCategory === category
                                         ? 'bg-teal-500 text-white'
                                         : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                                }`}
+                                    }`}
                             >
                                 {category}
                             </button>
@@ -247,14 +246,13 @@ export default function HelpPage() {
                                 >
                                     <div className="flex items-center space-x-3">
                                         {faq.popular && <Star className="h-4 w-4 text-yellow-500" />}
-                                        <span className={`text-xs px-2 py-1 rounded-full ${
-                                            faq.category === 'Primeros Pasos' ? 'bg-green-100 text-green-700' :
-                                            faq.category === 'Modelos IA' ? 'bg-emerald-100 text-emerald-700' :
-                                            faq.category === 'Costos' ? 'bg-teal-100 text-teal-700' :
-                                            faq.category === 'Facturación' ? 'bg-yellow-100 text-yellow-700' :
-                                            faq.category === 'Seguridad' ? 'bg-red-100 text-red-700' :
-                                            'bg-gray-100 text-gray-700'
-                                        }`}>
+                                        <span className={`text-xs px-2 py-1 rounded-full ${faq.category === 'Primeros Pasos' ? 'bg-green-100 text-green-700' :
+                                                faq.category === 'Modelos IA' ? 'bg-emerald-100 text-emerald-700' :
+                                                    faq.category === 'Costos' ? 'bg-teal-100 text-teal-700' :
+                                                        faq.category === 'Facturación' ? 'bg-yellow-100 text-yellow-700' :
+                                                            faq.category === 'Seguridad' ? 'bg-red-100 text-red-700' :
+                                                                'bg-gray-100 text-gray-700'
+                                            }`}>
                                             {faq.category}
                                         </span>
                                         <h3 className="font-medium text-gray-900">{faq.question}</h3>
@@ -287,7 +285,7 @@ export default function HelpPage() {
                         <Users className="h-8 w-8 text-cyan-500" />
                     </div>
                 </div>
-                
+
                 <div className="p-8">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div className="bg-gradient-to-br from-emerald-50 to-teal-100 rounded-xl p-6 border border-emerald-200 hover:shadow-lg transition-shadow cursor-pointer group">

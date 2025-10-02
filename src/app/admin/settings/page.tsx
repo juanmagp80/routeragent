@@ -1,29 +1,28 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import {
-    Settings,
-    User,
-    Shield,
-    Key,
-    Palette,
-    Globe,
-    Monitor,
-    Sun,
-    Moon,
+    AlertTriangle,
     Bell,
-    Lock,
+    Check,
     Eye,
     EyeOff,
-    Save,
-    Check,
-    X,
-    Smartphone,
+    Key,
+    Lock,
     Mail,
-    AlertTriangle,
-    Trash2
+    Monitor,
+    Moon,
+    Palette,
+    Save,
+    Settings,
+    Shield,
+    Smartphone,
+    Sun,
+    Trash2,
+    User,
+    X
 } from "lucide-react";
+import { useState } from "react";
 
 export default function SettingsPage() {
     const { user, loading } = useAuth();
@@ -71,7 +70,7 @@ export default function SettingsPage() {
     const handleSave = async () => {
         setSaving(true);
         setMessage('');
-        
+
         try {
             // Simular guardado
             await new Promise(resolve => setTimeout(resolve, 1000));
@@ -125,11 +124,10 @@ export default function SettingsPage() {
                             <button
                                 key={id}
                                 onClick={() => setActiveTab(id)}
-                                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors ${
-                                    activeTab === id
+                                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors ${activeTab === id
                                         ? 'bg-indigo-100 text-indigo-700 font-medium'
                                         : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                                }`}
+                                    }`}
                             >
                                 <Icon className="h-5 w-5" />
                                 {label}
@@ -287,11 +285,10 @@ export default function SettingsPage() {
                                                     ...prev,
                                                     theme: id
                                                 }))}
-                                                className={`p-4 rounded-lg border-2 transition-all ${
-                                                    preferences.theme === id
+                                                className={`p-4 rounded-lg border-2 transition-all ${preferences.theme === id
                                                         ? 'border-indigo-500 bg-indigo-50'
                                                         : 'border-gray-200 hover:border-gray-300'
-                                                }`}
+                                                    }`}
                                             >
                                                 <Icon className="h-8 w-8 mx-auto mb-2 text-gray-600" />
                                                 <p className="text-sm font-medium text-gray-900">{label}</p>
@@ -303,7 +300,7 @@ export default function SettingsPage() {
                                 {/* Configuraciones de toggle */}
                                 <div className="space-y-4">
                                     <h3 className="text-lg font-medium text-gray-900">Configuraciones Generales</h3>
-                                    
+
                                     {[
                                         {
                                             key: 'notifications',
@@ -575,7 +572,7 @@ export default function SettingsPage() {
                                 </>
                             )}
                         </button>
-                        
+
                         <button className="px-6 py-3 border border-gray-300 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors">
                             Cancelar
                         </button>
@@ -583,11 +580,10 @@ export default function SettingsPage() {
 
                     {/* Mensaje de estado */}
                     {message && (
-                        <div className={`mt-4 p-4 rounded-lg text-center font-medium ${
-                            message.includes('Error') 
+                        <div className={`mt-4 p-4 rounded-lg text-center font-medium ${message.includes('Error')
                                 ? 'bg-red-50 text-red-700 border border-red-200'
                                 : 'bg-green-50 text-green-700 border border-green-200'
-                        }`}>
+                            }`}>
                             <div className="flex items-center justify-center gap-2">
                                 {message.includes('Error') ? (
                                     <X className="h-5 w-5" />

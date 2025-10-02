@@ -1,27 +1,20 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import {
-    Download,
-    Calendar,
-    DollarSign,
-    TrendingUp,
-    CreditCard,
-    Award,
-    Zap,
-    Star,
-    CheckCircle,
-    XCircle,
-    Clock,
-    ArrowUp,
     Activity,
-    Sparkles,
     BarChart3,
+    Calendar,
+    CheckCircle,
+    CreditCard,
+    DollarSign,
+    Download,
     PiggyBank,
-    Brain,
-    Rocket
+    Rocket,
+    Star,
+    TrendingUp
 } from "lucide-react";
+import { useState } from "react";
 
 interface BillingData {
     currentPlan: string;
@@ -101,7 +94,7 @@ export default function BillingPage() {
                             </p>
                         </div>
                     </div>
-                    
+
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div className="bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-colors">
                             <div className="flex items-center space-x-3">
@@ -151,11 +144,10 @@ export default function BillingPage() {
                         <button
                             key={id}
                             onClick={() => setActiveTab(id)}
-                            className={`py-2 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${
-                                activeTab === id
+                            className={`py-2 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${activeTab === id
                                     ? 'border-emerald-500 text-emerald-600'
                                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                            }`}
+                                }`}
                         >
                             <Icon className="h-4 w-4" />
                             {label}
@@ -187,17 +179,16 @@ export default function BillingPage() {
                                     </span>
                                 </div>
                                 <div className="w-full bg-gray-200 rounded-full h-3">
-                                    <div 
-                                        className={`h-3 rounded-full transition-all duration-500 ${
-                                            usagePercentage > 90 ? 'bg-red-500' : 
-                                            usagePercentage > 75 ? 'bg-yellow-500' : 'bg-emerald-500'
-                                        }`}
+                                    <div
+                                        className={`h-3 rounded-full transition-all duration-500 ${usagePercentage > 90 ? 'bg-red-500' :
+                                                usagePercentage > 75 ? 'bg-yellow-500' : 'bg-emerald-500'
+                                            }`}
                                         style={{ width: `${Math.min(usagePercentage, 100)}%` }}
                                     ></div>
                                 </div>
                                 <p className="text-xs text-gray-500 mt-1">
-                                    {usagePercentage > 90 ? '¡Cerca del límite!' : 
-                                     usagePercentage > 75 ? 'Uso alto' : 'Uso normal'}
+                                    {usagePercentage > 90 ? '¡Cerca del límite!' :
+                                        usagePercentage > 75 ? 'Uso alto' : 'Uso normal'}
                                 </p>
                             </div>
 
@@ -284,11 +275,10 @@ export default function BillingPage() {
                         {PLANS.map((plan) => (
                             <div
                                 key={plan.id}
-                                className={`relative bg-white rounded-2xl shadow-lg border-2 p-6 ${
-                                    plan.popular 
-                                        ? 'border-purple-500 scale-105' 
+                                className={`relative bg-white rounded-2xl shadow-lg border-2 p-6 ${plan.popular
+                                        ? 'border-purple-500 scale-105'
                                         : 'border-gray-200 hover:border-gray-300'
-                                } transition-all duration-200`}
+                                    } transition-all duration-200`}
                             >
                                 {plan.popular && (
                                     <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
@@ -319,22 +309,19 @@ export default function BillingPage() {
                                 <ul className="space-y-3 mb-6">
                                     {plan.features.map((feature, index) => (
                                         <li key={index} className="flex items-center gap-2">
-                                            <CheckCircle className={`h-4 w-4 ${
-                                                feature.includes('Stripe') ? 'text-green-500' : 'text-emerald-500'
-                                            }`} />
-                                            <span className={`text-sm ${
-                                                feature.includes('Stripe') ? 'text-green-700 font-medium' : 'text-gray-700'
-                                            }`}>{feature}</span>
+                                            <CheckCircle className={`h-4 w-4 ${feature.includes('Stripe') ? 'text-green-500' : 'text-emerald-500'
+                                                }`} />
+                                            <span className={`text-sm ${feature.includes('Stripe') ? 'text-green-700 font-medium' : 'text-gray-700'
+                                                }`}>{feature}</span>
                                         </li>
                                     ))}
                                 </ul>
 
                                 <button
-                                    className={`w-full py-2 px-4 rounded-lg font-medium transition-all duration-200 ${
-                                        billingData.currentPlan === plan.name
+                                    className={`w-full py-2 px-4 rounded-lg font-medium transition-all duration-200 ${billingData.currentPlan === plan.name
                                             ? 'bg-gray-100 text-gray-500 cursor-not-allowed'
                                             : `bg-gradient-to-r ${plan.gradient} text-white hover:shadow-lg`
-                                    }`}
+                                        }`}
                                     disabled={billingData.currentPlan === plan.name}
                                 >
                                     {billingData.currentPlan === plan.name ? 'Plan Actual' : 'Seleccionar Plan'}

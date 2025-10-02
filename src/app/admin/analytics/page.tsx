@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { backendServiceDev, BackendMetrics } from "@/services/backendServiceDev";
+import { BackendMetrics, backendServiceDev } from "@/services/backendServiceDev";
 import { Activity, BarChart3, Clock, Cpu, TrendingUp, Zap } from "lucide-react";
+import { useEffect, useState } from "react";
 
 export default function AnalyticsPage() {
     const [metrics, setMetrics] = useState<BackendMetrics | null>(null);
@@ -38,12 +38,12 @@ export default function AnalyticsPage() {
     const totalRequests = metrics?.summary?.total_requests || 0;
     const activeKeys = metrics?.summary?.active_api_keys || 0;
     const modelCount = metrics?.metrics?.length || 0;
-    
+
     // Calcular requests por día (estimado)
     const requestsPerDay = Math.round(totalRequests / 7); // Estimado semanal
-    
+
     // Modelo más usado
-    const mostUsedModel = metrics?.metrics?.reduce((prev, current) => 
+    const mostUsedModel = metrics?.metrics?.reduce((prev, current) =>
         (prev.count > current.count) ? prev : current
     );
 
@@ -59,7 +59,7 @@ export default function AnalyticsPage() {
                         Estadísticas detalladas de uso y rendimiento de tus integraciones
                     </p>
                 </div>
-                <button 
+                <button
                     onClick={loadAnalytics}
                     className="inline-flex items-center px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
                 >
@@ -129,7 +129,7 @@ export default function AnalyticsPage() {
                         </div>
                     )}
                 </div>
-                
+
                 <div className="space-y-3">
                     {metrics?.metrics && metrics.metrics.length > 0 ? (
                         metrics.metrics
@@ -139,11 +139,10 @@ export default function AnalyticsPage() {
                                 return (
                                     <div key={index} className="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl border">
                                         <div className="flex items-center">
-                                            <div className={`w-3 h-3 rounded-full mr-3 ${
-                                                index === 0 ? 'bg-emerald-500' : 
-                                                index === 1 ? 'bg-blue-500' : 
-                                                index === 2 ? 'bg-purple-500' : 'bg-gray-400'
-                                            }`}></div>
+                                            <div className={`w-3 h-3 rounded-full mr-3 ${index === 0 ? 'bg-emerald-500' :
+                                                    index === 1 ? 'bg-blue-500' :
+                                                        index === 2 ? 'bg-purple-500' : 'bg-gray-400'
+                                                }`}></div>
                                             <div>
                                                 <p className="font-semibold text-gray-900">{model.model}</p>
                                                 <p className="text-sm text-gray-600">{model.count.toLocaleString()} requests</p>
@@ -152,12 +151,11 @@ export default function AnalyticsPage() {
                                         <div className="text-right">
                                             <p className="font-bold text-lg text-gray-900">{percentage.toFixed(1)}%</p>
                                             <div className="w-20 bg-gray-200 rounded-full h-2 mt-1">
-                                                <div 
-                                                    className={`h-2 rounded-full ${
-                                                        index === 0 ? 'bg-emerald-500' : 
-                                                        index === 1 ? 'bg-blue-500' : 
-                                                        index === 2 ? 'bg-purple-500' : 'bg-gray-400'
-                                                    }`}
+                                                <div
+                                                    className={`h-2 rounded-full ${index === 0 ? 'bg-emerald-500' :
+                                                            index === 1 ? 'bg-blue-500' :
+                                                                index === 2 ? 'bg-purple-500' : 'bg-gray-400'
+                                                        }`}
                                                     style={{ width: `${percentage}%` }}
                                                 ></div>
                                             </div>
@@ -183,7 +181,7 @@ export default function AnalyticsPage() {
                     <Clock className="mr-2 h-5 w-5 text-emerald-600" />
                     Actividad Reciente
                 </h2>
-                
+
                 <div className="space-y-3">
                     {metrics?.recent_tasks && metrics.recent_tasks.length > 0 ? (
                         metrics.recent_tasks.slice(0, 10).map((task, index) => (

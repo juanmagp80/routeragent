@@ -500,11 +500,11 @@ const DashboardSection = () => {
     try {
       setLoading(true);
       const response = await fetch('/api/v1/metrics');
-      
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
+
       const data = await response.json();
 
       if (data.success) {
@@ -518,7 +518,7 @@ const DashboardSection = () => {
       }
     } catch (err) {
       console.error('Error fetching metrics:', err);
-      
+
       // Usar datos mock como fallback para la demo
       console.log('Using fallback mock data for demo...');
       setMetrics([
@@ -544,7 +544,7 @@ const DashboardSection = () => {
           model: "gpt-4o",
           cost: 0.032,
           latency: 156,
-          status: "completed", 
+          status: "completed",
           timestamp: new Date(Date.now() - 12 * 60 * 1000).toISOString()
         }
       ]);

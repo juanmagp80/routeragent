@@ -181,7 +181,7 @@ export class ModelRouter {
     private selectBestModel(task: Task, taskType: string): Model {
         console.log(`🔍 Selecting model for task: "${task.input.substring(0, 50)}..." (priority: ${task.priority || 'balanced'}, type: ${taskType})`);
         console.log(`📋 Available models: ${this.models.map(m => m.name).join(', ')}`);
-        
+
         // Filtrar modelos compatibles
         let availableModels = this.models.filter(model =>
             model.supported_tasks.includes(taskType) && model.availability
@@ -210,7 +210,7 @@ export class ModelRouter {
 
         // Ordenar por score (mayor a menor)
         modelScores.sort((a, b) => b.score - a.score);
-        
+
         console.log(`🏆 Final ranking:`);
         modelScores.forEach((ms, index) => {
             console.log(`  ${index + 1}. ${ms.model.name}: ${ms.score.toFixed(3)}`);

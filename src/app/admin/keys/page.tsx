@@ -147,11 +147,10 @@ export default function ApiKeysPage() {
                             <button
                                 onClick={() => setShowCreateForm(!showCreateForm)}
                                 disabled={keys.length >= 5}
-                                className={`inline-flex items-center px-4 py-2 rounded-md text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${
-                                    keys.length >= 5 
-                                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                                className={`inline-flex items-center px-4 py-2 rounded-md text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${keys.length >= 5
+                                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                                         : 'bg-emerald-600 text-white hover:bg-emerald-700 focus:ring-emerald-500'
-                                }`}
+                                    }`}
                             >
                                 <Plus className="mr-2 h-4 w-4" />
                                 {keys.length >= 5 ? 'Límite alcanzado' : 'Nueva clave'}
@@ -179,7 +178,7 @@ export default function ApiKeysPage() {
                             <span className="text-gray-900">{((keys.length / 5) * 100).toFixed(0)}%</span>
                         </div>
                         <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
-                            <div 
+                            <div
                                 className="bg-emerald-600 h-2 rounded-full transition-all duration-300"
                                 style={{ width: `${(keys.length / 5) * 100}%` }}
                             ></div>
@@ -208,7 +207,7 @@ export default function ApiKeysPage() {
                             <span className="text-gray-900">{Math.min((totalUsage / planLimit) * 100, 100).toFixed(1)}%</span>
                         </div>
                         <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
-                            <div 
+                            <div
                                 className="bg-emerald-600 h-2 rounded-full transition-all duration-300"
                                 style={{ width: `${Math.min((totalUsage / planLimit) * 100, 100)}%` }}
                             ></div>
@@ -347,8 +346,8 @@ export default function ApiKeysPage() {
                             onClick={handleCreateKey}
                             disabled={!newKey.name.trim()}
                             className={`px-4 py-2 border border-transparent rounded-md text-sm font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors ${newKey.name.trim()
-                                    ? 'bg-emerald-600 hover:bg-emerald-700 focus:ring-emerald-500'
-                                    : 'bg-gray-400 cursor-not-allowed'
+                                ? 'bg-emerald-600 hover:bg-emerald-700 focus:ring-emerald-500'
+                                : 'bg-gray-400 cursor-not-allowed'
                                 }`}
                         >
                             <Plus className="inline-block w-4 h-4 mr-2" />
@@ -392,23 +391,23 @@ export default function ApiKeysPage() {
                     ) : (
                         <div className="space-y-4">
                             {keys.map((key, index) => (
-                                <div key={key.id} className="border border-gray-200 rounded-lg p-6 hover:shadow-lg hover:border-gray-300 transition-all duration-300 group animate-fade-in" style={{'--animation-delay': `${index * 100}ms`} as React.CSSProperties}>
+                                <div key={key.id} className="border border-gray-200 rounded-lg p-6 hover:shadow-lg hover:border-gray-300 transition-all duration-300 group animate-fade-in" style={{ '--animation-delay': `${index * 100}ms` } as React.CSSProperties}>
                                     <div className="flex items-start justify-between">
                                         <div className="flex-1">
                                             <div className="flex items-center space-x-4 mb-4">
                                                 <div>
                                                     <h4 className="text-lg font-medium text-gray-900">{key.name}</h4>
                                                     <p className="text-sm text-gray-500 mt-1">
-                                                        Creada el {new Date(key.created_at).toLocaleDateString('es-ES', { 
-                                                            year: 'numeric', 
-                                                            month: 'long', 
-                                                            day: 'numeric' 
+                                                        Creada el {new Date(key.created_at).toLocaleDateString('es-ES', {
+                                                            year: 'numeric',
+                                                            month: 'long',
+                                                            day: 'numeric'
                                                         })}
                                                     </p>
                                                 </div>
                                                 <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${key.is_active
-                                                        ? 'bg-green-100 text-green-800'
-                                                        : 'bg-red-100 text-red-800'
+                                                    ? 'bg-green-100 text-green-800'
+                                                    : 'bg-red-100 text-red-800'
                                                     }`}>
                                                     <div className={`w-1.5 h-1.5 rounded-full mr-1.5 ${key.is_active ? 'bg-green-500' : 'bg-red-500'}`}></div>
                                                     {key.is_active ? 'Activa' : 'Inactiva'}

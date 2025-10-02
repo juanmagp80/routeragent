@@ -1,8 +1,8 @@
 "use client";
 
+import { BackendMetrics, backendServiceDev } from "@/services/backendServiceDev";
+import { BarChart3, DollarSign, Key, TrendingUp } from "lucide-react";
 import { useEffect, useState } from "react";
-import { backendServiceDev, BackendMetrics } from "@/services/backendServiceDev";
-import { DollarSign, BarChart3, TrendingUp, Key } from "lucide-react";
 
 export default function DashboardPage() {
     const [metrics, setMetrics] = useState<BackendMetrics | null>(null);
@@ -118,7 +118,7 @@ export default function DashboardPage() {
                     <h2 className="text-lg font-semibold text-gray-900">Actividad reciente</h2>
                     <p className="text-gray-600 text-sm">Últimas consultas procesadas</p>
                 </div>
-                
+
                 <div className="p-6">
                     {metrics?.recent_tasks && metrics.recent_tasks.length > 0 ? (
                         <div className="space-y-3">

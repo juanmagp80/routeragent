@@ -1,26 +1,20 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import {
-    Bell,
-    Save,
-    Mail,
-    Smartphone,
-    Settings,
     AlertCircle,
-    Calendar,
-    Shield,
-    DollarSign,
     BarChart3,
-    MessageSquare,
-    Zap,
-    Clock,
-    Brain,
+    Bell,
     Check,
-    X
+    Clock,
+    Mail,
+    MessageSquare,
+    Save,
+    Settings,
+    Smartphone
 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 interface Notification {
     id: string;
@@ -88,7 +82,7 @@ export default function NotificationsPage() {
                             </p>
                         </div>
                     </div>
-                    
+
                     {unreadCount > 0 && (
                         <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-full px-4 py-2">
                             <div className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></div>
@@ -131,33 +125,29 @@ export default function NotificationsPage() {
                             notifications.map((notification) => (
                                 <div
                                     key={notification.id}
-                                    className={`p-4 rounded-lg border cursor-pointer transition-all hover:shadow-md ${
-                                        notification.is_read
+                                    className={`p-4 rounded-lg border cursor-pointer transition-all hover:shadow-md ${notification.is_read
                                             ? 'bg-gray-50 border-gray-200'
                                             : 'bg-emerald-50 border-emerald-200 shadow-sm'
-                                    }`}
+                                        }`}
                                 >
                                     <div className="flex items-start gap-3">
-                                        <div className={`p-2 rounded-lg ${
-                                            notification.is_read 
-                                                ? 'bg-gray-200' 
+                                        <div className={`p-2 rounded-lg ${notification.is_read
+                                                ? 'bg-gray-200'
                                                 : 'bg-emerald-100'
-                                        }`}>
+                                            }`}>
                                             <Bell className="h-5 w-5" />
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            <h3 className={`font-medium ${
-                                                notification.is_read 
-                                                    ? 'text-gray-700' 
+                                            <h3 className={`font-medium ${notification.is_read
+                                                    ? 'text-gray-700'
                                                     : 'text-gray-900'
-                                            }`}>
+                                                }`}>
                                                 {notification.title}
                                             </h3>
-                                            <p className={`text-sm mt-1 ${
-                                                notification.is_read 
-                                                    ? 'text-gray-500' 
+                                            <p className={`text-sm mt-1 ${notification.is_read
+                                                    ? 'text-gray-500'
                                                     : 'text-gray-700'
-                                            }`}>
+                                                }`}>
                                                 {notification.message}
                                             </p>
                                         </div>

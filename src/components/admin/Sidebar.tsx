@@ -80,10 +80,10 @@ export default function Sidebar() {
                                         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent transform -skew-x-12 animate-pulse"></div>
                                     )}
                                     <Icon
-                                        className={`mr-4 flex-shrink-0 h-6 w-6 transition-all duration-200 relative z-10 ${isActive 
-                                            ? "text-white drop-shadow-lg" 
+                                        className={`mr-4 flex-shrink-0 h-6 w-6 transition-all duration-200 relative z-10 ${isActive
+                                            ? "text-white drop-shadow-lg"
                                             : "text-slate-400 group-hover:text-emerald-400 group-hover:scale-110"
-                                        }`}
+                                            }`}
                                     />
                                     <span className="font-bold tracking-wide relative z-10 text-base">{item.name}</span>
                                     {isActive && (

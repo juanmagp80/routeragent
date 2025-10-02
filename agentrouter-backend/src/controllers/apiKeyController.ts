@@ -272,10 +272,10 @@ export const deleteApiKey = async (req: AuthenticatedRequest, res: Response) => 
 export const listApiKeysDev = async (req: Request, res: Response) => {
     try {
         console.log('📋 listApiKeysDev: Conectando con Supabase real');
-        
+
         // ID del usuario de desarrollo (debe coincidir con createApiKeyDev)
         const userId = '3a942f65-25e7-4de3-84cb-3df0268ff759';
-        
+
         // Para desarrollo, obtener solo las API keys del usuario actual
         const { data: apiKeys, error } = await supabase
             .from('api_keys')
@@ -503,7 +503,7 @@ export const getMetricsDev = async (req: Request, res: Response) => {
     try {
         // ID del usuario de desarrollo (debe coincidir con listApiKeysDev y createApiKeyDev)
         const userId = '3a942f65-25e7-4de3-84cb-3df0268ff759';
-        
+
         // Obtener conteo de API keys activas del usuario específico
         const { count: activeApiKeys } = await supabase
             .from('api_keys')
@@ -516,9 +516,9 @@ export const getMetricsDev = async (req: Request, res: Response) => {
             .from('api_keys')
             .select('id')
             .eq('user_id', userId);
-            
+
         const userApiKeyIds = userApiKeys?.map(key => key.id) || [];
-        
+
         // Obtener estadísticas de uso filtradas por las API keys del usuario
         const { data: usageData, error: usageError } = userApiKeyIds.length > 0 ? await supabase
             .from('usage_records')
