@@ -115,7 +115,7 @@ console.log(result.response);`
                 <div className="max-w-6xl mx-auto px-6 py-12">
                     <div className="text-center">
                         <h1 className="text-4xl font-black mb-4">
-                            AgentRouter MCP <span className="text-emerald-400">API Docs</span>
+                            RouterAI <span className="text-emerald-400">API Docs</span>
                         </h1>
                         <p className="text-xl text-slate-300 max-w-3xl mx-auto">
                             Documentación completa para integrar el router inteligente de IA en tu aplicación.
@@ -158,7 +158,7 @@ console.log(result.response);`
                                 <div>
                                     <h2 className="text-3xl font-bold text-slate-900 mb-4">Quick Start</h2>
                                     <p className="text-lg text-slate-600 mb-8">
-                                        Integra AgentRouter MCP en tu aplicación en menos de 5 minutos.
+                                        Integra RouterAI en tu aplicación en menos de 5 minutos.
                                     </p>
                                 </div>
 

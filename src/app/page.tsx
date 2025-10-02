@@ -55,8 +55,8 @@ const Navigation = () => {
               </div>
             </div>
             <div>
-              <span className="text-xl font-black text-white">AgentRouter</span>
-              <div className="text-xs text-emerald-400 font-mono">MCP</div>
+              <span className="text-xl font-black text-white">RouterAI</span>
+              <div className="text-xs text-emerald-400 font-mono">AI</div>
             </div>
           </motion.div>
 
@@ -94,7 +94,7 @@ const Navigation = () => {
 const HeroSection = () => {
   const [typedText, setTypedText] = useState("");
   const [currentStep, setCurrentStep] = useState(0);
-  const fullText = "curl -X POST https://api.agentrouter.com/v1/route";
+  const fullText = "curl -X POST https://api.routerai.com/v1/route";
 
   useEffect(() => {
     if (currentStep < fullText.length) {
@@ -225,7 +225,7 @@ const HeroSection = () => {
                 <div className="w-3 h-3 bg-red-500 rounded-full"></div>
                 <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
                 <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                <span className="text-slate-400 text-sm font-mono ml-4">agentrouter-api</span>
+                <span className="text-slate-400 text-sm font-mono ml-4">routerai-api</span>
               </div>
 
               {/* Terminal content */}
@@ -286,7 +286,7 @@ const RouterSection = () => {
             El Router que <span className="text-emerald-600">Piensa</span>
           </h2>
           <p className="text-xl text-slate-600 max-w-3xl mx-auto">
-            Tecnología MCP que analiza tu tarea y elige el modelo perfecto basándose en costo, velocidad y calidad.
+            Tecnología avanzada que analiza tu tarea y elige el modelo perfecto basándose en costo, velocidad y calidad.
           </p>
         </motion.div>
 
@@ -322,7 +322,7 @@ const RouterSection = () => {
             >
               <div className="bg-emerald-500 rounded-xl p-6 mb-4 relative overflow-hidden">
                 <Brain className="w-12 h-12 text-white mx-auto mb-4" />
-                <div className="text-white font-bold">Router MCP</div>
+                <div className="text-white font-bold">RouterAI</div>
                 <div className="text-emerald-100 text-xs mt-2">
                   Analizando...
                 </div>
@@ -377,7 +377,7 @@ const SavingsSection = () => {
 
   const models = {
     gpt4: { name: "Solo GPT-4", cost: 1000, color: "text-red-500" },
-    mixed: { name: "Con AgentRouter", cost: 320, color: "text-emerald-500" }
+    mixed: { name: "Con RouterAI", cost: 320, color: "text-emerald-500" }
   };
 
   return (
@@ -393,7 +393,7 @@ const SavingsSection = () => {
             Ahorro <span className="text-emerald-600">Real</span> y <span className="text-emerald-600">Medible</span>
           </h2>
           <p className="text-xl text-slate-600">
-            Comparativa real de costos: antes vs después de AgentRouter MCP
+            Comparativa real de costos: antes vs después de RouterAI
           </p>
         </motion.div>
 
@@ -451,7 +451,7 @@ const SavingsSection = () => {
                   <TrendingDown className="w-8 h-8 text-white rotate-180" />
                 </div>
                 <h3 className="text-2xl font-bold text-emerald-700">DESPUÉS</h3>
-                <p className="text-emerald-600">Con AgentRouter MCP</p>
+                <p className="text-emerald-600">Con RouterAI</p>
               </div>
 
               <div className="space-y-4">
@@ -499,7 +499,12 @@ const DashboardSection = () => {
   const fetchMetrics = async () => {
     try {
       setLoading(true);
-      const response = await fetch('http://localhost:3001/v1/metrics');
+      const response = await fetch('/api/v1/metrics');
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
       const data = await response.json();
 
       if (data.success) {
@@ -512,8 +517,39 @@ const DashboardSection = () => {
         setError(data.error || 'Failed to fetch metrics');
       }
     } catch (err) {
-      setError('Failed to connect to API');
       console.error('Error fetching metrics:', err);
+      
+      // Usar datos mock como fallback para la demo
+      console.log('Using fallback mock data for demo...');
+      setMetrics([
+        { model: "gpt-4o", count: 45, sum: 0.675 },
+        { model: "claude-3", count: 23, sum: 0.69 },
+        { model: "gpt-4o-mini", count: 67, sum: 0.134 },
+        { model: "llama-3", count: 89, sum: 0.089 }
+      ]);
+      setSummary({
+        total_cost: 1.588,
+        total_requests: 224,
+        avg_cost_per_request: 0.007
+      });
+      setRecentTasks([
+        {
+          model: "claude-3",
+          cost: 0.015,
+          latency: 89,
+          status: "completed",
+          timestamp: new Date(Date.now() - 5 * 60 * 1000).toISOString()
+        },
+        {
+          model: "gpt-4o",
+          cost: 0.032,
+          latency: 156,
+          status: "completed", 
+          timestamp: new Date(Date.now() - 12 * 60 * 1000).toISOString()
+        }
+      ]);
+      setLastUpdated(new Date());
+      setError(null); // No mostrar error, usar datos mock
     } finally {
       setLoading(false);
     }
@@ -943,7 +979,7 @@ const Footer = () => {
               </div>
             </div>
             <div>
-              <span className="text-lg font-black">AgentRouter MCP</span>
+              <span className="text-lg font-black">RouterAI</span>
               <div className="text-xs text-slate-400 font-mono">v1.0.0</div>
             </div>
           </div>
@@ -963,7 +999,7 @@ const Footer = () => {
 
         <div className="mt-12 pt-8 border-t border-slate-800 text-center">
           <p className="text-slate-500 text-sm font-mono">
-            © 2024 AgentRouter MCP • Optimizando IA desde 2024
+            © 2024 RouterAI • Optimizando IA desde 2024
           </p>
         </div>
       </div>

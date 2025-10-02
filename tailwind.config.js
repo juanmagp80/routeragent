@@ -63,6 +63,8 @@ module.exports = {
             },
             fontFamily: {
                 sans: ['Inter', 'system-ui', 'sans-serif'],
+                display: ['Outfit', 'Inter', 'system-ui', 'sans-serif'],
+                mono: ['JetBrains Mono', 'Monaco', 'Cascadia Code', 'Roboto Mono', 'monospace'],
             },
             animation: {
                 "gradient-x": "gradient-x 15s ease infinite",

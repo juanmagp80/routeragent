@@ -1,7 +1,7 @@
 /**
- * AgentRouter MCP SDK for JavaScript/Node.js
+ * RouterAI SDK for JavaScript/Node.js
  * 
- * Simple SDK to integrate AgentRouter intelligent AI routing
+ * Simple SDK to integrate RouterAI intelligent AI routing
  * into your applications with minimal code changes.
  */
 

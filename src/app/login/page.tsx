@@ -1,9 +1,9 @@
 "use client";
 
-import { motion, AnimatePresence } from 'framer-motion';
-import { Eye, EyeOff, ArrowRight, Github, Chrome } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { ArrowRight, Chrome, Eye, EyeOff, Github } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 
 export default function LoginPage() {
@@ -26,7 +26,7 @@ export default function LoginPage() {
 
     useEffect(() => {
         setIsMounted(true);
-        
+
         const handleMouseMove = (e: MouseEvent) => {
             setMousePosition({
                 x: e.clientX / window.innerWidth,
@@ -80,7 +80,7 @@ export default function LoginPage() {
             console.log('Login iniciado exitosamente, esperando redirección...');
         } catch (err: any) {
             const errorMessage = err.message || 'Error al iniciar sesión';
-            
+
             if (errorMessage.includes('verifica tu email') || errorMessage.includes('Email no verificado')) {
                 setShowEmailVerification(true);
                 setVerificationEmail(formData.email);
@@ -111,10 +111,10 @@ export default function LoginPage() {
 
     const containerVariants = {
         hidden: { opacity: 0, y: 20 },
-        visible: { 
-            opacity: 1, 
+        visible: {
+            opacity: 1,
             y: 0,
-            transition: { 
+            transition: {
                 duration: 0.6,
                 staggerChildren: 0.1
             }
@@ -129,19 +129,19 @@ export default function LoginPage() {
     return (
         <div className="min-h-screen bg-black relative overflow-hidden">
             {/* Dynamic background gradient */}
-            <div 
+            <div
                 className="absolute inset-0 opacity-30"
                 style={{
                     background: `radial-gradient(circle at ${mousePosition.x * 100}% ${mousePosition.y * 100}%, rgba(16, 185, 129, 0.15) 0%, transparent 50%)`
                 }}
             />
-            
+
             {/* Grid pattern overlay */}
             <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:4rem_4rem]" />
-            
+
             <div className="relative z-10 min-h-screen flex">
                 {/* Left side - Branding */}
-                <motion.div 
+                <motion.div
                     className="hidden lg:flex lg:w-1/2 flex-col justify-center px-12 xl:px-20"
                     initial={{ opacity: 0, x: -50 }}
                     animate={{ opacity: 1, x: 0 }}
@@ -159,18 +159,18 @@ export default function LoginPage() {
                                 </div>
                             </div>
                         </motion.div>
-                        
+
                         <h1 className="text-4xl font-bold text-white mb-4 leading-tight">
                             Bienvenido de vuelta a
                             <span className="block bg-gradient-to-r from-emerald-400 to-emerald-600 bg-clip-text text-transparent">
-                                AgentRouter
+                                RouterAI
                             </span>
                         </h1>
-                        
+
                         <p className="text-gray-400 text-lg leading-relaxed">
                             El router inteligente de modelos de IA que optimiza costo, velocidad y calidad para tus aplicaciones.
                         </p>
-                        
+
                         <div className="mt-8 space-y-4">
                             <div className="flex items-center space-x-3">
                                 <div className="w-2 h-2 bg-emerald-400 rounded-full"></div>
@@ -198,10 +198,10 @@ export default function LoginPage() {
                     >
                         <motion.div variants={itemVariants} className="text-center mb-8">
                             <h2 className="text-3xl font-bold text-white mb-2">Iniciar sesión</h2>
-                            <p className="text-gray-400">Accede a tu panel de AgentRouter</p>
+                            <p className="text-gray-400">Accede a tu panel de RouterAI</p>
                         </motion.div>
 
-                        <motion.div 
+                        <motion.div
                             variants={itemVariants}
                             className="bg-white/5 backdrop-blur-lg rounded-3xl p-8 border border-white/10 shadow-2xl"
                         >
@@ -243,11 +243,10 @@ export default function LoginPage() {
                                             onFocus={() => setFocusedField('email')}
                                             onBlur={() => setFocusedField(null)}
                                             name="email"
-                                            className={`w-full bg-white/5 border ${
-                                                focusedField === 'email' 
-                                                    ? 'border-emerald-400/50 ring-2 ring-emerald-400/20' 
-                                                    : 'border-white/10'
-                                            } text-white rounded-xl px-4 py-3 transition-all duration-300 placeholder-gray-500 focus:outline-none backdrop-blur-sm`}
+                                            className={`w-full bg-white/5 border ${focusedField === 'email'
+                                                ? 'border-emerald-400/50 ring-2 ring-emerald-400/20'
+                                                : 'border-white/10'
+                                                } text-white rounded-xl px-4 py-3 transition-all duration-300 placeholder-gray-500 focus:outline-none backdrop-blur-sm`}
                                             placeholder="tu@empresa.com"
                                         />
                                     </div>
@@ -266,11 +265,10 @@ export default function LoginPage() {
                                             onFocus={() => setFocusedField('password')}
                                             onBlur={() => setFocusedField(null)}
                                             name="password"
-                                            className={`w-full bg-white/5 border ${
-                                                focusedField === 'password' 
-                                                    ? 'border-emerald-400/50 ring-2 ring-emerald-400/20' 
-                                                    : 'border-white/10'
-                                            } text-white rounded-xl px-4 py-3 pr-12 transition-all duration-300 placeholder-gray-500 focus:outline-none backdrop-blur-sm`}
+                                            className={`w-full bg-white/5 border ${focusedField === 'password'
+                                                ? 'border-emerald-400/50 ring-2 ring-emerald-400/20'
+                                                : 'border-white/10'
+                                                } text-white rounded-xl px-4 py-3 pr-12 transition-all duration-300 placeholder-gray-500 focus:outline-none backdrop-blur-sm`}
                                             placeholder="Ingresa tu contraseña"
                                         />
                                         <button

@@ -1,7 +1,7 @@
 {
     "name": "agentrouter-sdk",
     "version": "1.0.0",
-    "description": "Official JavaScript/Node.js SDK for AgentRouter MCP - Intelligent AI model routing",
+    "description": "Official JavaScript/Node.js SDK for AgentRouter - Intelligent AI model routing",
     "main": "index.js",
     "module": "index.js",
     "types": "index.d.ts",
@@ -23,8 +23,8 @@
         "claude",
         "gpt",
         "router",
-        "mcp",
-        "model-context-protocol",
+        "routerai",
+        "intelligent-routing",
         "cost-optimization",
         "agentrouter"
     ],

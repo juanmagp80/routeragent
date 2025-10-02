@@ -1,10 +1,10 @@
-# AgentRouter MCP SDK for JavaScript/Node.js
+# RouterAI SDK for JavaScript/Node.js
 
 [![npm version](https://img.shields.io/npm/v/agentrouter-sdk.svg)](https://www.npmjs.com/package/agentrouter-sdk)
 [![License](https://img.shields.io/npm/l/agentrouter-sdk.svg)](LICENSE)
 [![Downloads](https://img.shields.io/npm/dm/agentrouter-sdk.svg)](https://www.npmjs.com/package/agentrouter-sdk)
 
-Official JavaScript/Node.js SDK for **AgentRouter MCP** - Intelligent AI model routing that reduces your AI costs by 70-95% without changing your code.
+Official JavaScript/Node.js SDK for **RouterAI** - Intelligent AI model routing that reduces your AI costs by 70-95% without changing your code.
 
 ## 🚀 Quick Start
 
@@ -34,7 +34,7 @@ console.log(result.response);
 
 ## 🧠 How It Works
 
-AgentRouter MCP uses the **Model Context Protocol** to intelligently select the optimal AI model for each task:
+RouterAI uses **advanced intelligent routing** to select the optimal AI model for each task:
 
 1. **Analyzes** your task (summary, translation, analysis, etc.)
 2. **Evaluates** available models based on quality, speed, and cost

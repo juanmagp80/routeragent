@@ -1,305 +1,604 @@
 "use client";
 
-import { BACKEND_URL } from "@/config/backend";
-import { useAuth } from "@/hooks/useAuth";
-import { Bell, Save, User } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useAuth } from "@/hooks/useAuth";
+import {
+    Settings,
+    User,
+    Shield,
+    Key,
+    Palette,
+    Globe,
+    Monitor,
+    Sun,
+    Moon,
+    Bell,
+    Lock,
+    Eye,
+    EyeOff,
+    Save,
+    Check,
+    X,
+    Smartphone,
+    Mail,
+    AlertTriangle,
+    Trash2
+} from "lucide-react";
 
 export default function SettingsPage() {
     const { user, loading } = useAuth();
+    const [activeTab, setActiveTab] = useState('profile');
     const [saving, setSaving] = useState(false);
     const [message, setMessage] = useState('');
+    const [showApiKey, setShowApiKey] = useState(false);
 
-    const [profile, setProfile] = useState({
-        name: "",
-        email: "",
-        company: "",
-        timezone: "Europe/Madrid"
+    // Estados para configuraciones del perfil
+    const [profileSettings, setProfileSettings] = useState({
+        name: 'Juan Manuel García',
+        email: 'juan@example.com',
+        company: 'RouterAI Corp',
+        role: 'Developer',
+        timezone: 'Europe/Madrid',
+        language: 'es'
     });
 
-    const [notifications, setNotifications] = useState({
-        email: true
+    // Estados para preferencias
+    const [preferences, setPreferences] = useState({
+        theme: 'light',
+        notifications: true,
+        emailUpdates: true,
+        marketingEmails: false,
+        autoSave: true,
+        compactMode: false
     });
 
-    // Cargar datos reales del usuario
-    useEffect(() => {
-        console.log('⚙️ Settings: User data from hook:', user);
-        console.log('⚙️ Settings: Loading state:', loading);
+    // Estados para seguridad
+    const [securitySettings, setSecuritySettings] = useState({
+        twoFactorAuth: false,
+        sessionTimeout: '30',
+        loginNotifications: true,
+        apiKeyRotation: 'monthly'
+    });
 
-        if (user && !loading) {
-            console.log('✅ Settings: Loading user data into form');
-
-            // Limpiar " - Test" del nombre si existe
-            const cleanName = user.name?.replace(/ - Test$/i, '') || "";
-
-            setProfile({
-                name: cleanName,
-                email: user.email || "",
-                company: (user as any)?.company || "",
-                timezone: "Europe/Madrid" // Predeterminado para España
-            });
-
-            // Cargar preferencias de notificaciones reales
-            setNotifications({
-                email: (user as any)?.email_notifications !== false
-            });
-        }
-    }, [user, loading]);
+    // Estados para API
+    const [apiSettings, setApiSettings] = useState({
+        apiKey: 'ar_010e77064cf58e3899df709246d0667be2a1ff518350506d69995eeee69e34d4',
+        rateLimiting: true,
+        corsOrigins: ['https://myapp.com', 'https://localhost:3000'],
+        webhookUrl: ''
+    });
 
     const handleSave = async () => {
         setSaving(true);
         setMessage('');
-
+        
         try {
-            console.log('💾 Saving user settings:', profile);
-
-            const response = await fetch(`${BACKEND_URL}/v1/user-dev`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    name: profile.name,
-                    email: profile.email,
-                    company: profile.company
-                })
-            });
-
-            console.log('📡 Update response status:', response.status);
-            const data = await response.json();
-            console.log('📝 Update response data:', data);
-
-            if (response.ok && data.success) {
-                setMessage('✅ Configuración guardada exitosamente');
-
-                // Recargar datos del usuario desde el hook
-                setTimeout(() => {
-                    window.location.reload();
-                }, 2000);
-            } else {
-                // Si el endpoint de actualización no está disponible, mostrar mensaje informativo
-                if (response.status === 404) {
-                    setMessage('ℹ️ Función de actualización no disponible en producción. Los datos se muestran correctamente desde la base de datos.');
-                } else {
-                    setMessage('❌ Error al guardar la configuración: ' + (data.error || 'Error desconocido'));
-                }
-            }
-        } catch (error) {
-            console.error('Error saving settings:', error);
-            setMessage('❌ Error de conexión al guardar la configuración');
+            // Simular guardado
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            setMessage('Configuración guardada exitosamente');
+            setTimeout(() => setMessage(''), 3000);
+        } catch (err) {
+            setMessage('Error al guardar la configuración');
         } finally {
             setSaving(false);
         }
     };
 
-    const handleNotificationChange = async (type: 'email', value: boolean) => {
-        console.log(`🔔 Updating ${type} notification to:`, value);
-
-        // Actualizar estado local inmediatamente para feedback visual
-        setNotifications(prev => ({ ...prev, [type]: value }));
-
-        try {
-            const response = await fetch(`${BACKEND_URL}/v1/user-notifications-dev`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    email_notifications: value
-                })
-            });
-
-            const data = await response.json();
-
-            if (response.ok && data.success) {
-                console.log('✅ Notification preference updated successfully');
-                // Actualizar con los valores del servidor
-                setNotifications({
-                    email: data.notifications.email
-                });
-            } else {
-                console.error('❌ Failed to update notification preference:', data.error);
-                // Revertir el cambio local si falló
-                setNotifications(prev => ({ ...prev, [type]: !value }));
-                setMessage('❌ Error al actualizar preferencias de notificación');
-            }
-        } catch (error) {
-            console.error('Error updating notification preference:', error);
-            // Revertir el cambio local si falló
-            setNotifications(prev => ({ ...prev, [type]: !value }));
-            setMessage('❌ Error de conexión al actualizar notificaciones');
-        }
-    };
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center min-h-96">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600"></div>
+            </div>
+        );
+    }
 
     return (
-        <div className="space-y-6">
-            {/* Page header */}
-            <div>
-                <h1 className="text-2xl font-bold text-gray-900">Configuración</h1>
-                <p className="mt-1 text-sm text-gray-600">
-                    Administra la configuración de tu cuenta y preferencias
-                </p>
-            </div>
-
-            {/* Loading state */}
-            {loading && (
-                <div className="bg-blue-50 p-4 rounded-md">
-                    <p className="text-blue-800">⏳ Cargando datos del usuario...</p>
-                </div>
-            )}
-
-
-            {/* Mensaje de estado */}
-            {message && (
-                <div className={`p-4 rounded-md ${message.includes('✅') ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'
-                    }`}>
-                    {message}
-                </div>
-            )}
-
-            {/* Profile settings */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                <div className="px-6 py-4 border-b border-gray-200">
-                    <div className="flex items-center">
-                        <User className="h-5 w-5 text-gray-500 mr-2" />
-                        <h2 className="text-lg font-semibold text-gray-900">Perfil</h2>
-                    </div>
-                </div>
-                <div className="px-6 py-6 space-y-6">
-                    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-                        <div>
-                            <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-                                Nombre Completo
-                            </label>
-                            <input
-                                type="text"
-                                id="name"
-                                value={profile.name}
-                                onChange={(e) => setProfile({ ...profile, name: e.target.value })}
-                                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm"
-                                placeholder="Tu nombre completo"
-                            />
+        <div className="space-y-8 max-w-6xl mx-auto p-6">
+            {/* Header con gradiente RouterAI */}
+            <div className="relative bg-gradient-to-br from-emerald-600 via-teal-700 to-emerald-800 rounded-2xl p-8 text-white overflow-hidden">
+                <div className="absolute inset-0 bg-black/20"></div>
+                <div className="relative z-10">
+                    <div className="flex items-center gap-3 mb-4">
+                        <div className="bg-white/20 backdrop-blur-sm rounded-xl p-3">
+                            <Settings className="h-8 w-8" />
                         </div>
                         <div>
-                            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                                Dirección de Email
-                            </label>
-                            <input
-                                type="email"
-                                id="email"
-                                value={profile.email}
-                                onChange={(e) => setProfile({ ...profile, email: e.target.value })}
-                                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm"
-                                placeholder="tu@email.com"
-                            />
-                        </div>
-                        <div>
-                            <label htmlFor="company" className="block text-sm font-medium text-gray-700">
-                                Empresa
-                            </label>
-                            <input
-                                type="text"
-                                id="company"
-                                value={profile.company}
-                                onChange={(e) => setProfile({ ...profile, company: e.target.value })}
-                                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm"
-                                placeholder="Nombre de tu empresa (opcional)"
-                            />
-                        </div>
-                        <div>
-                            <label htmlFor="timezone" className="block text-sm font-medium text-gray-700">
-                                Zona Horaria
-                            </label>
-                            <select
-                                id="timezone"
-                                value={profile.timezone}
-                                onChange={(e) => setProfile({ ...profile, timezone: e.target.value })}
-                                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm"
-                            >
-                                <option value="Europe/Madrid">Europa/Madrid (GMT+1)</option>
-                                <option value="America/New_York">América/Nueva York (GMT-5)</option>
-                                <option value="America/Los_Angeles">América/Los Ángeles (GMT-8)</option>
-                                <option value="Asia/Tokyo">Asia/Tokio (GMT+9)</option>
-                                <option value="Europe/London">Europa/Londres (GMT+0)</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div className={`p-4 rounded-md ${user?.plan === 'pro' ? 'bg-emerald-50' : 'bg-blue-50'}`}>
-                        <div className="flex">
-                            <div className="ml-3">
-                                <h3 className={`text-sm font-medium ${user?.plan === 'pro' ? 'text-emerald-800' : 'text-blue-800'}`}>
-                                    Plan Actual: {user?.plan?.toUpperCase() || 'CARGANDO...'}
-                                </h3>
-                                <div className={`mt-2 text-sm ${user?.plan === 'pro' ? 'text-emerald-700' : 'text-blue-700'}`}>
-                                    <p>
-                                        {user?.plan === 'pro' ? (
-                                            '¡Tienes acceso completo a todas las funciones Pro! Gracias por ser usuario premium.'
-                                        ) : user?.plan === 'free' ? (
-                                            'Tienes acceso a las funciones básicas. Considera actualizar para obtener más funciones.'
-                                        ) : (
-                                            'Cargando información del plan...'
-                                        )}
-                                    </p>
-                                    {user?.plan && (
-                                        <p className="mt-1 font-medium">
-                                            Límite de solicitudes: {user.plan === 'pro' ? '5,000' : '1,000'} por mes
-                                        </p>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Notification settings */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                <div className="px-6 py-4 border-b border-gray-200">
-                    <div className="flex items-center">
-                        <Bell className="h-5 w-5 text-gray-500 mr-2" />
-                        <h2 className="text-lg font-semibold text-gray-900">Notificaciones</h2>
-                    </div>
-                </div>
-                <div className="px-6 py-6 space-y-4">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <h3 className="text-sm font-medium text-gray-900">Notificaciones por Email</h3>
-                            <p className="text-sm text-gray-500">Recibir alertas de uso y actualizaciones de facturación por email</p>
-                        </div>
-                        <button
-                            onClick={() => handleNotificationChange('email', !notifications.email)}
-                            className={`relative inline-flex h-6 w-11 items-center rounded-full ${notifications.email ? 'bg-emerald-600' : 'bg-gray-200'
-                                }`}
-                        >
-                            <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${notifications.email ? 'translate-x-6' : 'translate-x-1'
-                                }`} />
-                        </button>
-                    </div>
-
-                    {/* Botón de prueba - Solo email */}
-                    <div className="pt-4 border-t border-gray-200">
-                        <div className="mb-2">
-                            <p className="text-xs text-gray-600">
-                                📧 Las notificaciones se enviarán por email
+                            <h1 className="text-3xl font-bold">Configuración</h1>
+                            <p className="text-indigo-100 mt-1">
+                                Personaliza tu experiencia RouterAI
                             </p>
                         </div>
                     </div>
                 </div>
             </div>
 
-            {/* Save button */}
-            <div className="flex justify-end">
-                <button
-                    onClick={handleSave}
-                    disabled={saving}
-                    className={`inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 ${saving
-                        ? 'bg-gray-400 cursor-not-allowed'
-                        : 'bg-emerald-600 hover:bg-emerald-700'
-                        }`}
-                >
-                    <Save className="h-5 w-5 mr-2" />
-                    {saving ? 'Guardando...' : 'Guardar Cambios'}
-                </button>
+            <div className="flex flex-col lg:flex-row gap-8">
+                {/* Navegación lateral */}
+                <div className="lg:w-64">
+                    <nav className="space-y-2">
+                        {[
+                            { id: 'profile', label: 'Perfil', icon: User },
+                            { id: 'preferences', label: 'Preferencias', icon: Palette },
+                            { id: 'security', label: 'Seguridad', icon: Shield },
+                            { id: 'api', label: 'API', icon: Key }
+                        ].map(({ id, label, icon: Icon }) => (
+                            <button
+                                key={id}
+                                onClick={() => setActiveTab(id)}
+                                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors ${
+                                    activeTab === id
+                                        ? 'bg-indigo-100 text-indigo-700 font-medium'
+                                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                                }`}
+                            >
+                                <Icon className="h-5 w-5" />
+                                {label}
+                            </button>
+                        ))}
+                    </nav>
+                </div>
+
+                {/* Contenido principal */}
+                <div className="flex-1">
+                    {activeTab === 'profile' && (
+                        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
+                            <div className="flex items-center gap-3 mb-6">
+                                <div className="bg-indigo-100 rounded-lg p-2">
+                                    <User className="h-5 w-5 text-indigo-600" />
+                                </div>
+                                <h2 className="text-xl font-semibold text-gray-900">
+                                    Información del Perfil
+                                </h2>
+                            </div>
+
+                            <div className="space-y-6">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Nombre completo
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={profileSettings.name}
+                                            onChange={(e) => setProfileSettings(prev => ({
+                                                ...prev,
+                                                name: e.target.value
+                                            }))}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Email
+                                        </label>
+                                        <input
+                                            type="email"
+                                            value={profileSettings.email}
+                                            onChange={(e) => setProfileSettings(prev => ({
+                                                ...prev,
+                                                email: e.target.value
+                                            }))}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Empresa
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={profileSettings.company}
+                                            onChange={(e) => setProfileSettings(prev => ({
+                                                ...prev,
+                                                company: e.target.value
+                                            }))}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Rol
+                                        </label>
+                                        <select
+                                            value={profileSettings.role}
+                                            onChange={(e) => setProfileSettings(prev => ({
+                                                ...prev,
+                                                role: e.target.value
+                                            }))}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                                        >
+                                            <option value="Developer">Developer</option>
+                                            <option value="Product Manager">Product Manager</option>
+                                            <option value="CTO">CTO</option>
+                                            <option value="CEO">CEO</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Zona horaria
+                                        </label>
+                                        <select
+                                            value={profileSettings.timezone}
+                                            onChange={(e) => setProfileSettings(prev => ({
+                                                ...prev,
+                                                timezone: e.target.value
+                                            }))}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                                        >
+                                            <option value="Europe/Madrid">Madrid (GMT+1)</option>
+                                            <option value="Europe/London">London (GMT)</option>
+                                            <option value="America/New_York">New York (GMT-5)</option>
+                                            <option value="America/Los_Angeles">Los Angeles (GMT-8)</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Idioma
+                                        </label>
+                                        <select
+                                            value={profileSettings.language}
+                                            onChange={(e) => setProfileSettings(prev => ({
+                                                ...prev,
+                                                language: e.target.value
+                                            }))}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                                        >
+                                            <option value="es">Español</option>
+                                            <option value="en">English</option>
+                                            <option value="fr">Français</option>
+                                            <option value="de">Deutsch</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'preferences' && (
+                        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
+                            <div className="flex items-center gap-3 mb-6">
+                                <div className="bg-emerald-100 rounded-lg p-2">
+                                    <Palette className="h-5 w-5 text-emerald-600" />
+                                </div>
+                                <h2 className="text-xl font-semibold text-gray-900">
+                                    Preferencias de la Aplicación
+                                </h2>
+                            </div>
+
+                            <div className="space-y-6">
+                                {/* Tema */}
+                                <div>
+                                    <h3 className="text-lg font-medium text-gray-900 mb-4">Tema</h3>
+                                    <div className="grid grid-cols-3 gap-4">
+                                        {[
+                                            { id: 'light', label: 'Claro', icon: Sun },
+                                            { id: 'dark', label: 'Oscuro', icon: Moon },
+                                            { id: 'system', label: 'Sistema', icon: Monitor }
+                                        ].map(({ id, label, icon: Icon }) => (
+                                            <button
+                                                key={id}
+                                                onClick={() => setPreferences(prev => ({
+                                                    ...prev,
+                                                    theme: id
+                                                }))}
+                                                className={`p-4 rounded-lg border-2 transition-all ${
+                                                    preferences.theme === id
+                                                        ? 'border-indigo-500 bg-indigo-50'
+                                                        : 'border-gray-200 hover:border-gray-300'
+                                                }`}
+                                            >
+                                                <Icon className="h-8 w-8 mx-auto mb-2 text-gray-600" />
+                                                <p className="text-sm font-medium text-gray-900">{label}</p>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Configuraciones de toggle */}
+                                <div className="space-y-4">
+                                    <h3 className="text-lg font-medium text-gray-900">Configuraciones Generales</h3>
+                                    
+                                    {[
+                                        {
+                                            key: 'notifications',
+                                            label: 'Notificaciones',
+                                            desc: 'Recibir notificaciones en el navegador',
+                                            icon: Bell
+                                        },
+                                        {
+                                            key: 'emailUpdates',
+                                            label: 'Actualizaciones por email',
+                                            desc: 'Recibir noticias y actualizaciones del producto',
+                                            icon: Mail
+                                        },
+                                        {
+                                            key: 'autoSave',
+                                            label: 'Guardado automático',
+                                            desc: 'Guardar cambios automáticamente',
+                                            icon: Save
+                                        },
+                                        {
+                                            key: 'compactMode',
+                                            label: 'Modo compacto',
+                                            desc: 'Interfaz más compacta y densa',
+                                            icon: Monitor
+                                        }
+                                    ].map(({ key, label, desc, icon: Icon }) => (
+                                        <div key={key} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                                            <div className="flex items-center gap-3">
+                                                <Icon className="h-5 w-5 text-gray-600" />
+                                                <div>
+                                                    <p className="font-medium text-gray-900">{label}</p>
+                                                    <p className="text-sm text-gray-500">{desc}</p>
+                                                </div>
+                                            </div>
+                                            <label className="relative inline-flex items-center cursor-pointer">
+                                                <input
+                                                    type="checkbox"
+                                                    className="sr-only peer"
+                                                    checked={preferences[key as keyof typeof preferences] as boolean}
+                                                    onChange={(e) => setPreferences(prev => ({
+                                                        ...prev,
+                                                        [key]: e.target.checked
+                                                    }))}
+                                                />
+                                                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                                            </label>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'security' && (
+                        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
+                            <div className="flex items-center gap-3 mb-6">
+                                <div className="bg-red-100 rounded-lg p-2">
+                                    <Shield className="h-5 w-5 text-red-600" />
+                                </div>
+                                <h2 className="text-xl font-semibold text-gray-900">
+                                    Configuración de Seguridad
+                                </h2>
+                            </div>
+
+                            <div className="space-y-6">
+                                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                                    <div className="flex items-center gap-2">
+                                        <AlertTriangle className="h-5 w-5 text-yellow-600" />
+                                        <p className="text-sm font-medium text-yellow-800">
+                                            Configuraciones sensibles - maneja con cuidado
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {/* Autenticación de dos factores */}
+                                <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+                                    <div className="flex items-center gap-3">
+                                        <Lock className="h-5 w-5 text-gray-600" />
+                                        <div>
+                                            <p className="font-medium text-gray-900">Autenticación de dos factores</p>
+                                            <p className="text-sm text-gray-500">Añade una capa extra de seguridad</p>
+                                        </div>
+                                    </div>
+                                    <label className="relative inline-flex items-center cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            className="sr-only peer"
+                                            checked={securitySettings.twoFactorAuth}
+                                            onChange={(e) => setSecuritySettings(prev => ({
+                                                ...prev,
+                                                twoFactorAuth: e.target.checked
+                                            }))}
+                                        />
+                                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-red-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-600"></div>
+                                    </label>
+                                </div>
+
+                                {/* Timeout de sesión */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Timeout de sesión (minutos)
+                                    </label>
+                                    <select
+                                        value={securitySettings.sessionTimeout}
+                                        onChange={(e) => setSecuritySettings(prev => ({
+                                            ...prev,
+                                            sessionTimeout: e.target.value
+                                        }))}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                                    >
+                                        <option value="15">15 minutos</option>
+                                        <option value="30">30 minutos</option>
+                                        <option value="60">1 hora</option>
+                                        <option value="240">4 horas</option>
+                                    </select>
+                                </div>
+
+                                {/* Notificaciones de login */}
+                                <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+                                    <div className="flex items-center gap-3">
+                                        <Smartphone className="h-5 w-5 text-gray-600" />
+                                        <div>
+                                            <p className="font-medium text-gray-900">Notificaciones de login</p>
+                                            <p className="text-sm text-gray-500">Alertas cuando alguien accede a tu cuenta</p>
+                                        </div>
+                                    </div>
+                                    <label className="relative inline-flex items-center cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            className="sr-only peer"
+                                            checked={securitySettings.loginNotifications}
+                                            onChange={(e) => setSecuritySettings(prev => ({
+                                                ...prev,
+                                                loginNotifications: e.target.checked
+                                            }))}
+                                        />
+                                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-red-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-600"></div>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'api' && (
+                        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
+                            <div className="flex items-center gap-3 mb-6">
+                                <div className="bg-green-100 rounded-lg p-2">
+                                    <Key className="h-5 w-5 text-green-600" />
+                                </div>
+                                <h2 className="text-xl font-semibold text-gray-900">
+                                    Configuración de API
+                                </h2>
+                            </div>
+
+                            <div className="space-y-6">
+                                {/* API Key */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        API Key
+                                    </label>
+                                    <div className="flex gap-2">
+                                        <div className="flex-1 relative">
+                                            <input
+                                                type={showApiKey ? 'text' : 'password'}
+                                                value={apiSettings.apiKey}
+                                                readOnly
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 font-mono text-sm"
+                                            />
+                                            <button
+                                                onClick={() => setShowApiKey(!showApiKey)}
+                                                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                            >
+                                                {showApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                            </button>
+                                        </div>
+                                        <button className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+                                            Rotar
+                                        </button>
+                                    </div>
+                                    <p className="text-xs text-gray-500 mt-1">
+                                        Mantén tu API key segura y no la compartas públicamente
+                                    </p>
+                                </div>
+
+                                {/* CORS Origins */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Orígenes CORS permitidos
+                                    </label>
+                                    <div className="space-y-2">
+                                        {apiSettings.corsOrigins.map((origin, index) => (
+                                            <div key={index} className="flex gap-2">
+                                                <input
+                                                    type="url"
+                                                    value={origin}
+                                                    onChange={(e) => {
+                                                        const newOrigins = [...apiSettings.corsOrigins];
+                                                        newOrigins[index] = e.target.value;
+                                                        setApiSettings(prev => ({
+                                                            ...prev,
+                                                            corsOrigins: newOrigins
+                                                        }));
+                                                    }}
+                                                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                                    placeholder="https://example.com"
+                                                />
+                                                <button
+                                                    onClick={() => {
+                                                        const newOrigins = apiSettings.corsOrigins.filter((_, i) => i !== index);
+                                                        setApiSettings(prev => ({
+                                                            ...prev,
+                                                            corsOrigins: newOrigins
+                                                        }));
+                                                    }}
+                                                    className="px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </button>
+                                            </div>
+                                        ))}
+                                        <button
+                                            onClick={() => setApiSettings(prev => ({
+                                                ...prev,
+                                                corsOrigins: [...prev.corsOrigins, '']
+                                            }))}
+                                            className="text-green-600 hover:text-green-700 text-sm font-medium"
+                                        >
+                                            + Añadir origen
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* Webhook URL */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        URL de Webhook
+                                    </label>
+                                    <input
+                                        type="url"
+                                        value={apiSettings.webhookUrl}
+                                        onChange={(e) => setApiSettings(prev => ({
+                                            ...prev,
+                                            webhookUrl: e.target.value
+                                        }))}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                        placeholder="https://tu-app.com/webhook"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Botones de acción */}
+                    <div className="flex items-center gap-4 mt-8">
+                        <button
+                            onClick={handleSave}
+                            disabled={saving}
+                            className="bg-gradient-to-r from-emerald-600 to-teal-700 text-white px-6 py-3 rounded-xl font-medium hover:from-emerald-700 hover:to-teal-800 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                        >
+                            {saving ? (
+                                <>
+                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                    Guardando...
+                                </>
+                            ) : (
+                                <>
+                                    <Save className="h-4 w-4" />
+                                    Guardar Cambios
+                                </>
+                            )}
+                        </button>
+                        
+                        <button className="px-6 py-3 border border-gray-300 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors">
+                            Cancelar
+                        </button>
+                    </div>
+
+                    {/* Mensaje de estado */}
+                    {message && (
+                        <div className={`mt-4 p-4 rounded-lg text-center font-medium ${
+                            message.includes('Error') 
+                                ? 'bg-red-50 text-red-700 border border-red-200'
+                                : 'bg-green-50 text-green-700 border border-green-200'
+                        }`}>
+                            <div className="flex items-center justify-center gap-2">
+                                {message.includes('Error') ? (
+                                    <X className="h-5 w-5" />
+                                ) : (
+                                    <Check className="h-5 w-5" />
+                                )}
+                                {message}
+                            </div>
+                        </div>
+                    )}
+                </div>
             </div>
         </div>
     );

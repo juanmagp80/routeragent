@@ -31,13 +31,13 @@ class CacheService {
         return Math.abs(hash).toString(36);
     }
     // Generar clave de cache
-    generateCacheKey(input, taskType) {
+    generateCacheKey(input, taskType, priority) {
         const inputHash = this.generateHash(input);
-        return `${taskType}:${inputHash}`;
+        return `${taskType}:${priority || 'balanced'}:${inputHash}`;
     }
     // Obtener del cache
-    get(input, taskType) {
-        const key = this.generateCacheKey(input, taskType);
+    get(input, taskType, priority) {
+        const key = this.generateCacheKey(input, taskType, priority);
         const entry = this.cache.get(key);
         if (!entry) {
             return null;
@@ -53,8 +53,8 @@ class CacheService {
         return entry.result;
     }
     // Guardar en cache
-    set(input, taskType, result) {
-        const key = this.generateCacheKey(input, taskType);
+    set(input, taskType, result, priority) {
+        const key = this.generateCacheKey(input, taskType, priority);
         const inputHash = this.generateHash(input);
         // Si el cache está lleno, remover entradas menos usadas
         if (this.cache.size >= this.maxSize) {

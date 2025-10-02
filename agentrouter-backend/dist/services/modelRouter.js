@@ -28,22 +28,24 @@ class ModelRouter {
             availability: true,
             supported_tasks: aiModel.supported_tasks
         }));
-        // Reemplazar modelos mock con modelos reales si están disponibles
-        if (convertedModels.length > 0) {
+        // Si hay menos de 3 modelos reales, mantener los mock para testing
+        if (convertedModels.length >= 3) {
             this.models = convertedModels;
             console.log(`🔄 Using ${convertedModels.length} real AI models instead of mock data`);
         }
         else {
-            console.log('⚠️  No real AI models available, using mock data');
+            // Combinar modelos reales con mock para tener variedad
+            this.models = [...this.models, ...convertedModels];
+            console.log(`⚡ Using ${this.models.length} models: ${convertedModels.length} real + ${this.models.length - convertedModels.length} mock`);
         }
     }
     async routeTask(task) {
         // Evaluar tarea primero para cache inteligente
         const taskType = this.analyzeTaskType(task.input);
-        // Verificar cache inteligente
-        const cached = this.cacheService.get(task.input, taskType);
+        // Verificar cache inteligente (incluir prioridad en la clave)
+        const cached = this.cacheService.get(task.input, taskType, task.priority);
         if (cached) {
-            console.log(`⚡ Cache hit for task type: ${taskType}`);
+            console.log(`⚡ Cache hit for task type: ${taskType}, priority: ${task.priority || 'balanced'}`);
             return cached;
         }
         // Seleccionar modelo óptimo
@@ -78,8 +80,8 @@ class ModelRouter {
             // Usar respuesta simulada
             result = this.createMockResult(selectedModel, taskType, task.input);
         }
-        // Registrar en cache inteligente
-        this.cacheService.set(task.input, taskType, result);
+        // Registrar en cache inteligente (incluir prioridad)
+        this.cacheService.set(task.input, taskType, result, task.priority);
         return result;
     }
     createMockResult(selectedModel, taskType, input) {
@@ -141,8 +143,11 @@ class ModelRouter {
         return detectedType;
     }
     selectBestModel(task, taskType) {
+        console.log(`🔍 Selecting model for task: "${task.input.substring(0, 50)}..." (priority: ${task.priority || 'balanced'}, type: ${taskType})`);
+        console.log(`📋 Available models: ${this.models.map(m => m.name).join(', ')}`);
         // Filtrar modelos compatibles
         let availableModels = this.models.filter(model => model.supported_tasks.includes(taskType) && model.availability);
+        console.log(`✅ Compatible models: ${availableModels.map(m => m.name).join(', ')}`);
         // Aplicar preferencias del usuario
         if (task.model_preferences?.preferred_models) {
             availableModels = availableModels.filter(model => task.model_preferences.preferred_models.includes(model.name));
@@ -150,56 +155,79 @@ class ModelRouter {
         if (task.model_preferences?.avoid_models) {
             availableModels = availableModels.filter(model => !task.model_preferences.avoid_models.includes(model.name));
         }
-        // Ordenar por calidad/costo
-        return availableModels.sort((a, b) => {
-            const scoreA = this.calculateModelScore(a, taskType);
-            const scoreB = this.calculateModelScore(b, taskType);
-            return scoreB - scoreA;
-        })[0];
+        // Calcular scores para cada modelo
+        const modelScores = availableModels.map(model => ({
+            model,
+            score: this.calculateModelScore(model, taskType, task.priority)
+        }));
+        // Ordenar por score (mayor a menor)
+        modelScores.sort((a, b) => b.score - a.score);
+        console.log(`🏆 Final ranking:`);
+        modelScores.forEach((ms, index) => {
+            console.log(`  ${index + 1}. ${ms.model.name}: ${ms.score.toFixed(3)}`);
+        });
+        return modelScores[0].model;
     }
-    calculateModelScore(model, taskType) {
-        // Algoritmo de scoring avanzado basado en tipo de tarea
+    calculateModelScore(model, taskType, priority) {
+        // Algoritmo de scoring avanzado basado en tipo de tarea y prioridad
         let qualityWeight = 0.4;
         let speedWeight = 0.3;
         let costWeight = 0.3;
-        // Ajustar pesos según el tipo de tarea
-        switch (taskType) {
-            case 'summary':
-                // Para resúmenes, priorizar velocidad y costo
-                qualityWeight = 0.3;
-                speedWeight = 0.4;
-                costWeight = 0.3;
+        // Ajustar pesos según la prioridad del usuario
+        switch (priority) {
+            case 'cost':
+                // Priorizar costo MUY fuertemente
+                qualityWeight = 0.1;
+                speedWeight = 0.1;
+                costWeight = 0.8;
                 break;
-            case 'translation':
-                // Para traducciones, priorizar calidad
-                qualityWeight = 0.6;
-                speedWeight = 0.2;
-                costWeight = 0.2;
-                break;
-            case 'analysis':
-                // Para análisis, priorizar calidad sobre todo
-                qualityWeight = 0.7;
-                speedWeight = 0.15;
-                costWeight = 0.15;
-                break;
-            case 'coding':
-                // Para código, balance entre calidad y velocidad
+            case 'performance':
+                // Priorizar calidad y velocidad
                 qualityWeight = 0.5;
-                speedWeight = 0.3;
-                costWeight = 0.2;
+                speedWeight = 0.4;
+                costWeight = 0.1;
                 break;
-            default: // general
-                // Balance estándar
-                qualityWeight = 0.4;
-                speedWeight = 0.3;
-                costWeight = 0.3;
+            case 'balanced':
+            default:
+                // Balance estándar, ajustado por tipo de tarea
+                switch (taskType) {
+                    case 'summary':
+                        // Para resúmenes, priorizar velocidad y costo
+                        qualityWeight = 0.3;
+                        speedWeight = 0.4;
+                        costWeight = 0.3;
+                        break;
+                    case 'translation':
+                        // Para traducciones, priorizar calidad
+                        qualityWeight = 0.6;
+                        speedWeight = 0.2;
+                        costWeight = 0.2;
+                        break;
+                    case 'analysis':
+                        // Para análisis, priorizar calidad sobre todo
+                        qualityWeight = 0.7;
+                        speedWeight = 0.15;
+                        costWeight = 0.15;
+                        break;
+                    case 'coding':
+                        // Para código, balance entre calidad y velocidad
+                        qualityWeight = 0.5;
+                        speedWeight = 0.3;
+                        costWeight = 0.2;
+                        break;
+                    default: // general
+                        // Balance estándar
+                        qualityWeight = 0.4;
+                        speedWeight = 0.3;
+                        costWeight = 0.3;
+                }
         }
         // Normalizar costo (invertir para que menor costo = mayor score)
         const costScore = Math.max(0, 10 - (model.cost_per_token * 10000));
         const score = ((model.quality_rating * qualityWeight) +
             (model.speed_rating * speedWeight) +
             (costScore * costWeight));
-        console.log(`📊 Model ${model.name} score for ${taskType}: ${score.toFixed(2)} (Q:${model.quality_rating} S:${model.speed_rating} C:${costScore.toFixed(1)})`);
+        console.log(`📊 Model ${model.name} score for ${taskType} (priority: ${priority || 'balanced'}): ${score.toFixed(2)} (Q:${model.quality_rating}*${qualityWeight.toFixed(1)} S:${model.speed_rating}*${speedWeight.toFixed(1)} C:${costScore.toFixed(1)}*${costWeight.toFixed(1)})`);
         return score;
     }
     calculateCost(model, input) {

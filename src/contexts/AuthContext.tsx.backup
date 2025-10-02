@@ -1,6 +1,7 @@
 "use client";
 
 import { BACKEND_URL } from '@/config/backend';
+import { supabase } from '@/config/database';
 import { useRouter } from 'next/navigation';
 import { createContext, ReactNode, useContext, useEffect, useState } from 'react';
 
@@ -40,7 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     useEffect(() => {
         const initializeUser = async () => {
             if (typeof window !== 'undefined') {
-                const savedUser = localStorage.getItem('agentrouter_user');
+                const savedUser = localStorage.getItem('routerai_user');
                 if (savedUser) {
                     try {
                         const userData = JSON.parse(savedUser);
@@ -50,11 +51,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                         const realUserData = await fetchUserData();
                         if (realUserData) {
                             setUser(realUserData);
-                            localStorage.setItem('agentrouter_user', JSON.stringify(realUserData));
+                            localStorage.setItem('routerai_user', JSON.stringify(realUserData));
                         }
                     } catch (error) {
                         console.warn('Error parsing saved user data:', error);
-                        localStorage.removeItem('agentrouter_user');
+                        localStorage.removeItem('routerai_user');
                     }
                 } else {
                     // Si no hay usuario guardado pero estamos en una página admin, obtener datos
@@ -62,7 +63,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                         const realUserData = await fetchUserData();
                         if (realUserData) {
                             setUser(realUserData);
-                            localStorage.setItem('agentrouter_user', JSON.stringify(realUserData));
+                            localStorage.setItem('routerai_user', JSON.stringify(realUserData));
                         }
                     }
                 }
@@ -75,11 +76,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Función para obtener datos reales del usuario desde el backend
     const fetchUserData = async (): Promise<User | null> => {
         try {
-            console.log('👤 Fetching real user data from user endpoint...');
-            const response = await fetch(`${BACKEND_URL}/v1/user-dev`);
+            console.log('👤 Fetching real user data from backend...');
+
+            // Usar el token mock para desarrollo
+            const token = localStorage.getItem('auth_token') || 'mock-pro-user-token';
+
+            // Llamar directamente al backend
+            const response = await fetch(`${BACKEND_URL}/v1/auth/me`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
+                },
+            });
 
             if (!response.ok) {
-                throw new Error(`Failed to fetch user data: ${response.status}`);
+                console.error('Failed to fetch user data:', response.status);
+                return null;
             }
 
             const data = await response.json();
@@ -106,25 +119,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setLoading(true);
             setAuthError(null);
 
+            // Login real con Supabase
+            const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+
+            if (error || !data?.user) {
+                setAuthError(error?.message || 'Error en el login');
+                throw error || new Error('No se pudo iniciar sesión');
+            }
+
             // Obtener datos reales del usuario desde el backend
             const realUserData = await fetchUserData();
 
-            const mockUser: User = realUserData || {
-                id: '3a942f65-25e7-4de3-84cb-3df0268ff759', // ID que coincide con el backend
-                name: 'Juan Manuel Garrido - Test',
-                email: email,
-                company: 'RouterAI Inc',
-                plan: 'pro',
-                api_key_limit: 5,
+            const userToSet: User = realUserData || {
+                id: data.user.id,
+                name: data.user.user_metadata?.name || data.user.email,
+                email: data.user.email,
+                plan: 'free',
+                api_key_limit: 3,
                 is_active: true,
-                email_verified: true,
-                created_at: new Date().toISOString()
+                email_verified: data.user.email_confirmed_at ? true : false,
+                created_at: data.user.created_at
             };
 
-            setUser(mockUser);
-            localStorage.setItem('agentrouter_user', JSON.stringify(mockUser));
-
-            // Redirigir al admin
+            setUser(userToSet);
+            localStorage.setItem('routerai_user', JSON.stringify(userToSet));
             router.push('/admin');
         } catch (error: any) {
             setAuthError(error.message || 'Error en el login');
@@ -141,18 +159,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
             // Simulación de registro exitoso
             const mockUser: User = {
-                id: '3a942f65-25e7-4de3-84cb-3df0268ff759', // ID que coincide con el backend
+                id: '1',
                 name: name,
                 email: email,
-                plan: 'pro',
-                api_key_limit: 5,
+                plan: 'starter',
+                api_key_limit: 3,
                 is_active: true,
                 email_verified: true,
                 created_at: new Date().toISOString()
             };
 
             setUser(mockUser);
-            localStorage.setItem('agentrouter_user', JSON.stringify(mockUser));
+            localStorage.setItem('routerai_user', JSON.stringify(mockUser));
 
             // Redirigir al admin
             router.push('/admin');

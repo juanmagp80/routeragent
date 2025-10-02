@@ -32,15 +32,15 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(false);
-    const [isHydrated, setIsHydrated] = useState(true);
+    const [isHydrated, setIsHydrated] = useState(false);
     const [authError, setAuthError] = useState<string | null>(null);
     const router = useRouter();
 
     // Cargar usuario desde localStorage al inicializar y actualizar con datos reales
     useEffect(() => {
         const initializeUser = async () => {
-            if (typeof window !== 'undefined') {
-                const savedUser = localStorage.getItem('agentrouter_user');
+            setIsHydrated(true);
+            const savedUser = localStorage.getItem('agentrouter_user');
                 if (savedUser) {
                     try {
                         const userData = JSON.parse(savedUser);
@@ -110,12 +110,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const realUserData = await fetchUserData();
 
             const mockUser: User = realUserData || {
-                id: '3a942f65-25e7-4de3-84cb-3df0268ff759', // ID que coincide con el backend
-                name: 'Juan Manuel Garrido - Test',
+                id: '1',
+                name: 'Usuario Demo',
                 email: email,
-                company: 'RouterAI Inc',
+                company: 'Demo Company',
                 plan: 'pro',
-                api_key_limit: 5,
+                api_key_limit: 10,
                 is_active: true,
                 email_verified: true,
                 created_at: new Date().toISOString()
@@ -141,11 +141,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
             // Simulación de registro exitoso
             const mockUser: User = {
-                id: '3a942f65-25e7-4de3-84cb-3df0268ff759', // ID que coincide con el backend
+                id: '1',
                 name: name,
                 email: email,
-                plan: 'pro',
-                api_key_limit: 5,
+                plan: 'starter',
+                api_key_limit: 3,
                 is_active: true,
                 email_verified: true,
                 created_at: new Date().toISOString()

@@ -1,5 +1,5 @@
 /**
- * TypeScript definitions for AgentRouter MCP SDK
+ * TypeScript definitions for RouterAI SDK
  */
 
 export interface ModelPreferences {

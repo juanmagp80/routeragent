@@ -1,8 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.requirePlan = exports.optionalAuth = exports.authenticateApiKey = void 0;
-const apiKeyService_1 = require("../services/apiKeyService");
 const database_1 = require("../config/database");
+const apiKeyService_1 = require("../services/apiKeyService");
 const apiKeyService = new apiKeyService_1.ApiKeyService();
 const authenticateApiKey = async (req, res, next) => {
     try {

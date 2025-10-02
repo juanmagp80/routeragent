@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { backendServiceDev, BackendMetrics } from "@/services/backendServiceDev";
+import { DollarSign, BarChart3, TrendingUp, Key } from "lucide-react";
 
 export default function DashboardPage() {
     const [metrics, setMetrics] = useState<BackendMetrics | null>(null);
@@ -33,48 +34,112 @@ export default function DashboardPage() {
         );
     }
     return (
-        <div>
-            <h1 className="text-2xl font-bold text-gray-900">Panel de Control</h1>
-            <p className="mt-1 text-sm text-gray-600">
-                ¡Bienvenido de nuevo! Aquí tienes un resumen de tu cuenta AgentRouter.
-            </p>
-
-            <div className="mt-6">
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                    <h2 className="text-lg font-semibold text-gray-900">Resumen de la Cuenta</h2>
-                    <div className="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                        <div className="bg-gray-50 rounded-lg p-4">
-                            <h3 className="text-sm font-medium text-gray-500">Costo Total</h3>
-                            <p className="text-2xl font-semibold text-gray-900">€{metrics?.summary.total_cost.toFixed(2) || '0.00'}</p>
-                        </div>
-                        <div className="bg-gray-50 rounded-lg p-4">
-                            <h3 className="text-sm font-medium text-gray-500">Total de Requests</h3>
-                            <p className="text-2xl font-semibold text-gray-900">{metrics?.summary.total_requests.toLocaleString() || '0'}</p>
-                        </div>
-                        <div className="bg-gray-50 rounded-lg p-4">
-                            <h3 className="text-sm font-medium text-gray-500">Costo Promedio/Request</h3>
-                            <p className="text-2xl font-semibold text-gray-900">€{metrics?.summary.avg_cost_per_request.toFixed(4) || '0.0000'}</p>
-                        </div>
-                        <div className="bg-gray-50 rounded-lg p-4">
-                            <h3 className="text-sm font-medium text-gray-500">Claves API Activas</h3>
-                            <p className="text-2xl font-semibold text-gray-900">{metrics?.summary.active_api_keys || '0'}</p>
+        <div className="space-y-8 max-w-7xl mx-auto">
+            {/* Header */}
+            <div className="bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-300">
+                <div className="px-6 py-4">
+                    <div className="flex items-center space-x-4">
+                        <div>
+                            <h1 className="text-2xl font-semibold text-gray-900">Panel de administración</h1>
+                            <p className="text-gray-600 mt-1">
+                                Gestiona tu cuenta y supervisa el uso de RouterAI
+                            </p>
                         </div>
                     </div>
                 </div>
+            </div>
 
-                <div className="mt-6 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                    <h2 className="text-lg font-semibold text-gray-900">Actividad Reciente</h2>
-                    <div className="mt-4 space-y-4">
-                        {metrics?.recent_tasks && metrics.recent_tasks.length > 0 ? (
-                            metrics.recent_tasks.map((task, index) => (
-                                <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                                    <div>
-                                        <p className="font-medium text-gray-900">{task.model}</p>
-                                        <p className="text-sm text-gray-500">{task.task_type}</p>
+            {/* Métricas del Cliente */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-lg hover:border-emerald-300 transition-all duration-300 group">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="text-sm font-medium text-gray-600">Total requests</p>
+                            <p className="text-2xl font-semibold text-gray-900">{metrics?.summary.total_requests.toLocaleString() || '0'}</p>
+                        </div>
+                        <div className="h-8 w-8 bg-emerald-100 rounded-lg flex items-center justify-center group-hover:bg-emerald-200 transition-colors duration-300">
+                            <BarChart3 className="h-4 w-4 text-emerald-600 group-hover:scale-110 transition-transform duration-300" />
+                        </div>
+                    </div>
+                    <div className="mt-2">
+                        <p className="text-xs text-gray-500">Consultas procesadas</p>
+                    </div>
+                </div>
+
+                <div className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-lg hover:border-emerald-300 transition-all duration-300 group">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="text-sm font-medium text-gray-600">Claves API</p>
+                            <p className="text-2xl font-semibold text-gray-900">{metrics?.summary.active_api_keys || '0'}</p>
+                        </div>
+                        <div className="h-8 w-8 bg-emerald-100 rounded-lg flex items-center justify-center group-hover:bg-emerald-200 transition-colors duration-300">
+                            <Key className="h-4 w-4 text-emerald-600 group-hover:scale-110 transition-transform duration-300" />
+                        </div>
+                    </div>
+                    <div className="mt-2">
+                        <p className="text-xs text-gray-500">Claves activas</p>
+                    </div>
+                </div>
+
+                <div className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-lg hover:border-purple-300 transition-all duration-300 group">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="text-sm font-medium text-gray-600">Rendimiento</p>
+                            <p className="text-2xl font-semibold text-gray-900">98.5%</p>
+                        </div>
+                        <div className="h-8 w-8 bg-purple-100 rounded-lg flex items-center justify-center group-hover:bg-purple-200 transition-colors duration-300">
+                            <TrendingUp className="h-4 w-4 text-purple-600 group-hover:scale-110 transition-transform duration-300" />
+                        </div>
+                    </div>
+                    <div className="mt-2">
+                        <p className="text-xs text-gray-500">Tiempo de actividad</p>
+                    </div>
+                </div>
+
+                <div className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-lg hover:border-emerald-300 transition-all duration-300 group">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="text-sm font-medium text-gray-600">Respuesta</p>
+                            <p className="text-2xl font-semibold text-gray-900">1.2s</p>
+                        </div>
+                        <div className="h-8 w-8 bg-emerald-100 rounded-lg flex items-center justify-center group-hover:bg-emerald-200 transition-colors duration-300">
+                            <DollarSign className="h-4 w-4 text-emerald-600 group-hover:scale-110 transition-transform duration-300" />
+                        </div>
+                    </div>
+                    <div className="mt-2">
+                        <p className="text-xs text-gray-500">Tiempo promedio</p>
+                    </div>
+                </div>
+            </div>
+
+            {/* Actividad Reciente */}
+            <div className="bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-300">
+                <div className="px-6 py-4 border-b border-gray-200">
+                    <h2 className="text-lg font-semibold text-gray-900">Actividad reciente</h2>
+                    <p className="text-gray-600 text-sm">Últimas consultas procesadas</p>
+                </div>
+                
+                <div className="p-6">
+                    {metrics?.recent_tasks && metrics.recent_tasks.length > 0 ? (
+                        <div className="space-y-3">
+                            {metrics.recent_tasks.map((task, index) => (
+                                <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-all duration-200 group">
+                                    <div className="flex items-center space-x-3">
+                                        <div className="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center group-hover:bg-emerald-200 transition-colors duration-200">
+                                            <BarChart3 className="h-4 w-4 text-emerald-600" />
+                                        </div>
+                                        <div>
+                                            <p className="font-medium text-gray-900">{task.model}</p>
+                                            <p className="text-sm text-gray-500 capitalize">{task.task_type}</p>
+                                        </div>
                                     </div>
                                     <div className="text-right">
-                                        <p className="font-medium text-gray-900">€{task.cost.toFixed(4)}</p>
-                                        <p className="text-sm text-gray-500">
+                                        <div className="flex items-center space-x-2">
+                                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                                ✓ Completado
+                                            </span>
+                                        </div>
+                                        <p className="text-sm text-gray-500 mt-1">
                                             {new Date(task.created_at).toLocaleString('es-ES', {
                                                 hour: '2-digit',
                                                 minute: '2-digit',
@@ -84,12 +149,76 @@ export default function DashboardPage() {
                                         </p>
                                     </div>
                                 </div>
-                            ))
-                        ) : (
-                            <div className="text-center py-8">
-                                <p className="text-gray-500">No hay actividad reciente</p>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="text-center py-8">
+                            <BarChart3 className="mx-auto h-8 w-8 text-gray-400 mb-3" />
+                            <h3 className="text-sm font-medium text-gray-900 mb-1">Sin actividad reciente</h3>
+                            <p className="text-sm text-gray-500">Las consultas aparecerán aquí cuando uses RouterAI</p>
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* Información del Sistema */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow duration-300">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Modelos Disponibles</h3>
+                    <div className="space-y-3">
+                        <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors group">
+                            <div className="flex items-center space-x-3">
+                                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                                <span className="font-medium text-gray-900">GPT-4 Turbo</span>
                             </div>
-                        )}
+                            <span className="text-sm text-green-600 font-medium">Activo</span>
+                        </div>
+                        <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors group">
+                            <div className="flex items-center space-x-3">
+                                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                                <span className="font-medium text-gray-900">Claude 3.5 Sonnet</span>
+                            </div>
+                            <span className="text-sm text-green-600 font-medium">Activo</span>
+                        </div>
+                        <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors group">
+                            <div className="flex items-center space-x-3">
+                                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                                <span className="font-medium text-gray-900">Gemini Pro</span>
+                            </div>
+                            <span className="text-sm text-green-600 font-medium">Activo</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow duration-300">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Estado del Servicio</h3>
+                    <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                            <span className="text-sm text-gray-600">API Gateway</span>
+                            <div className="flex items-center space-x-2">
+                                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                                <span className="text-sm font-medium text-green-600">Operativo</span>
+                            </div>
+                        </div>
+                        <div className="flex items-center justify-between">
+                            <span className="text-sm text-gray-600">Balanceador de Carga</span>
+                            <div className="flex items-center space-x-2">
+                                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                                <span className="text-sm font-medium text-green-600">Operativo</span>
+                            </div>
+                        </div>
+                        <div className="flex items-center justify-between">
+                            <span className="text-sm text-gray-600">Tiempo de Respuesta</span>
+                            <span className="text-sm font-medium text-gray-900">1.2s promedio</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                            <span className="text-sm text-gray-600">Disponibilidad (24h)</span>
+                            <span className="text-sm font-medium text-gray-900">99.9%</span>
+                        </div>
+                        <div className="flex items-center justify-between pt-2 border-t border-gray-200">
+                            <span className="text-sm text-gray-600">Última actualización</span>
+                            <span className="text-sm font-medium text-gray-900">Hace 2 min</span>
+                        </div>
                     </div>
                 </div>
             </div>

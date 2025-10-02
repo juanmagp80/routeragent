@@ -3,13 +3,13 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+const supabase_js_1 = require("@supabase/supabase-js");
 const cors_1 = __importDefault(require("cors"));
 const dotenv_1 = __importDefault(require("dotenv"));
 const express_1 = __importDefault(require("express"));
 const helmet_1 = __importDefault(require("helmet"));
 const morgan_1 = __importDefault(require("morgan"));
 const stripe_1 = __importDefault(require("stripe"));
-const supabase_js_1 = require("@supabase/supabase-js");
 // Cargar variables de entorno
 dotenv_1.default.config({ path: '.env.local' });
 dotenv_1.default.config(); // fallback para .env

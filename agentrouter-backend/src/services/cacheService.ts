@@ -42,14 +42,14 @@ export class CacheService {
     }
 
     // Generar clave de cache
-    private generateCacheKey(input: string, taskType: string): string {
+    private generateCacheKey(input: string, taskType: string, priority?: string): string {
         const inputHash = this.generateHash(input);
-        return `${taskType}:${inputHash}`;
+        return `${taskType}:${priority || 'balanced'}:${inputHash}`;
     }
 
     // Obtener del cache
-    get(input: string, taskType: string): (RouteResult & { response?: string }) | null {
-        const key = this.generateCacheKey(input, taskType);
+    get(input: string, taskType: string, priority?: string): (RouteResult & { response?: string }) | null {
+        const key = this.generateCacheKey(input, taskType, priority);
         const entry = this.cache.get(key);
 
         if (!entry) {
@@ -70,8 +70,8 @@ export class CacheService {
     }
 
     // Guardar en cache
-    set(input: string, taskType: string, result: RouteResult & { response?: string }): void {
-        const key = this.generateCacheKey(input, taskType);
+    set(input: string, taskType: string, result: RouteResult & { response?: string }, priority?: string): void {
+        const key = this.generateCacheKey(input, taskType, priority);
         const inputHash = this.generateHash(input);
 
         // Si el cache está lleno, remover entradas menos usadas

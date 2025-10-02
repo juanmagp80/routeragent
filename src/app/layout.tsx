@@ -12,9 +12,9 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "AgentRouter MCP - Router Inteligente de Modelos de IA",
-  description: "API que elige automáticamente el mejor modelo de IA (GPT-4, Claude, Mistral, Llama) según costo, velocidad y calidad. Ahorra hasta 70% en costos de IA con MCP.",
-  keywords: "router IA, MCP, optimización costos IA, GPT-4, Claude, Mistral, Llama, API inteligente, ahorro IA",
+  title: "RouterAI - Router Inteligente de Modelos de IA",
+  description: "API que elige automáticamente el mejor modelo de IA (GPT-4, Claude, Mistral, Llama) según costo, velocidad y calidad. Ahorra hasta 70% en costos de IA.",
+  keywords: "router IA, optimización costos IA, GPT-4, Claude, Mistral, Llama, API inteligente, ahorro IA, RouterAI",
   authors: [{ name: "AgentRouter Team" }],
   creator: "AgentRouter",
   publisher: "AgentRouter",
@@ -22,13 +22,13 @@ export const metadata: Metadata = {
     type: "website",
     locale: "es_ES",
     url: "https://agent-router.com",
-    title: "AgentRouter MCP - Router Inteligente de Modelos de IA",
+    title: "RouterAI - Router Inteligente de Modelos de IA",
     description: "Ahorra hasta 70% en costos de IA. Router que elige automáticamente el mejor modelo según tu tarea.",
-    siteName: "AgentRouter MCP",
+    siteName: "RouterAI",
   },
   twitter: {
     card: "summary_large_image",
-    title: "AgentRouter MCP - Router Inteligente de Modelos de IA",
+    title: "RouterAI - Router Inteligente de Modelos de IA",
     description: "Ahorra hasta 70% en costos de IA. Router que elige automáticamente el mejor modelo según tu tarea.",
     creator: "@agentrouter",
   },

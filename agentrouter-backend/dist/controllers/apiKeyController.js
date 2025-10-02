@@ -242,29 +242,32 @@ exports.deleteApiKey = deleteApiKey;
 // TODO: Remover cuando la autenticación esté funcionando
 const listApiKeysDev = async (req, res) => {
     try {
-        // Para desarrollo, obtener todas las API keys directamente de la base de datos 
-        const supabaseUrl = process.env.SUPABASE_URL;
-        const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-        const supabase = (0, supabase_js_1.createClient)(supabaseUrl, supabaseServiceKey);
+        console.log('📋 listApiKeysDev: Conectando con Supabase real');
+        // ID del usuario de desarrollo (debe coincidir con createApiKeyDev)
+        const userId = '3a942f65-25e7-4de3-84cb-3df0268ff759';
+        // Para desarrollo, obtener solo las API keys del usuario actual
         const { data: apiKeys, error } = await supabase
             .from('api_keys')
             .select('*')
+            .eq('user_id', userId)
             .eq('is_active', true)
             .order('created_at', { ascending: false });
         if (error) {
             console.error('Error fetching API keys from Supabase:', error);
             return res.status(500).json({
                 error: 'Failed to fetch API keys',
-                success: false
+                success: false,
+                details: error.message
             });
         }
+        console.log(`✅ Found ${apiKeys?.length || 0} API keys in database`);
         // Calcular el uso total de todas las claves activas
         const totalUsage = (apiKeys || []).reduce((sum, key) => sum + (key.usage_count || 0), 0);
         // Límites globales por plan
         const planLimits = {
             free: 100,
             starter: 1000,
-            pro: 5000,
+            pro: 50000,
             enterprise: -1
         };
         // Obtener el plan del usuario (asumimos pro para desarrollo)
@@ -443,20 +446,27 @@ exports.deleteApiKeyDev = deleteApiKeyDev;
 // Función para obtener métricas de desarrollo
 const getMetricsDev = async (req, res) => {
     try {
-        const supabaseUrl = process.env.SUPABASE_URL;
-        const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-        const supabase = (0, supabase_js_1.createClient)(supabaseUrl, supabaseServiceKey);
-        // Obtener conteo de API keys activas
+        // ID del usuario de desarrollo (debe coincidir con listApiKeysDev y createApiKeyDev)
+        const userId = '3a942f65-25e7-4de3-84cb-3df0268ff759';
+        // Obtener conteo de API keys activas del usuario específico
         const { count: activeApiKeys } = await supabase
             .from('api_keys')
             .select('*', { count: 'exact', head: true })
+            .eq('user_id', userId)
             .eq('is_active', true);
-        // Obtener estadísticas de uso (si existe una tabla de usage_records)
-        const { data: usageData, error: usageError } = await supabase
+        // Primero obtener las API keys del usuario para filtrar usage_records
+        const { data: userApiKeys } = await supabase
+            .from('api_keys')
+            .select('id')
+            .eq('user_id', userId);
+        const userApiKeyIds = userApiKeys?.map(key => key.id) || [];
+        // Obtener estadísticas de uso filtradas por las API keys del usuario
+        const { data: usageData, error: usageError } = userApiKeyIds.length > 0 ? await supabase
             .from('usage_records')
-            .select('cost, model_used, created_at')
+            .select('cost, model_used, created_at, api_key_id')
+            .in('api_key_id', userApiKeyIds)
             .order('created_at', { ascending: false })
-            .limit(100);
+            .limit(100) : { data: null, error: null };
         let totalCost = 0;
         let totalRequests = 0;
         let modelStats = {};

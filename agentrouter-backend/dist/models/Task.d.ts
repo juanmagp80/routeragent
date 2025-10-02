@@ -1,6 +1,7 @@
 export interface Task {
     id: string;
     input: string;
+    priority?: 'cost' | 'balanced' | 'performance';
     context?: any;
     model_preferences?: {
         preferred_models?: string[];

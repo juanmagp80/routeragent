@@ -7,6 +7,7 @@ import {
     BarChart3,
     CheckCircle,
     Copy,
+    Key,
     Plus,
     Trash2
 } from "lucide-react";
@@ -127,38 +128,114 @@ export default function ApiKeysPage() {
     };
 
     return (
-        <div className="space-y-6">
-            <div className="flex justify-between items-center">
-                <div>
-                    <h1 className="text-2xl font-bold text-gray-900">Claves API</h1>
-                    <p className="text-gray-600">Administra tus claves de acceso a la API</p>
+        <div className="space-y-8 max-w-7xl mx-auto">
+            {/* Header profesional */}
+            <div className="bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-300">
+                <div className="px-6 py-4 border-b border-gray-200">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h1 className="text-2xl font-semibold text-gray-900">Claves API</h1>
+                            <p className="text-gray-600 mt-1">
+                                Gestiona las claves de acceso para tus aplicaciones
+                            </p>
+                        </div>
+                        <div className="flex items-center space-x-4">
+                            <div className="text-right">
+                                <div className="text-sm text-gray-500">Claves activas</div>
+                                <div className="text-lg font-semibold text-gray-900">{keys.length} de 5</div>
+                            </div>
+                            <button
+                                onClick={() => setShowCreateForm(!showCreateForm)}
+                                disabled={keys.length >= 5}
+                                className={`inline-flex items-center px-4 py-2 rounded-md text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                                    keys.length >= 5 
+                                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                                        : 'bg-emerald-600 text-white hover:bg-emerald-700 focus:ring-emerald-500'
+                                }`}
+                            >
+                                <Plus className="mr-2 h-4 w-4" />
+                                {keys.length >= 5 ? 'Límite alcanzado' : 'Nueva clave'}
+                            </button>
+                        </div>
+                    </div>
                 </div>
-                <button
-                    onClick={() => setShowCreateForm(!showCreateForm)}
-                    className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500"
-                >
-                    <Plus className="mr-2 h-4 w-4" />
-                    Nueva Clave API
-                </button>
             </div>
 
-            {/* Estadísticas de uso */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Uso del Plan</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="text-center">
-                        <div className="text-2xl font-bold text-emerald-600">{keys.length}/5</div>
-                        <div className="text-sm text-gray-600">claves usadas • Plan {planNames[userPlan as keyof typeof planNames]}</div>
-                    </div>
-                    <div className="text-center">
-                        <div className="text-2xl font-bold text-blue-600">
-                            {totalUsage.toLocaleString()}/{planLimit.toLocaleString()}
+            {/* Estadísticas */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-lg hover:border-emerald-300 transition-all duration-300 group">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="text-sm font-medium text-gray-600">Claves API</p>
+                            <p className="text-2xl font-semibold text-gray-900">{keys.length} de 5</p>
                         </div>
-                        <div className="text-sm text-gray-600">Uso total: requests</div>
+                        <div className="h-8 w-8 bg-emerald-100 rounded-lg flex items-center justify-center group-hover:bg-emerald-200 transition-colors duration-300">
+                            <Key className="h-4 w-4 text-emerald-600 group-hover:scale-110 transition-transform duration-300" />
+                        </div>
                     </div>
-                    <div className="text-center">
-                        <div className="text-2xl font-bold text-purple-600">{keys.filter(k => k.is_active).length}</div>
-                        <div className="text-sm text-gray-600">claves activas</div>
+                    <div className="mt-4">
+                        <div className="flex items-center justify-between text-sm">
+                            <span className="text-gray-500">Plan {planNames[userPlan as keyof typeof planNames]}</span>
+                            <span className="text-gray-900">{((keys.length / 5) * 100).toFixed(0)}%</span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+                            <div 
+                                className="bg-emerald-600 h-2 rounded-full transition-all duration-300"
+                                style={{ width: `${(keys.length / 5) * 100}%` }}
+                            ></div>
+                        </div>
+                    </div>
+                    {keys.length >= 5 && (
+                        <div className="mt-3 text-xs text-amber-600 bg-amber-50 rounded-md p-2">
+                            Límite alcanzado
+                        </div>
+                    )}
+                </div>
+
+                <div className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-lg hover:border-emerald-300 transition-all duration-300 group">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="text-sm font-medium text-gray-600">Uso mensual</p>
+                            <p className="text-2xl font-semibold text-gray-900">{totalUsage.toLocaleString()}</p>
+                        </div>
+                        <div className="h-8 w-8 bg-emerald-100 rounded-lg flex items-center justify-center group-hover:bg-emerald-200 transition-colors duration-300">
+                            <BarChart3 className="h-4 w-4 text-emerald-600 group-hover:scale-110 transition-transform duration-300" />
+                        </div>
+                    </div>
+                    <div className="mt-4">
+                        <div className="flex items-center justify-between text-sm">
+                            <span className="text-gray-500">de {planLimit.toLocaleString()} requests</span>
+                            <span className="text-gray-900">{Math.min((totalUsage / planLimit) * 100, 100).toFixed(1)}%</span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+                            <div 
+                                className="bg-emerald-600 h-2 rounded-full transition-all duration-300"
+                                style={{ width: `${Math.min((totalUsage / planLimit) * 100, 100)}%` }}
+                            ></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-lg hover:border-purple-300 transition-all duration-300 group">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="text-sm font-medium text-gray-600">Estado</p>
+                            <p className="text-2xl font-semibold text-gray-900">{keys.filter(k => k.is_active).length}</p>
+                        </div>
+                        <div className="h-8 w-8 bg-purple-100 rounded-lg flex items-center justify-center group-hover:bg-purple-200 transition-colors duration-300">
+                            <Activity className="h-4 w-4 text-purple-600 group-hover:scale-110 transition-transform duration-300" />
+                        </div>
+                    </div>
+                    <div className="mt-4">
+                        <p className="text-sm text-gray-500">Claves activas</p>
+                        {keys.filter(k => k.is_active).length > 0 ? (
+                            <div className="flex items-center text-sm text-green-700 bg-green-50 rounded-md p-2 mt-2">
+                                <Activity className="mr-2 h-3 w-3" />
+                                Todas operativas
+                            </div>
+                        ) : (
+                            <div className="text-sm text-gray-500 mt-2">Sin claves activas</div>
+                        )}
                     </div>
                 </div>
             </div>
@@ -213,56 +290,92 @@ export default function ApiKeysPage() {
                 </div>
             )}
 
-            {showCreateForm && (
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                    <h2 className="text-lg font-semibold text-gray-900 mb-4">Crear Nueva Clave API</h2>
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                        <div>
-                            <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-                                Nombre de la Clave
+            {showCreateForm && keys.length < 5 && (
+                <div className="bg-white border border-gray-200 rounded-lg p-6">
+                    <div className="mb-6">
+                        <h2 className="text-lg font-medium text-gray-900 mb-2">
+                            Crear nueva clave API
+                        </h2>
+                        <p className="text-gray-600">
+                            Genera una nueva clave para integrar RouterAI en tus aplicaciones.
+                        </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                        <div className="sm:col-span-1">
+                            <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
+                                Nombre de la clave
                             </label>
                             <input
                                 type="text"
                                 id="name"
                                 value={newKey.name}
                                 onChange={(e) => setNewKey({ name: e.target.value })}
-                                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm"
-                                placeholder="Mi Clave API"
+                                className="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                                placeholder="Ej: Mi App Producción"
                             />
+                            <p className="mt-1 text-xs text-gray-500">
+                                Nombre descriptivo para identificar la clave
+                            </p>
                         </div>
-                        <div>
-                            <label htmlFor="plan" className="block text-sm font-medium text-gray-700">
+                        <div className="sm:col-span-1">
+                            <label htmlFor="plan" className="block text-sm font-medium text-gray-700 mb-2">
                                 Plan
                             </label>
-                            <div className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 bg-gray-50 sm:text-sm text-gray-900">
-                                <span className="font-medium">{planNames[userPlan as keyof typeof planNames]}</span>
-                                <span className="text-gray-500 ml-2">({planLimits[userPlan as keyof typeof planLimits]})</span>
+                            <div className="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 bg-gray-50 text-sm text-gray-900">
+                                <div className="flex items-center justify-between">
+                                    <span className="font-medium">{planNames[userPlan as keyof typeof planNames]}</span>
+                                    <span className="text-xs text-gray-500">
+                                        {planLimits[userPlan as keyof typeof planLimits]}
+                                    </span>
+                                </div>
                             </div>
                             <p className="mt-1 text-xs text-gray-500">
                                 Plan basado en tu suscripción actual
                             </p>
                         </div>
-                        <div className="flex items-end">
-                            <button
-                                onClick={handleCreateKey}
-                                disabled={!newKey.name.trim()}
-                                className={`w-full inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 ${newKey.name.trim()
-                                        ? 'bg-emerald-600 hover:bg-emerald-700'
-                                        : 'bg-gray-400 cursor-not-allowed'
-                                    }`}
-                            >
-                                Crear Clave
-                            </button>
-                        </div>
+                    </div>
+
+                    <div className="mt-6 flex justify-end space-x-3">
+                        <button
+                            onClick={() => setShowCreateForm(false)}
+                            className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                        >
+                            Cancelar
+                        </button>
+                        <button
+                            onClick={handleCreateKey}
+                            disabled={!newKey.name.trim()}
+                            className={`px-4 py-2 border border-transparent rounded-md text-sm font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors ${newKey.name.trim()
+                                    ? 'bg-emerald-600 hover:bg-emerald-700 focus:ring-emerald-500'
+                                    : 'bg-gray-400 cursor-not-allowed'
+                                }`}
+                        >
+                            <Plus className="inline-block w-4 h-4 mr-2" />
+                            Crear clave
+                        </button>
                     </div>
                 </div>
             )}
 
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                <div className="px-4 py-5 sm:p-6">
-                    <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
-                        Tus Claves API
-                    </h3>
+            <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
+                <div className="px-6 py-4 border-b border-gray-200">
+                    <div className="flex justify-between items-center">
+                        <h3 className="text-lg font-semibold text-gray-900">
+                            Lista de claves API
+                        </h3>
+                        {keys.length < 5 && !showCreateForm && (
+                            <button
+                                onClick={() => setShowCreateForm(true)}
+                                className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-emerald-600 border border-transparent rounded-md hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-colors"
+                            >
+                                <Plus className="mr-2 h-4 w-4" />
+                                Nueva clave
+                            </button>
+                        )}
+                    </div>
+                </div>
+                <div className="p-6">
 
                     {loading ? (
                         <div className="flex items-center justify-center py-12">
@@ -278,50 +391,63 @@ export default function ApiKeysPage() {
                         </div>
                     ) : (
                         <div className="space-y-4">
-                            {keys.map((key) => (
-                                <div key={key.id} className="border border-gray-200 rounded-lg p-4">
-                                    <div className="flex items-center justify-between">
+                            {keys.map((key, index) => (
+                                <div key={key.id} className="border border-gray-200 rounded-lg p-6 hover:shadow-lg hover:border-gray-300 transition-all duration-300 group animate-fade-in" style={{'--animation-delay': `${index * 100}ms`} as React.CSSProperties}>
+                                    <div className="flex items-start justify-between">
                                         <div className="flex-1">
-                                            <div className="flex items-center space-x-3">
-                                                <h4 className="text-lg font-medium text-gray-900">{key.name}</h4>
-                                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${key.is_active
+                                            <div className="flex items-center space-x-4 mb-4">
+                                                <div>
+                                                    <h4 className="text-lg font-medium text-gray-900">{key.name}</h4>
+                                                    <p className="text-sm text-gray-500 mt-1">
+                                                        Creada el {new Date(key.created_at).toLocaleDateString('es-ES', { 
+                                                            year: 'numeric', 
+                                                            month: 'long', 
+                                                            day: 'numeric' 
+                                                        })}
+                                                    </p>
+                                                </div>
+                                                <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${key.is_active
                                                         ? 'bg-green-100 text-green-800'
                                                         : 'bg-red-100 text-red-800'
                                                     }`}>
-                                                    <Activity className="mr-1 h-3 w-3" />
+                                                    <div className={`w-1.5 h-1.5 rounded-full mr-1.5 ${key.is_active ? 'bg-green-500' : 'bg-red-500'}`}></div>
                                                     {key.is_active ? 'Activa' : 'Inactiva'}
                                                 </span>
                                             </div>
 
-                                            <div className="mt-2 grid grid-cols-1 gap-4 sm:grid-cols-3">
-                                                <div>
-                                                    <div className="text-sm text-gray-500">Prefijo</div>
-                                                    <div className="text-sm font-mono bg-gray-100 px-2 py-1 rounded">
+                                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                                                <div className="bg-gray-50 rounded-md p-3">
+                                                    <div className="text-xs font-medium text-gray-500 mb-1">Prefijo</div>
+                                                    <div className="text-sm font-mono bg-white px-2 py-1 rounded border text-gray-800">
                                                         {key.key_prefix}***
                                                     </div>
                                                 </div>
-                                                <div>
-                                                    <div className="text-sm text-gray-500">Uso</div>
-                                                    <div className="text-sm font-semibold">
-                                                        {key.usage_count.toLocaleString()} requests
+                                                <div className="bg-gray-50 rounded-md p-3">
+                                                    <div className="text-xs font-medium text-gray-500 mb-1">Uso</div>
+                                                    <div className="text-lg font-semibold text-gray-900">
+                                                        {key.usage_count.toLocaleString()}
                                                     </div>
+                                                    <div className="text-xs text-gray-500">requests</div>
                                                 </div>
-                                                <div>
-                                                    <div className="text-sm text-gray-500">Creada</div>
-                                                    <div className="text-sm">
-                                                        {new Date(key.created_at).toLocaleDateString()}
+                                                <div className="bg-gray-50 rounded-md p-3">
+                                                    <div className="text-xs font-medium text-gray-500 mb-1">Estado</div>
+                                                    <div className="flex items-center">
+                                                        <Activity className={`h-3 w-3 mr-1 ${key.is_active ? 'text-green-500' : 'text-gray-400'}`} />
+                                                        <span className="text-sm text-gray-700">
+                                                            {key.is_active ? 'Operativa' : 'Pausada'}
+                                                        </span>
                                                     </div>
                                                 </div>
                                             </div>
                                         </div>
 
-                                        <div className="flex items-center space-x-2">
+                                        <div className="ml-6">
                                             <button
                                                 onClick={() => handleDeleteKey(key.id)}
-                                                className="p-2 text-red-600 hover:text-red-700"
-                                                title="Eliminar clave"
+                                                className="p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-md transition-colors"
+                                                title="Eliminar clave API"
                                             >
-                                                <Trash2 className="h-5 w-5" />
+                                                <Trash2 className="h-4 w-4" />
                                             </button>
                                         </div>
                                     </div>

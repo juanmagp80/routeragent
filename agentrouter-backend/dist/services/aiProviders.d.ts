@@ -34,6 +34,20 @@ export declare class AnthropicProvider implements AIProvider {
     constructor(apiKey: string);
     makeRequest(model: string, prompt: string, options?: any): Promise<AIResponse>;
 }
+export declare class GeminiProvider implements AIProvider {
+    name: string;
+    private apiKey;
+    models: AIModel[];
+    constructor(apiKey: string);
+    makeRequest(model: string, prompt: string, options?: any): Promise<AIResponse>;
+}
+export declare class GrokProvider implements AIProvider {
+    name: string;
+    private apiKey;
+    models: AIModel[];
+    constructor(apiKey: string);
+    makeRequest(model: string, prompt: string, options?: any): Promise<AIResponse>;
+}
 export declare class AIProviderManager {
     private providers;
     private allModels;

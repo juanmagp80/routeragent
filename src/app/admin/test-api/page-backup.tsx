@@ -140,21 +140,21 @@ export default function TestApiPage() {
             label: "Análisis de texto",
             prompt: "Analiza el sentimiento del siguiente texto: 'Me encanta este producto, es fantástico'",
             task_type: "analysis",
-            priority: "balanced",
+            priority: "quality",
             icon: "🔍"
         },
         {
             label: "Generación creativa",
             prompt: "Escribe un poema corto sobre la tecnología",
             task_type: "content_generation",
-            priority: "performance",
+            priority: "quality",
             icon: "✨"
         },
         {
             label: "Traducción",
             prompt: "Traduce al inglés: 'Hola, ¿cómo estás?'",
             task_type: "translation",
-            priority: "performance",
+            priority: "speed",
             icon: "🌐"
         }
     ];
@@ -187,8 +187,8 @@ export default function TestApiPage() {
                                     <Play className="h-8 w-8 text-white" />
                                 </div>
                                 <div>
-                                    <h1 className="text-3xl font-display font-bold text-white">🧪 Prueba RouterAI</h1>
-                                    <p className="text-purple-100 text-xl mt-2 font-medium">Prueba y valida tus API keys directamente desde el dashboard</p>
+                                    <h1 className="text-3xl font-bold">Prueba de API Keys</h1>
+                                    <p className="text-purple-100 text-lg mt-1">Prueba y valida tus API keys directamente desde el dashboard</p>
                                 </div>
                             </div>
                             <div className="flex items-center mt-6 space-x-4">
@@ -533,7 +533,190 @@ export default function TestApiPage() {
                 </div>
             </div>
 
+            {/* Modelo de Negocio Detallado */}
+            <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+                <div className="bg-gradient-to-r from-emerald-600 to-green-600 px-8 py-6">
+                    <h2 className="text-2xl font-bold text-white flex items-center">
+                        <DollarSign className="mr-3 h-6 w-6" />
+                        Modelo de Negocio: Suscripción + Consumo
+                    </h2>
+                    <p className="text-emerald-100 mt-1">Cómo funciona la facturación y por qué es rentable</p>
+                </div>
+                
+                <div className="p-8">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        {/* Estructura Actual */}
+                        <div className="space-y-6">
+                            <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl p-6 border border-blue-200">
+                                <h3 className="text-xl font-bold text-blue-900 mb-4 flex items-center">
+                                    <Target className="h-5 w-5 mr-2" />
+                                    📊 Estructura Actual de Planes
+                                </h3>
+                                <div className="space-y-4">
+                                    <div className="bg-white rounded-lg p-4 border border-blue-200">
+                                        <div className="flex justify-between items-center mb-2">
+                                            <span className="font-bold text-gray-900">Starter</span>
+                                            <span className="bg-blue-500 text-white px-2 py-1 rounded text-sm font-bold">$29/mes</span>
+                                        </div>
+                                        <p className="text-sm text-gray-600">1,000 requests incluidos</p>
+                                    </div>
+                                    <div className="bg-white rounded-lg p-4 border border-blue-200">
+                                        <div className="flex justify-between items-center mb-2">
+                                            <span className="font-bold text-gray-900">Pro</span>
+                                            <span className="bg-emerald-500 text-white px-2 py-1 rounded text-sm font-bold">$49/mes</span>
+                                        </div>
+                                        <p className="text-sm text-gray-600">5,000 requests incluidos</p>
+                                    </div>
+                                    <div className="bg-white rounded-lg p-4 border border-blue-200">
+                                        <div className="flex justify-between items-center mb-2">
+                                            <span className="font-bold text-gray-900">Enterprise</span>
+                                            <span className="bg-purple-500 text-white px-2 py-1 rounded text-sm font-bold">$99/mes</span>
+                                        </div>
+                                        <p className="text-sm text-gray-600">Requests ilimitados</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
 
+                        </div>
+
+                        {/* Solución Recomendada */}
+                        <div className="space-y-6">
+                            <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-6 border border-green-200">
+                                <h3 className="text-xl font-bold text-green-900 mb-4 flex items-center">
+                                    <Sparkles className="h-5 w-5 mr-2" />
+                                    ✅ Modelo Óptimo: Cuota Fija por Requests
+                                </h3>
+                                <div className="space-y-4">
+                                    <div className="bg-white rounded-lg p-4 border border-green-200">
+                                        <div className="flex justify-between items-center mb-2">
+                                            <span className="font-bold text-gray-900">Pro Simplificado</span>
+                                            <span className="bg-green-500 text-white px-2 py-1 rounded text-sm font-bold">$49/mes</span>
+                                        </div>
+                                        <div className="text-sm space-y-1">
+                                            <p className="text-green-700">• <strong>5,000 requests incluidos</strong></p>
+                                            <p className="text-green-700">• Costo promedio: <strong>$0.01 por request</strong></p>
+                                            <p className="text-green-700">• Sin sorpresas, sin excesos</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="bg-emerald-100 rounded-lg p-4">
+                                        <h4 className="font-bold text-emerald-900 mb-2">💰 Comparativa de Valor:</h4>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                                            <div>
+                                                <p className="font-bold text-emerald-800 mb-1">🏢 Directo con OpenAI:</p>
+                                                <ul className="space-y-1 text-emerald-700">
+                                                    <li>• GPT-4o: ~$0.015/request</li>
+                                                    <li>• Claude-3: ~$0.012/request</li>
+                                                    <li>• Sin optimización automática</li>
+                                                    <li><strong>5,000 requests = $60-75</strong></li>
+                                                </ul>
+                                            </div>
+                                            <div>
+                                                <p className="font-bold text-green-800 mb-1">🚀 Con AgentRouter:</p>
+                                                <ul className="space-y-1 text-green-700">
+                                                    <li>• Precio fijo: $0.01/request</li>
+                                                    <li>• Optimización automática</li>
+                                                    <li>• Ruteo inteligente</li>
+                                                    <li><strong>5,000 requests = $49</strong> ✅</li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                        <div className="mt-3 p-2 bg-green-200 rounded text-center">
+                                            <strong className="text-green-900">Ahorro del cliente: $11-26/mes (18-35%)</strong>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+
+                        </div>
+                    </div>
+                    
+                    {/* Matemáticas del Negocio */}
+                    <div className="mt-8 bg-gray-900 rounded-xl p-6">
+                        <h3 className="text-xl font-bold text-white mb-4 flex items-center">
+                            <Target className="h-5 w-5 mr-2" />
+                            � Matemáticas del Negocio
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div className="bg-gray-800 rounded-lg p-4">
+                                <h4 className="font-bold text-blue-400 mb-3">💰 Costos Reales (por request)</h4>
+                                <div className="text-sm text-gray-300 space-y-2">
+                                    <div className="flex justify-between">
+                                        <span>GPT-4o:</span>
+                                        <span className="text-blue-400">$0.0075</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span>Claude-3:</span>
+                                        <span className="text-blue-400">$0.0060</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span>Llama-3:</span>
+                                        <span className="text-blue-400">$0.0020</span>
+                                    </div>
+                                    <hr className="border-gray-600"/>
+                                    <div className="flex justify-between font-bold">
+                                        <span>Promedio optimizado:</span>
+                                        <span className="text-green-400">$0.0070</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div className="bg-gray-800 rounded-lg p-4">
+                                <h4 className="font-bold text-green-400 mb-3">🎯 Precios de Venta</h4>
+                                <div className="text-sm text-gray-300 space-y-2">
+                                    <div className="flex justify-between">
+                                        <span>Starter (1K):</span>
+                                        <span className="text-green-400">$0.029</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span>Pro (5K):</span>
+                                        <span className="text-green-400">$0.0098</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span>Enterprise:</span>
+                                        <span className="text-green-400">$0.0080</span>
+                                    </div>
+                                    <hr className="border-gray-600"/>
+                                    <div className="flex justify-between font-bold">
+                                        <span>Margen promedio:</span>
+                                        <span className="text-yellow-400">~40%</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div className="bg-gray-800 rounded-lg p-4">
+                                <h4 className="font-bold text-purple-400 mb-3">📈 Proyección Mensual</h4>
+                                <div className="text-sm text-gray-300 space-y-2">
+                                    <div className="flex justify-between">
+                                        <span>100 clientes Pro:</span>
+                                        <span className="text-purple-400">$4,900</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span>Costos (70% uso):</span>
+                                        <span className="text-red-400">-$2,450</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span>Infraestructura:</span>
+                                        <span className="text-red-400">-$200</span>
+                                    </div>
+                                    <hr className="border-gray-600"/>
+                                    <div className="flex justify-between font-bold text-lg">
+                                        <span>Ganancia neta:</span>
+                                        <span className="text-emerald-400">$2,250</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="mt-6 bg-gradient-to-r from-emerald-800 to-green-800 rounded-lg p-4">
+                            <p className="text-emerald-100 font-bold text-center text-lg">
+                                🚀 <strong>Modelo sustentable:</strong> Cliente ahorra 20-30% + Tú mantienes 40% de margen
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     );
 }

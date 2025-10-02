@@ -16,12 +16,12 @@ export declare class CacheService {
     constructor(maxSize?: number, ttlMinutes?: number);
     private generateHash;
     private generateCacheKey;
-    get(input: string, taskType: string): (RouteResult & {
+    get(input: string, taskType: string, priority?: string): (RouteResult & {
         response?: string;
     }) | null;
     set(input: string, taskType: string, result: RouteResult & {
         response?: string;
-    }): void;
+    }, priority?: string): void;
     private evictLeastUsed;
     private cleanup;
     getStats(): {
