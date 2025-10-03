@@ -226,3 +226,19 @@ body {
     font-family: 'JetBrains Mono', monospace;
   }
 }
+
+/* Asegurar que los elementos principales cambien con el tema */
+.dark {
+  color-scheme: dark;
+}
+
+.light {
+  color-scheme: light;
+}
+
+/* Transiciones suaves para el cambio de tema */
+* {
+  transition-property: color, background-color, border-color;
+  transition-duration: 200ms;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}

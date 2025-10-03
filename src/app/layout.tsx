@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import ClientOnly from "../components/ClientOnly";
 import RedirectHandler from "../components/RedirectHandler";
 import { AuthProvider } from "../contexts/AuthContext";
+import { ThemeProvider } from "../contexts/ThemeContext";
 import "./globals.css";
 
 const inter = Inter({
@@ -52,12 +53,14 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es" className="scroll-smooth">
-      <body className={`${inter.variable} font-sans antialiased bg-background text-foreground`}>
+      <body className={`${inter.variable} font-sans antialiased bg-background text-foreground transition-colors duration-200`}>
         <ClientOnly>
-          <AuthProvider>
-            <RedirectHandler />
-            {children}
-          </AuthProvider>
+          <ThemeProvider>
+            <AuthProvider>
+              <RedirectHandler />
+              {children}
+            </AuthProvider>
+          </ThemeProvider>
         </ClientOnly>
       </body>
     </html>

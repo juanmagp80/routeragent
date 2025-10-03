@@ -1,6 +1,7 @@
 "use client";
 
 import { useAuth } from "@/hooks/useAuth";
+import { useTheme } from "@/hooks/useTheme";
 import {
     AlertTriangle,
     Bell,
@@ -26,6 +27,7 @@ import { useState } from "react";
 
 export default function SettingsPage() {
     const { user, loading } = useAuth();
+    const { theme, setTheme, themes, resolvedTheme } = useTheme();
     const [activeTab, setActiveTab] = useState('profile');
     const [saving, setSaving] = useState(false);
     const [message, setMessage] = useState('');
@@ -85,14 +87,14 @@ export default function SettingsPage() {
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center min-h-96">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600"></div>
+            <div className="flex items-center justify-center min-h-96 bg-background">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 dark:border-emerald-400"></div>
             </div>
         );
     }
 
     return (
-        <div className="space-y-8 max-w-6xl mx-auto p-6">
+        <div className="space-y-8 max-w-6xl mx-auto p-6 bg-background text-foreground min-h-screen transition-colors">
             {/* Header con gradiente RouterAI */}
             <div className="relative bg-gradient-to-br from-emerald-600 via-teal-700 to-emerald-800 rounded-2xl p-8 text-white overflow-hidden">
                 <div className="absolute inset-0 bg-black/20"></div>
@@ -125,8 +127,8 @@ export default function SettingsPage() {
                                 key={id}
                                 onClick={() => setActiveTab(id)}
                                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors ${activeTab === id
-                                        ? 'bg-indigo-100 text-indigo-700 font-medium'
-                                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                                        ? 'bg-primary/10 text-primary font-medium'
+                                        : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
                                     }`}
                             >
                                 <Icon className="h-5 w-5" />
@@ -139,12 +141,12 @@ export default function SettingsPage() {
                 {/* Contenido principal */}
                 <div className="flex-1">
                     {activeTab === 'profile' && (
-                        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
+                        <div className="bg-card dark:bg-card rounded-2xl shadow-lg border border-border p-6">
                             <div className="flex items-center gap-3 mb-6">
-                                <div className="bg-indigo-100 rounded-lg p-2">
-                                    <User className="h-5 w-5 text-indigo-600" />
+                                <div className="bg-indigo-100 dark:bg-indigo-900 rounded-lg p-2">
+                                    <User className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
                                 </div>
-                                <h2 className="text-xl font-semibold text-gray-900">
+                                <h2 className="text-xl font-semibold text-card-foreground">
                                     Información del Perfil
                                 </h2>
                             </div>
@@ -152,7 +154,7 @@ export default function SettingsPage() {
                             <div className="space-y-6">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        <label className="block text-sm font-medium text-muted-foreground mb-2">
                                             Nombre completo
                                         </label>
                                         <input
@@ -259,12 +261,12 @@ export default function SettingsPage() {
                     )}
 
                     {activeTab === 'preferences' && (
-                        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
+                        <div className="bg-card rounded-2xl shadow-lg border border-border p-6">
                             <div className="flex items-center gap-3 mb-6">
-                                <div className="bg-emerald-100 rounded-lg p-2">
-                                    <Palette className="h-5 w-5 text-emerald-600" />
+                                <div className="bg-emerald-100 dark:bg-emerald-900 rounded-lg p-2">
+                                    <Palette className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
                                 </div>
-                                <h2 className="text-xl font-semibold text-gray-900">
+                                <h2 className="text-xl font-semibold text-card-foreground">
                                     Preferencias de la Aplicación
                                 </h2>
                             </div>
@@ -272,34 +274,49 @@ export default function SettingsPage() {
                             <div className="space-y-6">
                                 {/* Tema */}
                                 <div>
-                                    <h3 className="text-lg font-medium text-gray-900 mb-4">Tema</h3>
+                                    <h3 className="text-lg font-medium text-card-foreground mb-4">Tema de la Interfaz</h3>
                                     <div className="grid grid-cols-3 gap-4">
-                                        {[
-                                            { id: 'light', label: 'Claro', icon: Sun },
-                                            { id: 'dark', label: 'Oscuro', icon: Moon },
-                                            { id: 'system', label: 'Sistema', icon: Monitor }
-                                        ].map(({ id, label, icon: Icon }) => (
-                                            <button
-                                                key={id}
-                                                onClick={() => setPreferences(prev => ({
-                                                    ...prev,
-                                                    theme: id
-                                                }))}
-                                                className={`p-4 rounded-lg border-2 transition-all ${preferences.theme === id
-                                                        ? 'border-indigo-500 bg-indigo-50'
-                                                        : 'border-gray-200 hover:border-gray-300'
+                                        {themes.map((themeOption) => {
+                                            const IconComponent = themeOption.value === 'light' ? Sun : 
+                                                                themeOption.value === 'dark' ? Moon : Monitor;
+                                            return (
+                                                <button
+                                                    key={themeOption.value}
+                                                    onClick={() => setTheme(themeOption.value)}
+                                                    className={`p-4 rounded-lg border-2 transition-all hover:shadow-md ${
+                                                        theme === themeOption.value
+                                                            ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400'
+                                                            : 'border-border bg-card text-card-foreground hover:border-accent'
                                                     }`}
-                                            >
-                                                <Icon className="h-8 w-8 mx-auto mb-2 text-gray-600" />
-                                                <p className="text-sm font-medium text-gray-900">{label}</p>
-                                            </button>
-                                        ))}
+                                                >
+                                                    <div className="flex flex-col items-center gap-3">
+                                                        <div className="text-3xl">
+                                                            {themeOption.icon}
+                                                        </div>
+                                                        <div className="text-center">
+                                                            <p className="text-sm font-medium">{themeOption.label}</p>
+                                                            {themeOption.value === 'system' && (
+                                                                <p className="text-xs text-muted-foreground mt-1">
+                                                                    Actual: {resolvedTheme === 'dark' ? 'Oscuro' : 'Claro'}
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </button>
+                                            );
+                                        })}
                                     </div>
+                                    <p className="text-sm text-muted-foreground mt-3">
+                                        {theme === 'system' 
+                                            ? 'El tema se ajustará automáticamente según las preferencias de tu sistema'
+                                            : `Tema ${theme === 'light' ? 'claro' : 'oscuro'} seleccionado`
+                                        }
+                                    </p>
                                 </div>
 
                                 {/* Configuraciones de toggle */}
                                 <div className="space-y-4">
-                                    <h3 className="text-lg font-medium text-gray-900">Configuraciones Generales</h3>
+                                    <h3 className="text-lg font-medium text-card-foreground">Configuraciones Generales</h3>
 
                                     {[
                                         {

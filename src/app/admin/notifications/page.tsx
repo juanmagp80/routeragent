@@ -7,14 +7,17 @@ import {
     Bell,
     Check,
     Clock,
+    Cpu,
     Mail,
     MessageSquare,
+    Monitor,
     Save,
     Settings,
-    Smartphone
+    Smartphone,
+    TrendingUp
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 interface Notification {
     id: string;
@@ -34,6 +37,7 @@ export default function NotificationsPage() {
     const [saving, setSaving] = useState(false);
     const [message, setMessage] = useState('');
     const [error, setError] = useState<string | null>(null);
+    const [loadingNotifications, setLoadingNotifications] = useState(true);
 
     const [notificationPreferences, setNotificationPreferences] = useState({
         email: true,
@@ -56,6 +60,65 @@ export default function NotificationsPage() {
         quiet_hours_end: '08:00',
         digest_frequency: 'daily'
     });
+
+    // Cargar notificaciones reales al montar el componente
+    useEffect(() => {
+        loadNotifications();
+    }, []);
+
+    const loadNotifications = async () => {
+        try {
+            setLoadingNotifications(true);
+            const response = await fetch('/api/v1/notifications', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success) {
+                    setNotifications(data.notifications);
+                    setUnreadCount(data.unread_count);
+                } else {
+                    setError('Error al cargar notificaciones');
+                }
+            } else {
+                setError('Error de conexión al cargar notificaciones');
+            }
+        } catch (error) {
+            console.error('Error loading notifications:', error);
+            setError('Error al cargar notificaciones');
+        } finally {
+            setLoadingNotifications(false);
+        }
+    };
+
+    const markAsRead = async (notificationId: string) => {
+        try {
+            const response = await fetch('/api/v1/notifications', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    notificationId,
+                    action: 'mark_read'
+                })
+            });
+
+            if (response.ok) {
+                // Actualizar el estado local
+                setNotifications(prev => prev.map(n => 
+                    n.id === notificationId ? { ...n, is_read: true } : n
+                ));
+                setUnreadCount(prev => Math.max(0, prev - 1));
+            }
+        } catch (error) {
+            console.error('Error marking notification as read:', error);
+        }
+    };
 
     if (loading) {
         return (
@@ -116,7 +179,12 @@ export default function NotificationsPage() {
                     )}
 
                     <div className="space-y-3 max-h-96 overflow-y-auto">
-                        {notifications.length === 0 ? (
+                        {loadingNotifications ? (
+                            <div className="flex items-center justify-center py-8">
+                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500"></div>
+                                <span className="ml-2 text-gray-500">Cargando notificaciones...</span>
+                            </div>
+                        ) : notifications.length === 0 ? (
                             <div className="text-center py-8 text-gray-500">
                                 <Bell className="h-12 w-12 mx-auto mb-3 text-gray-300" />
                                 <p>No hay notificaciones disponibles</p>
@@ -125,7 +193,7 @@ export default function NotificationsPage() {
                             notifications.map((notification) => (
                                 <div
                                     key={notification.id}
-                                    className={`p-4 rounded-lg border cursor-pointer transition-all hover:shadow-md ${notification.is_read
+                                    className={`p-4 rounded-lg border transition-all hover:shadow-md ${notification.is_read
                                             ? 'bg-gray-50 border-gray-200'
                                             : 'bg-emerald-50 border-emerald-200 shadow-sm'
                                         }`}
@@ -135,21 +203,47 @@ export default function NotificationsPage() {
                                                 ? 'bg-gray-200'
                                                 : 'bg-emerald-100'
                                             }`}>
-                                            <Bell className="h-5 w-5" />
+                                            {notification.type === 'billing' && <BarChart3 className="h-5 w-5" />}
+                                            {notification.type === 'usage_alert' && <TrendingUp className="h-5 w-5" />}
+                                            {notification.type === 'performance' && <Cpu className="h-5 w-5" />}
+                                            {notification.type === 'system' && <Settings className="h-5 w-5" />}
+                                            {notification.type === 'feature' && <Bell className="h-5 w-5" />}
+                                            {!['billing', 'usage_alert', 'performance', 'system', 'feature'].includes(notification.type) && <Bell className="h-5 w-5" />}
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            <h3 className={`font-medium ${notification.is_read
-                                                    ? 'text-gray-700'
-                                                    : 'text-gray-900'
-                                                }`}>
-                                                {notification.title}
-                                            </h3>
-                                            <p className={`text-sm mt-1 ${notification.is_read
-                                                    ? 'text-gray-500'
-                                                    : 'text-gray-700'
-                                                }`}>
-                                                {notification.message}
-                                            </p>
+                                            <div className="flex items-start justify-between">
+                                                <div>
+                                                    <h3 className={`font-medium ${notification.is_read
+                                                            ? 'text-gray-700'
+                                                            : 'text-gray-900'
+                                                        }`}>
+                                                        {notification.title}
+                                                    </h3>
+                                                    <p className={`text-sm mt-1 ${notification.is_read
+                                                            ? 'text-gray-500'
+                                                            : 'text-gray-700'
+                                                        }`}>
+                                                        {notification.message}
+                                                    </p>
+                                                    <p className="text-xs text-gray-400 mt-2">
+                                                        {new Date(notification.created_at).toLocaleDateString('es-ES', {
+                                                            day: 'numeric',
+                                                            month: 'short',
+                                                            hour: '2-digit',
+                                                            minute: '2-digit'
+                                                        })}
+                                                    </p>
+                                                </div>
+                                                {!notification.is_read && (
+                                                    <button
+                                                        onClick={() => markAsRead(notification.id)}
+                                                        className="ml-2 p-1 text-emerald-600 hover:text-emerald-800 transition-colors"
+                                                        title="Marcar como leída"
+                                                    >
+                                                        <Check className="h-4 w-4" />
+                                                    </button>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>

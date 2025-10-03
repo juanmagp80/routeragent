@@ -1,11 +1,34 @@
 "use client";
 
-import { BackendMetrics, backendServiceDev } from "@/services/backendServiceDev";
 import { Activity, BarChart3, Clock, Cpu, TrendingUp, Zap } from "lucide-react";
 import { useEffect, useState } from "react";
 
+// Interfaz para los datos de métricas
+interface MetricsData {
+    metrics: Array<{
+        model: string;
+        count: number;
+        sum: number;
+    }>;
+    summary: {
+        total_cost: number;
+        total_requests: number;
+        avg_cost_per_request: number;
+        active_api_keys?: number;
+    };
+    recent_tasks: Array<{
+        model: string;
+        cost: number;
+        latency: number;
+        status: string;
+        timestamp: string;
+        task_type?: string;
+        created_at?: string;
+    }>;
+}
+
 export default function AnalyticsPage() {
-    const [metrics, setMetrics] = useState<BackendMetrics | null>(null);
+    const [metrics, setMetrics] = useState<MetricsData | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -16,11 +39,35 @@ export default function AnalyticsPage() {
         try {
             console.log('📊 Loading analytics...');
             setLoading(true);
-            const metricsData = await backendServiceDev.getMetrics();
+            
+            // Usar nuestro propio endpoint interno en lugar del backend externo
+            const response = await fetch('/api/v1/metrics', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const metricsData = await response.json();
             console.log('✅ Analytics loaded:', metricsData);
             setMetrics(metricsData);
         } catch (error) {
             console.error('❌ Error loading analytics:', error);
+            // Datos por defecto en caso de error
+            setMetrics({
+                metrics: [],
+                summary: {
+                    total_cost: 0,
+                    total_requests: 0,
+                    avg_cost_per_request: 0,
+                    active_api_keys: 0,
+                },
+                recent_tasks: []
+            });
         } finally {
             setLoading(false);
         }
@@ -192,18 +239,18 @@ export default function AnalyticsPage() {
                                     </div>
                                     <div>
                                         <p className="font-semibold text-gray-900">{task.model}</p>
-                                        <p className="text-sm text-gray-600 capitalize">{task.task_type.replace('_', ' ')}</p>
+                                        <p className="text-sm text-gray-600 capitalize">{task.task_type?.replace('_', ' ') || task.status}</p>
                                     </div>
                                 </div>
                                 <div className="text-right">
                                     <p className="font-medium text-gray-900">
-                                        {new Date(task.created_at).toLocaleDateString('es-ES', {
+                                        {new Date(task.created_at || task.timestamp).toLocaleDateString('es-ES', {
                                             day: '2-digit',
                                             month: '2-digit'
                                         })}
                                     </p>
                                     <p className="text-sm text-gray-500">
-                                        {new Date(task.created_at).toLocaleTimeString('es-ES', {
+                                        {new Date(task.created_at || task.timestamp).toLocaleTimeString('es-ES', {
                                             hour: '2-digit',
                                             minute: '2-digit'
                                         })}
