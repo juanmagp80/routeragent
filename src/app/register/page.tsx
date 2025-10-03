@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { ArrowRight, Check, Chrome, Eye, EyeOff, Github, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Eye, EyeOff, ArrowRight, Check, X, Github, Chrome } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 
 export default function RegisterPage() {
@@ -28,7 +28,7 @@ export default function RegisterPage() {
 
   useEffect(() => {
     setIsMounted(true);
-    
+
     const handleMouseMove = (e: MouseEvent) => {
       setMousePosition({
         x: e.clientX / window.innerWidth,
@@ -79,21 +79,21 @@ export default function RegisterPage() {
     setError(null);
     setSuccess(null);
     setIsSubmitting(true);
-    
+
     try {
       if (formData.password !== formData.confirmPassword) {
         setError('Las contraseñas no coinciden');
         return;
       }
-      
+
       if (formData.password.length < 8) {
         setError('La contraseña debe tener al menos 8 caracteres');
         return;
       }
-      
+
       await register(formData.name, formData.email, formData.password);
       setSuccess('¡Cuenta creada exitosamente! Redirigiendo...');
-      
+
       setTimeout(() => {
         router.push('/admin');
       }, 2000);
@@ -106,10 +106,10 @@ export default function RegisterPage() {
 
   const containerVariants = {
     hidden: { opacity: 0, y: 20 },
-    visible: { 
-      opacity: 1, 
+    visible: {
+      opacity: 1,
       y: 0,
-      transition: { 
+      transition: {
         duration: 0.6,
         staggerChildren: 0.1
       }
@@ -124,19 +124,19 @@ export default function RegisterPage() {
   return (
     <div className="min-h-screen bg-black relative overflow-hidden">
       {/* Dynamic background gradient */}
-      <div 
+      <div
         className="absolute inset-0 opacity-30"
         style={{
           background: `radial-gradient(circle at ${mousePosition.x * 100}% ${mousePosition.y * 100}%, rgba(16, 185, 129, 0.15) 0%, transparent 50%)`
         }}
       />
-      
+
       {/* Grid pattern overlay */}
       <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:4rem_4rem]" />
-      
+
       <div className="relative z-10 min-h-screen flex">
         {/* Left side - Branding */}
-        <motion.div 
+        <motion.div
           className="hidden lg:flex lg:w-1/2 flex-col justify-center px-12 xl:px-20"
           initial={{ opacity: 0, x: -50 }}
           animate={{ opacity: 1, x: 0 }}
@@ -154,18 +154,18 @@ export default function RegisterPage() {
                 </div>
               </div>
             </motion.div>
-            
+
             <h1 className="text-4xl font-bold text-white mb-4 leading-tight">
               Únete al futuro del
               <span className="block bg-gradient-to-r from-emerald-400 to-emerald-600 bg-clip-text text-transparent">
                 enrutamiento de IA
               </span>
             </h1>
-            
+
             <p className="text-gray-400 text-lg leading-relaxed mb-8">
               Comienza a optimizar tus cargas de trabajo de IA con enrutamiento inteligente de modelos. Únete a miles de desarrolladores que ya usan RouterAI.
             </p>
-            
+
             <div className="space-y-4">
               <div className="flex items-center space-x-3">
                 <div className="w-2 h-2 bg-emerald-400 rounded-full"></div>
@@ -196,7 +196,7 @@ export default function RegisterPage() {
               <p className="text-gray-400">Comienza con RouterAI hoy</p>
             </motion.div>
 
-            <motion.div 
+            <motion.div
               variants={itemVariants}
               className="bg-white/5 backdrop-blur-lg rounded-3xl p-8 border border-white/10 shadow-2xl"
             >
@@ -211,7 +211,7 @@ export default function RegisterPage() {
                     {error}
                   </motion.div>
                 )}
-                
+
                 {success && (
                   <motion.div
                     initial={{ opacity: 0, y: -10 }}
@@ -237,11 +237,10 @@ export default function RegisterPage() {
                     onFocus={() => setFocusedField('name')}
                     onBlur={() => setFocusedField(null)}
                     name="name"
-                    className={`w-full bg-white/5 border ${
-                      focusedField === 'name' 
-                        ? 'border-emerald-400/50 ring-2 ring-emerald-400/20' 
+                    className={`w-full bg-white/5 border ${focusedField === 'name'
+                        ? 'border-emerald-400/50 ring-2 ring-emerald-400/20'
                         : 'border-white/10'
-                    } text-white rounded-xl px-4 py-3 transition-all duration-300 placeholder-gray-500 focus:outline-none backdrop-blur-sm`}
+                      } text-white rounded-xl px-4 py-3 transition-all duration-300 placeholder-gray-500 focus:outline-none backdrop-blur-sm`}
                     placeholder="Juan Pérez"
                   />
                 </motion.div>
@@ -258,11 +257,10 @@ export default function RegisterPage() {
                     onFocus={() => setFocusedField('email')}
                     onBlur={() => setFocusedField(null)}
                     name="email"
-                    className={`w-full bg-white/5 border ${
-                      focusedField === 'email' 
-                        ? 'border-emerald-400/50 ring-2 ring-emerald-400/20' 
+                    className={`w-full bg-white/5 border ${focusedField === 'email'
+                        ? 'border-emerald-400/50 ring-2 ring-emerald-400/20'
                         : 'border-white/10'
-                    } text-white rounded-xl px-4 py-3 transition-all duration-300 placeholder-gray-500 focus:outline-none backdrop-blur-sm`}
+                      } text-white rounded-xl px-4 py-3 transition-all duration-300 placeholder-gray-500 focus:outline-none backdrop-blur-sm`}
                     placeholder="tu@empresa.com"
                   />
                 </motion.div>
@@ -280,11 +278,10 @@ export default function RegisterPage() {
                       onFocus={() => setFocusedField('password')}
                       onBlur={() => setFocusedField(null)}
                       name="password"
-                      className={`w-full bg-white/5 border ${
-                        focusedField === 'password' 
-                          ? 'border-emerald-400/50 ring-2 ring-emerald-400/20' 
+                      className={`w-full bg-white/5 border ${focusedField === 'password'
+                          ? 'border-emerald-400/50 ring-2 ring-emerald-400/20'
                           : 'border-white/10'
-                      } text-white rounded-xl px-4 py-3 pr-12 transition-all duration-300 placeholder-gray-500 focus:outline-none backdrop-blur-sm`}
+                        } text-white rounded-xl px-4 py-3 pr-12 transition-all duration-300 placeholder-gray-500 focus:outline-none backdrop-blur-sm`}
                       placeholder="Crea una contraseña segura"
                     />
                     <button
@@ -295,7 +292,7 @@ export default function RegisterPage() {
                       {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                     </button>
                   </div>
-                  
+
                   {/* Password strength indicator */}
                   {formData.password && (
                     <motion.div
@@ -307,13 +304,12 @@ export default function RegisterPage() {
                         {[1, 2, 3, 4, 5].map((level) => (
                           <div
                             key={level}
-                            className={`h-1 flex-1 rounded-full transition-colors ${
-                              level <= passwordStrength
-                                ? passwordStrength <= 2 ? 'bg-red-400' 
+                            className={`h-1 flex-1 rounded-full transition-colors ${level <= passwordStrength
+                                ? passwordStrength <= 2 ? 'bg-red-400'
                                   : passwordStrength <= 3 ? 'bg-yellow-400'
-                                  : 'bg-emerald-400'
+                                    : 'bg-emerald-400'
                                 : 'bg-gray-600'
-                            }`}
+                              }`}
                           />
                         ))}
                       </div>
@@ -348,13 +344,12 @@ export default function RegisterPage() {
                       onFocus={() => setFocusedField('confirmPassword')}
                       onBlur={() => setFocusedField(null)}
                       name="confirmPassword"
-                      className={`w-full bg-white/5 border ${
-                        focusedField === 'confirmPassword' 
-                          ? 'border-emerald-400/50 ring-2 ring-emerald-400/20' 
+                      className={`w-full bg-white/5 border ${focusedField === 'confirmPassword'
+                          ? 'border-emerald-400/50 ring-2 ring-emerald-400/20'
                           : formData.confirmPassword && formData.password !== formData.confirmPassword
                             ? 'border-red-400/50'
                             : 'border-white/10'
-                      } text-white rounded-xl px-4 py-3 pr-12 transition-all duration-300 placeholder-gray-500 focus:outline-none backdrop-blur-sm`}
+                        } text-white rounded-xl px-4 py-3 pr-12 transition-all duration-300 placeholder-gray-500 focus:outline-none backdrop-blur-sm`}
                       placeholder="Confirma tu contraseña"
                     />
                     <button

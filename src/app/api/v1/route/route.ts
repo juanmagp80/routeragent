@@ -18,14 +18,14 @@ export async function POST(req: NextRequest) {
             console.log('Raw body received:', rawBody);
             console.log('Raw body length:', rawBody.length);
             console.log('Raw body type:', typeof rawBody);
-            
+
             if (!rawBody.trim()) {
                 return NextResponse.json(
                     { error: 'Empty request body', success: false },
                     { status: 400 }
                 );
             }
-            
+
             body = JSON.parse(rawBody);
             console.log('Parsed body:', body);
         } catch (parseError) {

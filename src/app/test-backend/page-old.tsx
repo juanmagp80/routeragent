@@ -1,13 +1,13 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { backendService, type RouteRequest, type RouteResponse } from '@/services/backendService';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, CheckCircle, XCircle, Server, Zap, DollarSign, Clock } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Textarea } from '@/components/ui/textarea';
+import { backendService, type RouteRequest, type RouteResponse } from '@/services/backendService';
+import { CheckCircle, Clock, DollarSign, Loader2, Server, XCircle, Zap } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 export default function BackendTestPage() {
     const [isConnected, setIsConnected] = useState<boolean | null>(null);
@@ -27,7 +27,7 @@ export default function BackendTestPage() {
         try {
             const connected = await backendService.healthCheck();
             setIsConnected(connected);
-            
+
             if (connected) {
                 const info = await backendService.getSystemInfo();
                 setSystemInfo(info);
@@ -95,12 +95,12 @@ export default function BackendTestPage() {
                                 <XCircle className="w-4 h-4 text-red-500" />
                             )}
                             <span className="text-slate-300">
-                                {isConnected === null ? 'Verificando...' : 
-                                 isConnected ? 'Conectado' : 'Desconectado'}
+                                {isConnected === null ? 'Verificando...' :
+                                    isConnected ? 'Conectado' : 'Desconectado'}
                             </span>
-                            <Button 
-                                variant="outline" 
-                                size="sm" 
+                            <Button
+                                variant="outline"
+                                size="sm"
                                 onClick={checkBackendConnection}
                                 className="ml-auto"
                             >
@@ -163,7 +163,7 @@ export default function BackendTestPage() {
                                 </select>
                             </div>
 
-                            <Button 
+                            <Button
                                 onClick={testRouting}
                                 disabled={isRouting || !testInput.trim()}
                                 className="w-full bg-purple-600 hover:bg-purple-700"
@@ -212,7 +212,7 @@ export default function BackendTestPage() {
                                         {routeResult.selected_model}
                                     </Badge>
                                 </div>
-                                
+
                                 <div className="bg-slate-900 p-4 rounded-lg text-center">
                                     <div className="flex items-center justify-center gap-2 mb-2">
                                         <DollarSign className="w-4 h-4 text-green-500" />
@@ -222,7 +222,7 @@ export default function BackendTestPage() {
                                         ${routeResult.cost.toFixed(4)}
                                     </p>
                                 </div>
-                                
+
                                 <div className="bg-slate-900 p-4 rounded-lg text-center">
                                     <div className="flex items-center justify-center gap-2 mb-2">
                                         <Clock className="w-4 h-4 text-yellow-500" />

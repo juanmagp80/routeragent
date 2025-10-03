@@ -1,13 +1,13 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { backendService, type RouteRequest, type RouteResponse } from '@/services/backendService';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, CheckCircle, XCircle, Server, Zap, DollarSign, Clock } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Textarea } from '@/components/ui/textarea';
+import { backendService, type RouteRequest, type RouteResponse } from '@/services/backendService';
+import { CheckCircle, Clock, DollarSign, Loader2, Server, XCircle, Zap } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 export default function BackendTestPage() {
     const [isConnected, setIsConnected] = useState<boolean | null>(null);
@@ -27,7 +27,7 @@ export default function BackendTestPage() {
         try {
             const connected = await backendService.healthCheck();
             setIsConnected(connected);
-            
+
             if (connected) {
                 const info = await backendService.getSystemInfo();
                 setSystemInfo(info);
@@ -96,13 +96,13 @@ export default function BackendTestPage() {
                                     <XCircle className="h-5 w-5 text-red-500" />
                                 )}
                                 <span className="font-medium">
-                                    {isConnected === null ? 'Verificando...' : 
-                                     isConnected ? 'Conectado' : 'Desconectado'}
+                                    {isConnected === null ? 'Verificando...' :
+                                        isConnected ? 'Conectado' : 'Desconectado'}
                                 </span>
                             </div>
-                            <Button 
-                                onClick={checkBackendConnection} 
-                                variant="outline" 
+                            <Button
+                                onClick={checkBackendConnection}
+                                variant="outline"
                                 size="sm"
                             >
                                 Reconectar
@@ -167,7 +167,7 @@ export default function BackendTestPage() {
                                 </select>
                             </div>
 
-                            <Button 
+                            <Button
                                 onClick={testRouting}
                                 disabled={!isConnected || isRouting || !testInput.trim()}
                                 className="w-full"
@@ -212,7 +212,7 @@ export default function BackendTestPage() {
                                                 {routeResult.selected_model}
                                             </Badge>
                                         </div>
-                                        
+
                                         <div className="flex items-center justify-between">
                                             <span className="text-sm text-gray-600">Costo:</span>
                                             <div className="flex items-center space-x-1">

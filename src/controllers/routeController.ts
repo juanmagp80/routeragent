@@ -28,7 +28,7 @@ export const routeTask = async (req: any, res: any) => {
         // Determinar el task_type primero para seleccionar el modelo apropiado
         let taskType = task.task_type || "general";
         const input = task.input.toLowerCase();
-        
+
         if (!task.task_type || task.task_type === "general") {
             if (input.includes("resume") || input.includes("summarize") || input.includes("resumen")) {
                 taskType = "summary";
@@ -82,7 +82,7 @@ export const routeTask = async (req: any, res: any) => {
         // Función para generar respuestas contextuales reales
         const generateContextualResponse = (userInput: string, taskTypeDetected: string) => {
             const lowerInput = userInput.toLowerCase();
-            
+
             // Para resúmenes - detectar el tema específico
             if (taskTypeDetected === "summary" || lowerInput.includes("resumen") || lowerInput.includes("resume")) {
                 if (lowerInput.includes("dormir") || lowerInput.includes("sueño") || lowerInput.includes("sleep")) {

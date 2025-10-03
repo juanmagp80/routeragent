@@ -289,7 +289,7 @@ console.log('Respuesta:', data.response);`
                                     <h4 className="font-bold text-slate-900 mb-2">📝 Ejemplo de petición completa</h4>
                                     <div className="bg-slate-900 rounded-lg p-4">
                                         <pre className="text-emerald-400 font-mono text-sm">
-{`curl -X POST http://localhost:3000/api/v1/route \\
+                                            {`curl -X POST http://localhost:3000/api/v1/route \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer ar_6f7ccf7894c970ee9012cd50d8096a3edf2fed8122f39b53d6c47fef9a69239a" \\
   -d '{
@@ -306,7 +306,7 @@ console.log('Respuesta:', data.response);`
                                         <div>
                                             <h4 className="font-bold text-yellow-800">Entorno de desarrollo</h4>
                                             <p className="text-yellow-700 text-sm">
-                                                Esta documentación está configurada para el entorno local de desarrollo (localhost:3000). 
+                                                Esta documentación está configurada para el entorno local de desarrollo (localhost:3000).
                                                 En producción, usa la URL correspondiente a tu despliegue.
                                             </p>
                                         </div>
@@ -339,7 +339,7 @@ console.log('Respuesta:', data.response);`
                                     <h4 className="font-bold text-slate-900 mb-2">Request Body:</h4>
                                     <div className="bg-slate-900 rounded-lg p-4 mb-4">
                                         <pre className="text-emerald-400 font-mono text-sm">
-{`{
+                                            {`{
   "input": "string (required) - Tu pregunta o texto a procesar",
   "task_type": "summary|translation|analysis|question|coding|general (opcional)"
 }`}
@@ -377,7 +377,7 @@ console.log('Respuesta:', data.response);`
                                     <h4 className="font-bold text-slate-900 mb-2">Response:</h4>
                                     <div className="bg-slate-900 rounded-lg p-4">
                                         <pre className="text-blue-400 font-mono text-sm">
-{`{
+                                            {`{
   "selected_model": "Claude-3",
   "cost": 0.002,
   "estimated_time": 125,
@@ -472,7 +472,7 @@ console.log('Respuesta:', data.response);`
                                     <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4 mt-6">
                                         <h4 className="font-bold text-emerald-800 mb-2">💡 Tip de optimización</h4>
                                         <p className="text-emerald-700 text-sm">
-                                            Si no especificas <code className="bg-emerald-100 px-2 py-1 rounded">task_type</code>, RouterAI lo detectará automáticamente basándose en el contenido. 
+                                            Si no especificas <code className="bg-emerald-100 px-2 py-1 rounded">task_type</code>, RouterAI lo detectará automáticamente basándose en el contenido.
                                             ¡Pero especificarlo garantiza la máxima precisión en la selección del modelo!
                                         </p>
                                     </div>
@@ -492,7 +492,7 @@ console.log('Respuesta:', data.response);`
 
                                     <div className="bg-slate-900 rounded-lg p-4">
                                         <pre className="text-blue-400 font-mono text-sm">
-{`{
+                                            {`{
   "metrics": [
     {
       "model": "claude-3.5-sonnet",
@@ -596,7 +596,7 @@ console.log('Respuesta:', data.response);`
                                             <p className="text-slate-600 text-sm mb-4">{useCase.description}</p>
                                             <div className="bg-slate-900 rounded-lg p-3">
                                                 <code className="text-emerald-400 text-xs">
-{`fetch('/api/v1/route', {
+                                                    {`fetch('/api/v1/route', {
   method: 'POST',
   body: JSON.stringify({
     input: "Tu consulta aquí",

@@ -298,8 +298,8 @@ export default function ApiTestPage() {
                         <CardContent>
                             {backendHealth !== null && (
                                 <div className={`flex items-center space-x-2 p-4 rounded-lg ${backendHealth
-                                        ? 'bg-green-50 border border-green-200'
-                                        : 'bg-red-50 border border-red-200'
+                                    ? 'bg-green-50 border border-green-200'
+                                    : 'bg-red-50 border border-red-200'
                                     }`}>
                                     {backendHealth ? (
                                         <>

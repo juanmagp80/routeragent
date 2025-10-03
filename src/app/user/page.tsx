@@ -1,12 +1,12 @@
 "use client";
 
 import { motion } from 'framer-motion';
-import { BarChart3, DollarSign, LogOut, Network, User, Activity, Clock } from 'lucide-react';
+import { Activity, BarChart3, Clock, DollarSign, LogOut, Network, User } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { clearPendingRedirect } from '../../utils/redirect';
 import { getUserMetrics, getUserStats, UserMetrics, UserStats } from '../../services/userMetrics';
+import { clearPendingRedirect } from '../../utils/redirect';
 
 console.log('📁 UserDashboard module loaded');
 
@@ -14,7 +14,7 @@ export default function UserDashboard() {
     console.log('🏠 UserDashboard component instantiated');
     const { user, logout, loading: authLoading, isHydrated } = useAuth();
     const router = useRouter();
-    
+
     // Estados para métricas reales
     const [metrics, setMetrics] = useState<UserMetrics | null>(null);
     const [stats, setStats] = useState<UserStats | null>(null);
@@ -48,12 +48,12 @@ export default function UserDashboard() {
         try {
             setIsLoadingMetrics(true);
             console.log('📊 Cargando métricas para usuario:', userId);
-            
+
             const [userMetrics, userStats] = await Promise.all([
                 getUserMetrics(userId),
                 getUserStats(userId)
             ]);
-            
+
             setMetrics(userMetrics);
             setStats(userStats);
             console.log('✅ Métricas cargadas:', { userMetrics, userStats });
@@ -446,13 +446,12 @@ export default function UserDashboard() {
                                     <div className="text-right">
                                         <p className="font-medium text-emerald-400">${activity.cost.toFixed(3)}</p>
                                         <p className="text-sm text-slate-400 capitalize">{activity.model_used}</p>
-                                        <p className={`text-xs px-2 py-1 rounded-full inline-block ${
-                                            activity.status === 'completed' 
-                                                ? 'bg-emerald-500/20 text-emerald-400' 
-                                                : activity.status === 'pending' 
-                                                ? 'bg-yellow-500/20 text-yellow-400'
-                                                : 'bg-red-500/20 text-red-400'
-                                        }`}>
+                                        <p className={`text-xs px-2 py-1 rounded-full inline-block ${activity.status === 'completed'
+                                                ? 'bg-emerald-500/20 text-emerald-400'
+                                                : activity.status === 'pending'
+                                                    ? 'bg-yellow-500/20 text-yellow-400'
+                                                    : 'bg-red-500/20 text-red-400'
+                                            }`}>
                                             {activity.status}
                                         </p>
                                     </div>
