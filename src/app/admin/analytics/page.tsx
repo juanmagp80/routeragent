@@ -39,7 +39,7 @@ export default function AnalyticsPage() {
         try {
             console.log('📊 Loading analytics...');
             setLoading(true);
-            
+
             // Usar nuestro propio endpoint interno en lugar del backend externo
             const response = await fetch('/api/v1/metrics', {
                 method: 'GET',
@@ -187,8 +187,8 @@ export default function AnalyticsPage() {
                                     <div key={index} className="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl border">
                                         <div className="flex items-center">
                                             <div className={`w-3 h-3 rounded-full mr-3 ${index === 0 ? 'bg-emerald-500' :
-                                                    index === 1 ? 'bg-blue-500' :
-                                                        index === 2 ? 'bg-purple-500' : 'bg-gray-400'
+                                                index === 1 ? 'bg-blue-500' :
+                                                    index === 2 ? 'bg-purple-500' : 'bg-gray-400'
                                                 }`}></div>
                                             <div>
                                                 <p className="font-semibold text-gray-900">{model.model}</p>
@@ -200,8 +200,8 @@ export default function AnalyticsPage() {
                                             <div className="w-20 bg-gray-200 rounded-full h-2 mt-1">
                                                 <div
                                                     className={`h-2 rounded-full ${index === 0 ? 'bg-emerald-500' :
-                                                            index === 1 ? 'bg-blue-500' :
-                                                                index === 2 ? 'bg-purple-500' : 'bg-gray-400'
+                                                        index === 1 ? 'bg-blue-500' :
+                                                            index === 2 ? 'bg-purple-500' : 'bg-gray-400'
                                                         }`}
                                                     style={{ width: `${percentage}%` }}
                                                 ></div>

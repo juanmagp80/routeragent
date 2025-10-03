@@ -10,7 +10,6 @@ import {
     Cpu,
     Mail,
     MessageSquare,
-    Monitor,
     Save,
     Settings,
     Smartphone,
@@ -110,7 +109,7 @@ export default function NotificationsPage() {
 
             if (response.ok) {
                 // Actualizar el estado local
-                setNotifications(prev => prev.map(n => 
+                setNotifications(prev => prev.map(n =>
                     n.id === notificationId ? { ...n, is_read: true } : n
                 ));
                 setUnreadCount(prev => Math.max(0, prev - 1));
@@ -194,14 +193,14 @@ export default function NotificationsPage() {
                                 <div
                                     key={notification.id}
                                     className={`p-4 rounded-lg border transition-all hover:shadow-md ${notification.is_read
-                                            ? 'bg-gray-50 border-gray-200'
-                                            : 'bg-emerald-50 border-emerald-200 shadow-sm'
+                                        ? 'bg-gray-50 border-gray-200'
+                                        : 'bg-emerald-50 border-emerald-200 shadow-sm'
                                         }`}
                                 >
                                     <div className="flex items-start gap-3">
                                         <div className={`p-2 rounded-lg ${notification.is_read
-                                                ? 'bg-gray-200'
-                                                : 'bg-emerald-100'
+                                            ? 'bg-gray-200'
+                                            : 'bg-emerald-100'
                                             }`}>
                                             {notification.type === 'billing' && <BarChart3 className="h-5 w-5" />}
                                             {notification.type === 'usage_alert' && <TrendingUp className="h-5 w-5" />}
@@ -214,14 +213,14 @@ export default function NotificationsPage() {
                                             <div className="flex items-start justify-between">
                                                 <div>
                                                     <h3 className={`font-medium ${notification.is_read
-                                                            ? 'text-gray-700'
-                                                            : 'text-gray-900'
+                                                        ? 'text-gray-700'
+                                                        : 'text-gray-900'
                                                         }`}>
                                                         {notification.title}
                                                     </h3>
                                                     <p className={`text-sm mt-1 ${notification.is_read
-                                                            ? 'text-gray-500'
-                                                            : 'text-gray-700'
+                                                        ? 'text-gray-500'
+                                                        : 'text-gray-700'
                                                         }`}>
                                                         {notification.message}
                                                     </p>

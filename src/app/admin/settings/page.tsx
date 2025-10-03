@@ -127,8 +127,8 @@ export default function SettingsPage() {
                                 key={id}
                                 onClick={() => setActiveTab(id)}
                                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors ${activeTab === id
-                                        ? 'bg-primary/10 text-primary font-medium'
-                                        : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                                    ? 'bg-primary/10 text-primary font-medium'
+                                    : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
                                     }`}
                             >
                                 <Icon className="h-5 w-5" />
@@ -277,17 +277,16 @@ export default function SettingsPage() {
                                     <h3 className="text-lg font-medium text-card-foreground mb-4">Tema de la Interfaz</h3>
                                     <div className="grid grid-cols-3 gap-4">
                                         {themes.map((themeOption) => {
-                                            const IconComponent = themeOption.value === 'light' ? Sun : 
-                                                                themeOption.value === 'dark' ? Moon : Monitor;
+                                            const IconComponent = themeOption.value === 'light' ? Sun :
+                                                themeOption.value === 'dark' ? Moon : Monitor;
                                             return (
                                                 <button
                                                     key={themeOption.value}
                                                     onClick={() => setTheme(themeOption.value)}
-                                                    className={`p-4 rounded-lg border-2 transition-all hover:shadow-md ${
-                                                        theme === themeOption.value
+                                                    className={`p-4 rounded-lg border-2 transition-all hover:shadow-md ${theme === themeOption.value
                                                             ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400'
                                                             : 'border-border bg-card text-card-foreground hover:border-accent'
-                                                    }`}
+                                                        }`}
                                                 >
                                                     <div className="flex flex-col items-center gap-3">
                                                         <div className="text-3xl">
@@ -307,7 +306,7 @@ export default function SettingsPage() {
                                         })}
                                     </div>
                                     <p className="text-sm text-muted-foreground mt-3">
-                                        {theme === 'system' 
+                                        {theme === 'system'
                                             ? 'El tema se ajustará automáticamente según las preferencias de tu sistema'
                                             : `Tema ${theme === 'light' ? 'claro' : 'oscuro'} seleccionado`
                                         }
@@ -598,8 +597,8 @@ export default function SettingsPage() {
                     {/* Mensaje de estado */}
                     {message && (
                         <div className={`mt-4 p-4 rounded-lg text-center font-medium ${message.includes('Error')
-                                ? 'bg-red-50 text-red-700 border border-red-200'
-                                : 'bg-green-50 text-green-700 border border-green-200'
+                            ? 'bg-red-50 text-red-700 border border-red-200'
+                            : 'bg-green-50 text-green-700 border border-green-200'
                             }`}>
                             <div className="flex items-center justify-center gap-2">
                                 {message.includes('Error') ? (

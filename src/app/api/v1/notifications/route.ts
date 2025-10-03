@@ -30,10 +30,10 @@ async function generateRealNotifications() {
             method: 'GET',
             headers: { 'Content-Type': 'application/json' }
         });
-        
+
         if (metricsResponse.ok) {
             const metrics = await metricsResponse.json();
-            
+
             // Notificación sobre uso alto
             if (metrics.summary.total_requests > 100) {
                 notifications.push({
@@ -62,10 +62,10 @@ async function generateRealNotifications() {
 
             // Notificación sobre modelo más usado
             if (metrics.metrics.length > 0) {
-                const mostUsed = metrics.metrics.reduce((prev: any, current: any) => 
+                const mostUsed = metrics.metrics.reduce((prev: any, current: any) =>
                     prev.count > current.count ? prev : current
                 );
-                
+
                 notifications.push({
                     id: 'model-performance',
                     type: 'performance',
@@ -116,7 +116,7 @@ async function generateRealNotifications() {
         created_at: new Date(now.getTime() - 12 * 60 * 60 * 1000).toISOString() // 12 horas atrás
     });
 
-    return notifications.sort((a, b) => 
+    return notifications.sort((a, b) =>
         new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     );
 }
