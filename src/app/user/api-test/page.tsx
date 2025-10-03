@@ -75,7 +75,7 @@ export default function ApiTestPage() {
     return (
         <div className="container mx-auto py-8 px-4">
             <div className="mb-8">
-                <h1 className="text-3xl font-bold mb-2">🧪 Test de API AgentRouter</h1>
+                <h1 className="text-3xl font-bold mb-2">🧪 Test de API RouterAI</h1>
                 <p className="text-muted-foreground">
                     Prueba la funcionalidad del router de modelos de IA
                 </p>

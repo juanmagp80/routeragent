@@ -168,7 +168,7 @@ export default function UserDashboard() {
                                 <div className="w-8 h-8 bg-slate-700 rounded-lg flex items-center justify-center relative">
                                     <Network className="w-5 h-5 text-emerald-400" />
                                 </div>
-                                <span className="ml-2 text-xl font-bold">AgentRouter</span>
+                                <span className="ml-2 text-xl font-bold">RouterAI</span>
                             </div>
                         </div>
                         <div className="flex items-center space-x-4">

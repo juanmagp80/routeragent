@@ -163,7 +163,7 @@ export default function RegisterPage() {
             </h1>
             
             <p className="text-gray-400 text-lg leading-relaxed mb-8">
-              Comienza a optimizar tus cargas de trabajo de IA con enrutamiento inteligente de modelos. Únete a miles de desarrolladores que ya usan AgentRouter.
+              Comienza a optimizar tus cargas de trabajo de IA con enrutamiento inteligente de modelos. Únete a miles de desarrolladores que ya usan RouterAI.
             </p>
             
             <div className="space-y-4">
@@ -193,7 +193,7 @@ export default function RegisterPage() {
           >
             <motion.div variants={itemVariants} className="text-center mb-8">
               <h2 className="text-3xl font-bold text-white mb-2">Crear cuenta</h2>
-              <p className="text-gray-400">Comienza con AgentRouter hoy</p>
+              <p className="text-gray-400">Comienza con RouterAI hoy</p>
             </motion.div>
 
             <motion.div 

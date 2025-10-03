@@ -16,7 +16,7 @@ class AgentRouter {
         }
 
         this.apiKey = apiKey;
-        this.baseUrl = options.baseUrl || 'https://api.agentrouter.com';
+        this.baseUrl = options.baseUrl || 'https://api.routerai.com';
         this.timeout = options.timeout || 30000;
         this.retries = options.retries || 3;
     }

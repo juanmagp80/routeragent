@@ -70,7 +70,7 @@ export default function BackendTestPage() {
                 {/* Header */}
                 <div className="text-center">
                     <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">
-                        🧪 Test Backend AgentRouter
+                        🧪 Test Backend RouterAI
                     </h1>
                     <p className="text-gray-600">
                         Verifica la conectividad y funcionalidad del router de modelos de IA

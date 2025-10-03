@@ -15,9 +15,9 @@ export const metadata: Metadata = {
   title: "RouterAI - Router Inteligente de Modelos de IA",
   description: "API que elige automáticamente el mejor modelo de IA (GPT-4, Claude, Mistral, Llama) según costo, velocidad y calidad. Ahorra hasta 70% en costos de IA.",
   keywords: "router IA, optimización costos IA, GPT-4, Claude, Mistral, Llama, API inteligente, ahorro IA, RouterAI",
-  authors: [{ name: "AgentRouter Team" }],
-  creator: "AgentRouter",
-  publisher: "AgentRouter",
+  authors: [{ name: "RouterAI Team" }],
+  creator: "RouterAI",
+  publisher: "RouterAI",
   openGraph: {
     type: "website",
     locale: "es_ES",
@@ -30,7 +30,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "RouterAI - Router Inteligente de Modelos de IA",
     description: "Ahorra hasta 70% en costos de IA. Router que elige automáticamente el mejor modelo según tu tarea.",
-    creator: "@agentrouter",
+    creator: "@routerai",
   },
   robots: {
     index: true,

@@ -97,7 +97,7 @@ const response3 = await router.route({
 
 ```javascript
 const router = new AgentRouter('ar_your_api_key_here', {
-  baseUrl: 'https://api.agentrouter.com', // Custom endpoint
+  baseUrl: 'https://api.routerai.com', // Custom endpoint
   timeout: 30000, // 30 second timeout
   retries: 3 // 3 retry attempts
 });
@@ -304,13 +304,13 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 ## 📞 Support
 
-- Documentation: [https://agentrouter.com/docs](https://agentrouter.com/docs)
+- Documentation: [https://routerai.com/docs](https://routerai.com/docs)
 - Issues: [GitHub Issues](https://github.com/agentrouter/agentrouter-sdk-js/issues)
-- Email: support@agentrouter.com
+- Email: support@routerai.com
 
 ## 🚀 Getting Started
 
-1. Sign up at [https://agentrouter.com](https://agentrouter.com)
+1. Sign up at [https://routerai.com](https://routerai.com)
 2. Get your API key from the dashboard
 3. Install the SDK: `npm install agentrouter-sdk`
 4. Start routing tasks intelligently!

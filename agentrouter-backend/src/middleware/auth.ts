@@ -76,7 +76,7 @@ export const authenticateApiKey = async (req: Request, res: Response, next: Next
                     return res.status(429).json({
                         error: `Usage limit exceeded. Current plan (${validApiKey.plan}) allows ${planLimit} requests total across all API keys. Current usage: ${totalUsage}/${planLimit}`,
                         success: false,
-                        upgrade_url: 'https://agentrouter.com/pricing',
+                        upgrade_url: 'https://routerai.com/pricing',
                         total_usage: totalUsage,
                         plan_limit: planLimit
                     });
@@ -146,7 +146,7 @@ export const requirePlan = (requiredPlan: 'free' | 'starter' | 'pro' | 'enterpri
             return res.status(403).json({
                 error: `This feature requires ${requiredPlan} plan or higher. Current plan: ${req.apiKey.plan}`,
                 success: false,
-                upgrade_url: 'https://agentrouter.com/pricing'
+                upgrade_url: 'https://routerai.com/pricing'
             });
         }
 
