@@ -1,13 +1,17 @@
 "use client";
 
+import React, { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowRight, Chrome, Eye, EyeOff, Github } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { supabase } from '../../config/database';
+import { useNotifications } from '../../hooks/useNotifications';
+import { OAUTH_CONFIG } from '../../config/oauth';
 
 export default function LoginPage() {
     const { login, loading: authLoading, isHydrated, authError } = useAuth();
+    const { showSuccess, showError, showLoading } = useNotifications();
     const router = useRouter();
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -16,6 +20,7 @@ export default function LoginPage() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [focusedField, setFocusedField] = useState<string | null>(null);
     const [isMounted, setIsMounted] = useState(false);
+    const [socialLoading, setSocialLoading] = useState<string | null>(null);
     const [formData, setFormData] = useState({
         email: '',
         password: '',
@@ -106,6 +111,47 @@ export default function LoginPage() {
         } catch (error) {
             console.error('Error reenviando email:', error);
             setError('Error reenviando email de verificación');
+        }
+    };
+
+    // Función para login con proveedores sociales
+    const handleSocialLogin = async (provider: 'github' | 'google') => {
+        try {
+            setSocialLoading(provider);
+            const loadingToast = showLoading(`Conectando con ${provider === 'github' ? 'GitHub' : 'Google'}...`);
+            
+            const { data, error } = await supabase.auth.signInWithOAuth({
+                provider: provider,
+                options: {
+                    redirectTo: OAUTH_CONFIG.redirectTo('/admin'),
+                    queryParams: OAUTH_CONFIG.queryParams,
+                },
+            });
+
+            if (error) {
+                throw error;
+            }
+
+            // El usuario será redirigido automáticamente
+            showSuccess(`Redirigiendo a ${provider === 'github' ? 'GitHub' : 'Google'}...`);
+            
+        } catch (error: any) {
+            console.error(`Error with ${provider} login:`, error);
+            
+            let errorMessage = `Error al conectar con ${provider === 'github' ? 'GitHub' : 'Google'}`;
+            
+            if (error.message?.includes('popup_closed')) {
+                errorMessage = 'Ventana cerrada. Por favor, inténtalo de nuevo.';
+            } else if (error.message?.includes('access_denied')) {
+                errorMessage = 'Acceso denegado. Por favor, autoriza la aplicación.';
+            } else if (error.message) {
+                errorMessage = error.message;
+            }
+            
+            showError(errorMessage);
+            setError(errorMessage);
+        } finally {
+            setSocialLoading(null);
         }
     };
 
@@ -333,12 +379,28 @@ export default function LoginPage() {
                                 </div>
 
                                 <div className="mt-6 grid grid-cols-2 gap-3">
-                                    <button className="w-full bg-white/5 border border-white/10 text-white py-2 px-4 rounded-xl font-medium hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-emerald-400 transition-all duration-300 flex items-center justify-center space-x-2 backdrop-blur-sm">
-                                        <Github className="h-5 w-5" />
+                                    <button 
+                                        onClick={() => handleSocialLogin('github')}
+                                        disabled={socialLoading !== null || isSubmitting || authLoading}
+                                        className="w-full bg-white/5 border border-white/10 text-white py-2 px-4 rounded-xl font-medium hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-emerald-400 transition-all duration-300 flex items-center justify-center space-x-2 backdrop-blur-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        {socialLoading === 'github' ? (
+                                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                                        ) : (
+                                            <Github className="h-5 w-5" />
+                                        )}
                                         <span>GitHub</span>
                                     </button>
-                                    <button className="w-full bg-white/5 border border-white/10 text-white py-2 px-4 rounded-xl font-medium hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-emerald-400 transition-all duration-300 flex items-center justify-center space-x-2 backdrop-blur-sm">
-                                        <Chrome className="h-5 w-5" />
+                                    <button 
+                                        onClick={() => handleSocialLogin('google')}
+                                        disabled={socialLoading !== null || isSubmitting || authLoading}
+                                        className="w-full bg-white/5 border border-white/10 text-white py-2 px-4 rounded-xl font-medium hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-emerald-400 transition-all duration-300 flex items-center justify-center space-x-2 backdrop-blur-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        {socialLoading === 'google' ? (
+                                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                                        ) : (
+                                            <Chrome className="h-5 w-5" />
+                                        )}
                                         <span>Google</span>
                                     </button>
                                 </div>

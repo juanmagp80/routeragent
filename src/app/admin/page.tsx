@@ -1,26 +1,73 @@
 "use client";
 
 import { BackendMetrics, backendServiceDev } from "@/services/backendServiceDev";
-import { BarChart3, DollarSign, Key, TrendingUp } from "lucide-react";
+import { BarChart3, DollarSign, Key, TrendingUp, User, Sparkles } from "lucide-react";
 import { useEffect, useState } from "react";
+import { supabase } from "../../config/database";
 
 export default function DashboardPage() {
     const [metrics, setMetrics] = useState<BackendMetrics | null>(null);
     const [loading, setLoading] = useState(true);
+    const [isNewUser, setIsNewUser] = useState<boolean>(false);
+    const [userInfo, setUserInfo] = useState<any>(null);
 
     useEffect(() => {
-        loadMetrics();
+        checkUserAndLoadMetrics();
     }, []);
 
-    const loadMetrics = async () => {
+    const checkUserAndLoadMetrics = async () => {
         try {
-            console.log('📊 Loading metrics...');
+            console.log('� Checking user status...');
             setLoading(true);
-            const metricsData = await backendServiceDev.getMetrics();
-            console.log('✅ Metrics loaded:', metricsData);
-            setMetrics(metricsData);
+
+            // Verificar si el usuario está autenticado
+            const { data: { user }, error: authError } = await supabase.auth.getUser();
+            
+            if (authError || !user) {
+                console.error('No authenticated user found:', authError);
+                return;
+            }
+
+            // Buscar información del usuario en nuestra base de datos
+            const { data: userData, error: userError } = await supabase
+                .from('users')
+                .select('*')
+                .eq('id', user.id)
+                .single();
+
+            if (userError) {
+                console.error('Error fetching user data:', userError);
+                return;
+            }
+
+            setUserInfo(userData);
+
+            // Verificar si el usuario tiene API keys (para determinar si es nuevo)
+            const { data: apiKeys, error: keysError } = await supabase
+                .from('api_keys')
+                .select('id')
+                .eq('user_id', user.id);
+
+            if (keysError) {
+                console.error('Error checking API keys:', keysError);
+            }
+
+            // Si no tiene API keys o fue creado recientemente, es un usuario nuevo
+            const isRecentUser = userData.created_at && 
+                new Date(userData.created_at) > new Date(Date.now() - 24 * 60 * 60 * 1000); // 24 horas
+            const hasNoApiKeys = !apiKeys || apiKeys.length === 0;
+
+            if (isRecentUser && hasNoApiKeys) {
+                console.log('🎉 New user detected!');
+                setIsNewUser(true);
+            } else {
+                console.log('📊 Loading metrics for existing user...');
+                const metricsData = await backendServiceDev.getMetrics();
+                console.log('✅ Metrics loaded:', metricsData);
+                setMetrics(metricsData);
+            }
         } catch (error) {
-            console.error('❌ Error loading metrics:', error);
+            console.error('❌ Error checking user status:', error);
         } finally {
             setLoading(false);
         }
@@ -30,6 +77,107 @@ export default function DashboardPage() {
         return (
             <div className="flex items-center justify-center min-h-64">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500"></div>
+            </div>
+        );
+    }
+
+    // Dashboard para usuarios nuevos
+    if (isNewUser) {
+        return (
+            <div className="space-y-8 max-w-4xl mx-auto">
+                {/* Bienvenida */}
+                <div className="bg-gradient-to-r from-emerald-500 to-teal-600 rounded-lg shadow-lg text-white overflow-hidden">
+                    <div className="px-8 py-12">
+                        <div className="flex items-center space-x-4 mb-6">
+                            <div className="bg-white/20 rounded-full p-3">
+                                <Sparkles className="w-8 h-8" />
+                            </div>
+                            <div>
+                                <h1 className="text-3xl font-bold">
+                                    ¡Bienvenido a RouterAI, {userInfo?.name}!
+                                </h1>
+                                <p className="text-emerald-100 mt-2">
+                                    Tu cuenta ha sido creada exitosamente. Ahora puedes empezar a usar nuestros servicios de IA.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Primeros pasos */}
+                <div className="grid md:grid-cols-3 gap-6">
+                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
+                        <div className="flex items-center space-x-3 mb-4">
+                            <div className="bg-emerald-100 rounded-full p-3">
+                                <Key className="w-6 h-6 text-emerald-600" />
+                            </div>
+                            <div>
+                                <h3 className="font-semibold text-gray-900">1. Crear API Key</h3>
+                                <p className="text-sm text-gray-600">Genera tu primera clave de API</p>
+                            </div>
+                        </div>
+                        <a 
+                            href="/admin/keys" 
+                            className="inline-flex items-center text-emerald-600 hover:text-emerald-700 font-medium"
+                        >
+                            Crear API Key →
+                        </a>
+                    </div>
+
+                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
+                        <div className="flex items-center space-x-3 mb-4">
+                            <div className="bg-blue-100 rounded-full p-3">
+                                <BarChart3 className="w-6 h-6 text-blue-600" />
+                            </div>
+                            <div>
+                                <h3 className="font-semibold text-gray-900">2. Probar API</h3>
+                                <p className="text-sm text-gray-600">Realiza tu primera llamada</p>
+                            </div>
+                        </div>
+                        <a 
+                            href="/admin/test-api" 
+                            className="inline-flex items-center text-blue-600 hover:text-blue-700 font-medium"
+                        >
+                            Probar API →
+                        </a>
+                    </div>
+
+                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
+                        <div className="flex items-center space-x-3 mb-4">
+                            <div className="bg-purple-100 rounded-full p-3">
+                                <User className="w-6 h-6 text-purple-600" />
+                            </div>
+                            <div>
+                                <h3 className="font-semibold text-gray-900">3. Configurar Perfil</h3>
+                                <p className="text-sm text-gray-600">Personaliza tu cuenta</p>
+                            </div>
+                        </div>
+                        <a 
+                            href="/admin/settings" 
+                            className="inline-flex items-center text-purple-600 hover:text-purple-700 font-medium"
+                        >
+                            Configurar →
+                        </a>
+                    </div>
+                </div>
+
+                {/* Información de plan */}
+                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Tu Plan Actual</h3>
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="text-2xl font-bold text-emerald-600">Plan Gratuito</p>
+                            <p className="text-gray-600">1,000 llamadas mensuales incluidas</p>
+                        </div>
+                        <div className="text-right">
+                            <p className="text-sm text-gray-500">Uso actual</p>
+                            <p className="text-2xl font-semibold text-gray-900">0 / 1,000</p>
+                            <div className="w-32 bg-gray-200 rounded-full h-2 mt-2">
+                                <div className="bg-emerald-500 h-2 rounded-full" style={{width: '0%'}}></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         );
     }

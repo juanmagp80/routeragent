@@ -14,7 +14,7 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-    const [theme, setThemeState] = useState<Theme>('system');
+    const [theme, setThemeState] = useState<Theme>('light');
     const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>('light');
     const isInitialLoad = useRef(true);
 
@@ -32,7 +32,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
             console.log('✅ ThemeContext: Aplicando tema guardado:', savedTheme);
             setThemeState(savedTheme);
         } else {
-            console.log('⚠️ ThemeContext: No hay tema guardado, usando sistema');
+            console.log('⚠️ ThemeContext: No hay tema guardado, usando tema claro por defecto');
+            setThemeState('light');
         }
         // Marcar que la carga inicial ha terminado
         isInitialLoad.current = false;

@@ -11,6 +11,10 @@ export default function AdminHeader() {
     const router = useRouter();
     const { user } = useAuth();
 
+    // Debug: logs para ver qué usuario tenemos
+    console.log('🔍 HEADER: Usuario actual:', user);
+    console.log('🔍 HEADER: user?.name:', user?.name);
+
     // Función para obtener notificaciones
     const fetchNotifications = async () => {
         try {

@@ -1,8 +1,7 @@
 "use client";
 
-import { BACKEND_URL } from '@/config/backend';
+import React, { createContext, ReactNode, useContext, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { createContext, ReactNode, useContext, useEffect, useState } from 'react';
 
 // Interfaz simplificada para el usuario
 export interface User {
@@ -25,6 +24,7 @@ interface AuthContextType {
     loading: boolean;
     isHydrated: boolean;
     authError: string | null;
+    refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -72,29 +72,94 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         initializeUser();
     }, []);
 
-    // Función para obtener datos reales del usuario desde el backend
+    // Escuchar cambios en localStorage para sincronizar datos del usuario
+    useEffect(() => {
+        const handleStorageChange = (e: StorageEvent) => {
+            if (e.key === 'agentrouter_user' && e.newValue) {
+                try {
+                    const userData = JSON.parse(e.newValue);
+                    console.log('🔄 Usuario actualizado desde localStorage:', userData);
+                    setUser(userData);
+                } catch (error) {
+                    console.warn('Error parsing updated user data:', error);
+                }
+            }
+        };
+
+        window.addEventListener('storage', handleStorageChange);
+        return () => window.removeEventListener('storage', handleStorageChange);
+    }, []);
+
+    // Función para obtener datos reales del usuario desde Supabase
     const fetchUserData = async (): Promise<User | null> => {
         try {
-            console.log('👤 Fetching real user data from user endpoint...');
-            const response = await fetch(`${BACKEND_URL}/v1/user-dev`);
-
-            if (!response.ok) {
-                throw new Error(`Failed to fetch user data: ${response.status}`);
+            console.log('� === AUTHCONTEXT: INICIO FETCH USER DATA ===');
+            
+            // Importar supabase aquí para evitar problemas de SSR
+            const { supabase } = await import('../config/database');
+            
+            // Obtener usuario autenticado de Supabase
+            const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
+            
+            console.log('🔍 AuthUser de Supabase:', JSON.stringify(authUser, null, 2));
+            console.log('🔍 AuthError:', authError);
+            
+            if (authError || !authUser) {
+                console.log('❌ No authenticated user found:', authError);
+                return null;
             }
 
-            const data = await response.json();
-            console.log('👤 User data received:', data);
+            console.log('🔍 Buscando usuario en BD con ID:', authUser.id);
 
-            if (data.success && data.user) {
-                // Limpiar " - Test" del nombre antes de devolver
-                const cleanUser = {
-                    ...data.user,
-                    name: data.user.name?.replace(/ - Test$/i, '') || data.user.name
-                };
-                return cleanUser;
+            // Obtener datos del usuario de nuestra tabla personalizada
+            const { data: userData, error: userError } = await supabase
+                .from('users')
+                .select('*')
+                .eq('id', authUser.id)
+                .single();
+
+            console.log('🔍 UserData de BD:', JSON.stringify(userData, null, 2));
+            console.log('🔍 UserError:', userError);
+
+            if (userError) {
+                console.error('❌ Error fetching user data from database:', userError);
+                
+                // Si el usuario no existe en la tabla personalizada, usar datos de auth
+                if (userError.code === 'PGRST116') {
+                    console.log('⚠️ Usuario no encontrado en tabla personalizada, usando datos de auth');
+                    const user: User = {
+                        id: authUser.id,
+                        name: authUser.user_metadata?.name || authUser.user_metadata?.full_name || 'Usuario',
+                        email: authUser.email || '',
+                        company: '',
+                        plan: 'free',
+                        api_key_limit: 1000,
+                        is_active: true,
+                        email_verified: true,
+                        created_at: authUser.created_at || new Date().toISOString()
+                    };
+                    return user;
+                }
+                
+                return null;
             }
 
-            return null;
+            // Convertir a formato de nuestro User interface
+            const user: User = {
+                id: userData.id,
+                name: userData.name,
+                email: userData.email,
+                company: userData.company || '',
+                plan: userData.plan || 'free',
+                api_key_limit: userData.api_usage_limit || 1000,
+                is_active: true,
+                email_verified: true,
+                created_at: userData.created_at
+            };
+
+            console.log('✅ Usuario formateado para AuthContext:', JSON.stringify(user, null, 2));
+            console.log('🔍 === AUTHCONTEXT: FIN FETCH USER DATA ===');
+            return user;
         } catch (error) {
             console.error('❌ Error fetching user data:', error);
             return null;
@@ -170,6 +235,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         router.push('/login');
     };
 
+    const refreshUser = async () => {
+        console.log('🔄 Refreshing user data...');
+        const realUserData = await fetchUserData();
+        if (realUserData) {
+            setUser(realUserData);
+            localStorage.setItem('agentrouter_user', JSON.stringify(realUserData));
+        }
+    };
+
     const value: AuthContextType = {
         user,
         login,
@@ -178,6 +252,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         loading,
         isHydrated,
         authError,
+        refreshUser,
     };
 
     return (

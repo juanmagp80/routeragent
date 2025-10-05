@@ -1,7 +1,7 @@
 "use client";
 
+import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
 
 export default function AuthWrapper({ children }: { children: React.ReactNode }) {
     const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
