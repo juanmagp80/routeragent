@@ -8,10 +8,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { backendService, type RouteRequest, type RouteResponse } from '@/services/backendService';
+import { useNotifications } from '@/hooks/useNotifications';
 import { Activity, CheckCircle, DollarSign, Loader2, XCircle, Zap } from 'lucide-react';
 import { useState } from 'react';
 
 export default function ApiTestPage() {
+    const { showSuccess, showError } = useNotifications();
     const [loading, setLoading] = useState(false);
     const [response, setResponse] = useState<RouteResponse | null>(null);
     const [error, setError] = useState<string | null>(null);
@@ -66,9 +68,9 @@ export default function ApiTestPage() {
     const clearCache = async () => {
         try {
             await backendService.clearCache();
-            alert('Cache limpiado exitosamente');
+            showSuccess('Cache limpiado exitosamente');
         } catch (err) {
-            alert('Error al limpiar cache');
+            showError('Error al limpiar cache');
         }
     };
 

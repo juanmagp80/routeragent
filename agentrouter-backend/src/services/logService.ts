@@ -2,21 +2,36 @@ import { supabase } from "../config/database";
 import { UsageRecord } from "../models/UsageRecord";
 
 export class LogService {
-    async logUsage(logEntry: Omit<UsageRecord, 'id' | 'created_at'>): Promise<void> {
+    async logUsage(logEntry: Omit<UsageRecord, 'id' | 'created_at'>, apiKeyId?: string): Promise<void> {
         try {
-            const { error } = await supabase
-                .from('usage_logs')
+            // Insertar en usage_records (tabla principal para métricas)
+            const { error: recordError } = await supabase
+                .from('usage_records')
                 .insert([{
                     ...logEntry,
+                    api_key_id: apiKeyId || null,
                     created_at: new Date().toISOString()
                 }]);
 
-            if (error) {
-                console.error('Log error:', error);
-                throw new Error(`Failed to log usage: ${error.message}`);
+            if (recordError) {
+                console.error('Usage record error:', recordError);
+                throw new Error(`Failed to log usage record: ${recordError.message}`);
             }
 
-            console.log('Successfully logged usage to Supabase');
+            // También mantener el log en usage_logs para compatibilidad
+            const { error: logError } = await supabase
+                .from('usage_logs')
+                .insert([{
+                    ...logEntry,
+                    api_key_id: apiKeyId || null,
+                    created_at: new Date().toISOString()
+                }]);
+
+            if (logError) {
+                console.warn('Log error (non-critical):', logError);
+            }
+
+            console.log('Successfully logged usage to Supabase (usage_records and usage_logs)');
         } catch (error) {
             console.error('Error logging usage:', error);
             // En producción podrías implementar retry o fallback

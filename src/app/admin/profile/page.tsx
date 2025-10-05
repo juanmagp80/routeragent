@@ -1,9 +1,11 @@
 "use client";
 
+import { useNotifications } from "@/hooks/useNotifications";
 import { Building, Globe, Mail, User } from "lucide-react";
 import { useState } from "react";
 
 export default function ProfilePage() {
+    const { showSuccess } = useNotifications();
     const [profile, setProfile] = useState({
         name: "John Developer",
         email: "john@example.com",
@@ -18,7 +20,7 @@ export default function ProfilePage() {
         // Simular guardado
         setTimeout(() => {
             setSaving(false);
-            alert("Profile updated successfully!");
+            showSuccess("Profile updated successfully!");
         }, 1000);
     };
 

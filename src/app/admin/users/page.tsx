@@ -1,11 +1,13 @@
 "use client";
 
 import { User, UserService } from '@/services/userService';
+import { useNotifications } from '@/hooks/useNotifications';
 import { useEffect, useState } from 'react';
 
 const userService = new UserService();
 
 export default function UsersPage() {
+    const { showSuccess, showError, confirm } = useNotifications();
     const [users, setUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -144,17 +146,19 @@ export default function UsersPage() {
 
     // Handle deleting a user
     const handleDeleteUser = async (userId: string) => {
-        if (!confirm('Are you sure you want to delete this user? This action cannot be undone.')) return;
-
-        try {
-            await userService.deleteUser(userId);
-            setUsers(prev => prev.filter(u => u.id !== userId));
-            setSuccess('User deleted successfully');
-            setTimeout(() => setSuccess(null), 3000);
-        } catch (err: any) {
-            console.error('Error deleting user:', err);
-            setError(err.message || 'Failed to delete user. Please try again.');
-        }
+        confirm(
+            'Are you sure you want to delete this user? This action cannot be undone.',
+            async () => {
+                try {
+                    await userService.deleteUser(userId);
+                    setUsers(prev => prev.filter(u => u.id !== userId));
+                    showSuccess('User deleted successfully');
+                } catch (err: any) {
+                    console.error('Error deleting user:', err);
+                    showError(err.message || 'Failed to delete user. Please try again.');
+                }
+            }
+        );
     };
 
     // Open edit form with user data

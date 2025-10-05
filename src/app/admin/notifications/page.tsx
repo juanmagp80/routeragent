@@ -1,6 +1,7 @@
 "use client";
 
 import { useAuth } from "@/hooks/useAuth";
+import { useNotifications } from "@/hooks/useNotifications";
 import {
     AlertCircle,
     BarChart3,
@@ -30,6 +31,7 @@ interface Notification {
 
 export default function NotificationsPage() {
     const { user, loading } = useAuth();
+    const { showSuccess, showError, showWarning, showInfo } = useNotifications();
     const router = useRouter();
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [unreadCount, setUnreadCount] = useState(0);
@@ -60,10 +62,65 @@ export default function NotificationsPage() {
         digest_frequency: 'daily'
     });
 
+    // Función para verificar si estamos en horas silenciosas
+    const isQuietHours = () => {
+        const now = new Date();
+        const currentTime = now.getHours() * 60 + now.getMinutes();
+        
+        const [startHour, startMin] = notificationSettings.quiet_hours_start.split(':').map(Number);
+        const [endHour, endMin] = notificationSettings.quiet_hours_end.split(':').map(Number);
+        
+        const startTime = startHour * 60 + startMin;
+        const endTime = endHour * 60 + endMin;
+        
+        // Si el periodo cruza la medianoche (ej: 22:00 - 08:00)
+        if (startTime > endTime) {
+            return currentTime >= startTime || currentTime <= endTime;
+        }
+        // Si el periodo no cruza la medianoche (ej: 08:00 - 22:00)
+        return currentTime >= startTime && currentTime <= endTime;
+    };
+
+    // Función para enviar notificación que respeta horas silenciosas
+    const sendNotificationIfAllowed = (title: string, options: NotificationOptions) => {
+        if (!notificationPreferences.push || !('Notification' in window) || Notification.permission !== 'granted') {
+            return false;
+        }
+
+        if (isQuietHours()) {
+            console.log('🔇 Notificación silenciada por horas silenciosas:', title);
+            return false;
+        }
+
+        new Notification(title, options);
+        return true;
+    };
+
     // Cargar notificaciones reales al montar el componente
     useEffect(() => {
         loadNotifications();
+        loadNotificationPreferences();
     }, []);
+
+    // Cargar configuraciones guardadas
+    const loadNotificationPreferences = () => {
+        try {
+            const savedPreferences = localStorage.getItem('notificationPreferences');
+            if (savedPreferences) {
+                const preferences = JSON.parse(savedPreferences);
+                setNotificationPreferences(preferences);
+                console.log('✅ Configuraciones de notificaciones cargadas:', preferences);
+            }
+            
+            const savedSettings = localStorage.getItem('notificationSettings');
+            if (savedSettings) {
+                const settings = JSON.parse(savedSettings);
+                setNotificationSettings(settings);
+            }
+        } catch (error) {
+            console.error('Error cargando configuraciones de notificaciones:', error);
+        }
+    };
 
     const loadNotifications = async () => {
         try {
@@ -81,16 +138,79 @@ export default function NotificationsPage() {
                     setNotifications(data.notifications);
                     setUnreadCount(data.unread_count);
                 } else {
-                    setError('Error al cargar notificaciones');
+                    const errorMsg = 'Error al cargar notificaciones';
+                    setError(errorMsg);
+                    showError(errorMsg);
                 }
             } else {
-                setError('Error de conexión al cargar notificaciones');
+                const errorMsg = 'Error de conexión al cargar notificaciones';
+                setError(errorMsg);
+                showError(errorMsg);
             }
         } catch (error) {
             console.error('Error loading notifications:', error);
-            setError('Error al cargar notificaciones');
+            const errorMsg = 'Error al cargar notificaciones';
+            setError(errorMsg);
+            showError(errorMsg);
         } finally {
             setLoadingNotifications(false);
+        }
+    };
+
+    // Función para solicitar permisos de push notifications
+    const requestPushPermission = async () => {
+        try {
+            if (!('Notification' in window)) {
+                const errorMsg = 'Este navegador no soporta notificaciones push';
+                showError(errorMsg);
+                return false;
+            }
+
+            // Verificar el estado actual de los permisos
+            if (Notification.permission === 'granted') {
+                showSuccess('Notificaciones push ya están activadas');
+                return true;
+            }
+
+            if (Notification.permission === 'denied') {
+                const errorMsg = 'Los permisos de notificación han sido denegados. Por favor, habilítalos manualmente en la configuración del navegador.';
+                showError(errorMsg);
+                return false;
+            }
+
+            // Solicitar permisos (esto puede mostrar el diálogo del navegador)
+            const permission = await Notification.requestPermission();
+            
+            if (permission === 'granted') {
+                console.log('✅ Permisos de push notifications concedidos');
+                showSuccess('Notificaciones push activadas exitosamente');
+                
+                // Crear una notificación de prueba (respetando horas silenciosas)
+                const notificationSent = sendNotificationIfAllowed('RouterAI Notificaciones', {
+                    body: 'Las notificaciones push están ahora activadas',
+                    icon: '/favicon.ico',
+                    badge: '/favicon.ico'
+                });
+
+                if (!notificationSent && isQuietHours()) {
+                    showInfo('Notificación activada. La notificación de prueba fue silenciada por las horas silenciosas configuradas.');
+                }
+                
+                return true;
+            } else if (permission === 'denied') {
+                const errorMsg = 'Permisos de notificaciones denegados';
+                showError(errorMsg);
+                return false;
+            } else {
+                const errorMsg = 'Permisos de notificaciones no concedidos';
+                showWarning(errorMsg);
+                return false;
+            }
+        } catch (error) {
+            console.error('Error solicitando permisos push:', error);
+            const errorMessage = 'Error al activar notificaciones push: ' + (error as Error).message;
+            showError(errorMessage);
+            return false;
         }
     };
 
@@ -292,7 +412,19 @@ export default function NotificationsPage() {
                                     <Smartphone className="h-5 w-5 text-gray-600" />
                                     <div>
                                         <p className="font-medium text-gray-900">Push</p>
-                                        <p className="text-sm text-gray-500">Notificaciones push</p>
+                                        <p className="text-sm text-gray-500">
+                                            Notificaciones push
+                                            {notificationPreferences.push && (
+                                                <span className="ml-2 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                                    ✓ Activado
+                                                </span>
+                                            )}
+                                            {!notificationPreferences.push && ('Notification' in window) && Notification.permission === 'denied' && (
+                                                <span className="ml-2 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                                    ❌ Bloqueado
+                                                </span>
+                                            )}
+                                        </p>
                                     </div>
                                 </div>
                                 <label className="relative inline-flex items-center cursor-pointer">
@@ -300,14 +432,66 @@ export default function NotificationsPage() {
                                         type="checkbox"
                                         className="sr-only peer"
                                         checked={notificationPreferences.push}
-                                        onChange={(e) => setNotificationPreferences(prev => ({
-                                            ...prev,
-                                            push: e.target.checked
-                                        }))}
+                                        onChange={async (e) => {
+                                            if (e.target.checked) {
+                                                // Si activa push, solicitar permisos inmediatamente
+                                                const success = await requestPushPermission();
+                                                if (success) {
+                                                    setNotificationPreferences(prev => ({
+                                                        ...prev,
+                                                        push: true
+                                                    }));
+                                                } else {
+                                                    // Los permisos fallan, el toggle se mantiene desactivado
+                                                    console.log('Push notifications no activadas debido a permisos');
+                                                }
+                                            } else {
+                                                // Si desactiva, simplemente cambiar estado
+                                                setNotificationPreferences(prev => ({
+                                                    ...prev,
+                                                    push: false
+                                                }));
+                                            }
+                                        }}
                                     />
                                     <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-emerald-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
                                 </label>
                             </div>
+
+                            {/* Botón de prueba para push notifications */}
+                            {notificationPreferences.push && (
+                                <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <p className="text-sm font-medium text-blue-900">Probar notificaciones push</p>
+                                            <p className="text-xs text-blue-700">Envía una notificación de prueba</p>
+                                        </div>
+                                        <button
+                                            onClick={() => {
+                                                const notificationSent = sendNotificationIfAllowed('RouterAI - Prueba', {
+                                                    body: 'Esta es una notificación de prueba. ¡Las push notifications funcionan correctamente!',
+                                                    icon: '/favicon.ico',
+                                                    badge: '/favicon.ico',
+                                                    tag: 'test-notification'
+                                                });
+
+                                                if (notificationSent) {
+                                                    showSuccess('Notificación de prueba enviada');
+                                                } else if (isQuietHours()) {
+                                                    showWarning('Notificación silenciada por horas silenciosas configuradas');
+                                                } else if (!notificationPreferences.push) {
+                                                    showWarning('Las notificaciones push están desactivadas');
+                                                } else {
+                                                    showError('No se pueden enviar notificaciones. Verifica los permisos.');
+                                                }
+                                            }}
+                                            className="px-3 py-1 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700 transition-colors"
+                                        >
+                                            Enviar Prueba
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
 
@@ -324,9 +508,17 @@ export default function NotificationsPage() {
 
                         <div className="space-y-6">
                             <div>
-                                <div className="flex items-center gap-2 mb-3">
-                                    <Clock className="h-5 w-5 text-gray-600" />
-                                    <h3 className="font-medium text-gray-900">Horas Silenciosas</h3>
+                                <div className="flex items-center justify-between mb-3">
+                                    <div className="flex items-center gap-2">
+                                        <Clock className="h-5 w-5 text-gray-600" />
+                                        <h3 className="font-medium text-gray-900">Horas Silenciosas</h3>
+                                    </div>
+                                    {isQuietHours() && (
+                                        <div className="flex items-center gap-1 px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full">
+                                            <div className="w-2 h-2 bg-purple-500 rounded-full animate-pulse"></div>
+                                            Silenciado
+                                        </div>
+                                    )}
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
                                     <input
@@ -378,13 +570,45 @@ export default function NotificationsPage() {
 
                     {/* Botón de guardar */}
                     <button
-                        onClick={() => {
+                        onClick={async () => {
                             setSaving(true);
-                            setMessage('Configuración guardada exitosamente');
-                            setTimeout(() => {
+                            setError(null);
+                            
+                            try {
+                                // Guardar en localStorage
+                                localStorage.setItem('notificationPreferences', JSON.stringify(notificationPreferences));
+                                localStorage.setItem('notificationSettings', JSON.stringify(notificationSettings));
+                                
+                                // Manejar permisos de push notifications
+                                if (notificationPreferences.push) {
+                                    const success = await requestPushPermission();
+                                    if (!success) {
+                                        // Si falla, desactivar push en las preferencias
+                                        setNotificationPreferences(prev => ({
+                                            ...prev,
+                                            push: false
+                                        }));
+                                    }
+                                }
+                                
+                                console.log('✅ Configuración guardada:', {
+                                    preferences: notificationPreferences,
+                                    settings: notificationSettings
+                                });
+                                
+                                setMessage('Configuración guardada exitosamente');
+                                showSuccess('Configuración guardada exitosamente');
+                                
+                                setTimeout(() => {
+                                    setMessage('');
+                                }, 3000);
+                            } catch (error) {
+                                console.error('Error guardando configuración:', error);
+                                setError('Error al guardar la configuración');
+                                showError('Error al guardar la configuración');
+                            } finally {
                                 setSaving(false);
-                                setMessage('');
-                            }, 2000);
+                            }
                         }}
                         disabled={saving}
                         className="w-full bg-gradient-to-r from-emerald-600 to-teal-700 text-white px-6 py-3 rounded-xl font-medium hover:from-emerald-700 hover:to-teal-800 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"

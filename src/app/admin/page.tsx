@@ -140,12 +140,24 @@ export default function DashboardPage() {
                                             </span>
                                         </div>
                                         <p className="text-sm text-gray-500 mt-1">
-                                            {new Date(task.created_at).toLocaleString('es-ES', {
-                                                hour: '2-digit',
-                                                minute: '2-digit',
-                                                day: '2-digit',
-                                                month: '2-digit'
-                                            })}
+                                            {(() => {
+                                                try {
+                                                    const date = new Date(task.created_at);
+                                                    if (isNaN(date.getTime())) {
+                                                        return 'Fecha no válida';
+                                                    }
+                                                    return date.toLocaleString('es-ES', {
+                                                        hour: '2-digit',
+                                                        minute: '2-digit',
+                                                        day: '2-digit',
+                                                        month: '2-digit',
+                                                        year: '2-digit'
+                                                    });
+                                                } catch (error) {
+                                                    console.error('Error parsing date:', task.created_at, error);
+                                                    return 'Fecha no disponible';
+                                                }
+                                            })()}
                                         </p>
                                     </div>
                                 </div>

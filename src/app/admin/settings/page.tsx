@@ -2,6 +2,8 @@
 
 import { useAuth } from "@/hooks/useAuth";
 import { useTheme } from "@/hooks/useTheme";
+import { useNotifications } from "@/hooks/useNotifications";
+import { supabase } from "@/config/database";
 import {
     AlertTriangle,
     Bell,
@@ -23,22 +25,24 @@ import {
     User,
     X
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function SettingsPage() {
     const { user, loading } = useAuth();
     const { theme, setTheme, themes, resolvedTheme } = useTheme();
+    const { showSuccess, showError, showWarning } = useNotifications();
     const [activeTab, setActiveTab] = useState('profile');
     const [saving, setSaving] = useState(false);
     const [message, setMessage] = useState('');
     const [showApiKey, setShowApiKey] = useState(false);
+    const [loadingProfile, setLoadingProfile] = useState(false);
 
     // Estados para configuraciones del perfil
     const [profileSettings, setProfileSettings] = useState({
-        name: 'Juan Manuel García',
-        email: 'juan@example.com',
-        company: 'RouterAI Corp',
-        role: 'Developer',
+        name: user?.name || '',
+        email: user?.email || '',
+        company: '',
+        role: 'User',
         timezone: 'Europe/Madrid',
         language: 'es'
     });
@@ -69,16 +73,148 @@ export default function SettingsPage() {
         webhookUrl: ''
     });
 
+    // Cargar datos del perfil desde la base de datos
+    const loadProfileData = async () => {
+        if (!user?.id) return;
+        
+        setLoadingProfile(true);
+        try {
+            const { data: profile, error } = await supabase
+                .from('users')
+                .select('name, email, company, role, timezone, language')
+                .eq('id', user.id)
+                .single();
+
+            if (error) throw error;
+
+            if (profile) {
+                setProfileSettings({
+                    name: profile.name || '',
+                    email: profile.email || '',
+                    company: profile.company || '',
+                    role: profile.role || 'User',
+                    timezone: profile.timezone || 'Europe/Madrid',
+                    language: profile.language || 'es'
+                });
+            }
+        } catch (error) {
+            console.error('Error loading profile:', error);
+            showError('Error al cargar los datos del perfil');
+        } finally {
+            setLoadingProfile(false);
+        }
+    };
+
+    // Validar campos del perfil
+    const validateProfile = () => {
+        const errors = [];
+
+        if (!profileSettings.name.trim()) {
+            errors.push('El nombre es obligatorio');
+        }
+
+        if (!profileSettings.email.trim()) {
+            errors.push('El email es obligatorio');
+        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(profileSettings.email)) {
+            errors.push('El formato del email no es válido');
+        }
+
+        return errors;
+    };
+
+    // Actualizar perfil en la base de datos
+    const updateProfile = async () => {
+        if (!user?.id) return false;
+
+        // Validar campos
+        const validationErrors = validateProfile();
+        if (validationErrors.length > 0) {
+            showError(`Errores de validación: ${validationErrors.join(', ')}`);
+            return false;
+        }
+
+        try {
+            const { error } = await supabase
+                .from('users')
+                .update({
+                    name: profileSettings.name,
+                    company: profileSettings.company,
+                    role: profileSettings.role,
+                    timezone: profileSettings.timezone,
+                    language: profileSettings.language
+                })
+                .eq('id', user.id);
+
+            if (error) throw error;
+
+            showSuccess('Perfil actualizado exitosamente');
+            return true;
+        } catch (error) {
+            console.error('Error updating profile:', error);
+            showError('Error al actualizar el perfil');
+            return false;
+        }
+    };
+
+    // Cargar configuración guardada al iniciar
+    useEffect(() => {
+        try {
+            const savedSettings = localStorage.getItem('userSettings');
+            if (savedSettings) {
+                const settings = JSON.parse(savedSettings);
+                
+                // Cargar configuraciones de API si existen
+                if (settings.apiSettings) {
+                    setApiSettings(settings.apiSettings);
+                }
+                
+                console.log('✅ Configuración cargada desde localStorage');
+            }
+        } catch (error) {
+            console.warn('⚠️ Error cargando configuración guardada:', error);
+        }
+
+        // Cargar datos del perfil
+        loadProfileData();
+    }, [user?.id]);
+
     const handleSave = async () => {
         setSaving(true);
         setMessage('');
 
         try {
-            // Simular guardado
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            setMessage('Configuración guardada exitosamente');
-            setTimeout(() => setMessage(''), 3000);
+            let allSuccessful = true;
+
+            // Actualizar perfil en la base de datos si estamos en la pestaña de perfil
+            if (activeTab === 'profile') {
+                const profileUpdated = await updateProfile();
+                allSuccessful = allSuccessful && profileUpdated;
+            }
+            
+            // Guardar configuración del tema explícitamente
+            localStorage.setItem('theme', theme);
+            
+            // Guardar otras configuraciones (API settings, etc.)
+            const settingsToSave = {
+                theme: theme,
+                apiSettings: apiSettings,
+                preferences: preferences,
+                securitySettings: securitySettings,
+                savedAt: new Date().toISOString()
+            };
+            
+            localStorage.setItem('userSettings', JSON.stringify(settingsToSave));
+            
+            if (allSuccessful) {
+                setMessage('Configuración guardada exitosamente');
+                showSuccess('Configuración guardada exitosamente');
+            } else {
+                showWarning('Algunas configuraciones no se pudieron guardar');
+            }
+            
         } catch (err) {
+            console.error('Error saving settings:', err);
+            showError('Error al guardar la configuración');
             setMessage('Error al guardar la configuración');
         } finally {
             setSaving(false);
@@ -149,13 +285,16 @@ export default function SettingsPage() {
                                 <h2 className="text-xl font-semibold text-card-foreground">
                                     Información del Perfil
                                 </h2>
+                                {loadingProfile && (
+                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                                )}
                             </div>
 
                             <div className="space-y-6">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div>
                                         <label className="block text-sm font-medium text-muted-foreground mb-2">
-                                            Nombre completo
+                                            Nombre completo *
                                         </label>
                                         <input
                                             type="text"
@@ -164,12 +303,21 @@ export default function SettingsPage() {
                                                 ...prev,
                                                 name: e.target.value
                                             }))}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                                            disabled={loadingProfile}
+                                            required
+                                            className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-colors
+                                                ${!profileSettings.name.trim() ? 'border-red-300 bg-red-50' : 'border-border bg-background'}
+                                                ${loadingProfile ? 'opacity-50 cursor-not-allowed' : ''}
+                                            `}
+                                            placeholder="Ingresa tu nombre completo"
                                         />
+                                        {!profileSettings.name.trim() && (
+                                            <p className="text-red-500 text-xs mt-1">El nombre es obligatorio</p>
+                                        )}
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                                            Email
+                                        <label className="block text-sm font-medium text-muted-foreground mb-2">
+                                            Email *
                                         </label>
                                         <input
                                             type="email"
@@ -178,14 +326,26 @@ export default function SettingsPage() {
                                                 ...prev,
                                                 email: e.target.value
                                             }))}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                                            disabled={loadingProfile}
+                                            required
+                                            className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-colors
+                                                ${(!profileSettings.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(profileSettings.email)) ? 'border-red-300 bg-red-50' : 'border-border bg-background'}
+                                                ${loadingProfile ? 'opacity-50 cursor-not-allowed' : ''}
+                                            `}
+                                            placeholder="tu@email.com"
                                         />
+                                        {!profileSettings.email.trim() && (
+                                            <p className="text-red-500 text-xs mt-1">El email es obligatorio</p>
+                                        )}
+                                        {profileSettings.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(profileSettings.email) && (
+                                            <p className="text-red-500 text-xs mt-1">Formato de email inválido</p>
+                                        )}
                                     </div>
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        <label className="block text-sm font-medium text-muted-foreground mb-2">
                                             Empresa
                                         </label>
                                         <input
@@ -195,11 +355,15 @@ export default function SettingsPage() {
                                                 ...prev,
                                                 company: e.target.value
                                             }))}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                                            disabled={loadingProfile}
+                                            className={`w-full px-3 py-2 border border-border bg-background rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-colors
+                                                ${loadingProfile ? 'opacity-50 cursor-not-allowed' : ''}
+                                            `}
+                                            placeholder="Nombre de tu empresa (opcional)"
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        <label className="block text-sm font-medium text-muted-foreground mb-2">
                                             Rol
                                         </label>
                                         <select
@@ -208,7 +372,10 @@ export default function SettingsPage() {
                                                 ...prev,
                                                 role: e.target.value
                                             }))}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                                            disabled={loadingProfile}
+                                            className={`w-full px-3 py-2 border border-border bg-background rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-colors
+                                                ${loadingProfile ? 'opacity-50 cursor-not-allowed' : ''}
+                                            `}
                                         >
                                             <option value="Developer">Developer</option>
                                             <option value="Product Manager">Product Manager</option>
@@ -220,7 +387,7 @@ export default function SettingsPage() {
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        <label className="block text-sm font-medium text-muted-foreground mb-2">
                                             Zona horaria
                                         </label>
                                         <select
@@ -229,7 +396,10 @@ export default function SettingsPage() {
                                                 ...prev,
                                                 timezone: e.target.value
                                             }))}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                                            disabled={loadingProfile}
+                                            className={`w-full px-3 py-2 border border-border bg-background rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-colors
+                                                ${loadingProfile ? 'opacity-50 cursor-not-allowed' : ''}
+                                            `}
                                         >
                                             <option value="Europe/Madrid">Madrid (GMT+1)</option>
                                             <option value="Europe/London">London (GMT)</option>
@@ -238,7 +408,7 @@ export default function SettingsPage() {
                                         </select>
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        <label className="block text-sm font-medium text-muted-foreground mb-2">
                                             Idioma
                                         </label>
                                         <select
@@ -247,7 +417,10 @@ export default function SettingsPage() {
                                                 ...prev,
                                                 language: e.target.value
                                             }))}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                                            disabled={loadingProfile}
+                                            className={`w-full px-3 py-2 border border-border bg-background rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-colors
+                                                ${loadingProfile ? 'opacity-50 cursor-not-allowed' : ''}
+                                            `}
                                         >
                                             <option value="es">Español</option>
                                             <option value="en">English</option>
@@ -255,6 +428,28 @@ export default function SettingsPage() {
                                             <option value="de">Deutsch</option>
                                         </select>
                                     </div>
+                                </div>
+
+                                <div className="flex justify-between items-center pt-6 border-t border-border">
+                                    <div className="text-sm text-muted-foreground">
+                                        * Campos obligatorios
+                                    </div>
+                                    <button
+                                        onClick={async () => {
+                                            setSaving(true);
+                                            const success = await updateProfile();
+                                            setSaving(false);
+                                        }}
+                                        disabled={saving || loadingProfile || !profileSettings.name.trim() || !profileSettings.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(profileSettings.email)}
+                                        className="flex items-center gap-2 bg-primary hover:bg-primary/90 disabled:bg-muted disabled:cursor-not-allowed text-primary-foreground px-4 py-2 rounded-lg font-medium transition-colors"
+                                    >
+                                        {saving ? (
+                                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-foreground"></div>
+                                        ) : (
+                                            <Save className="h-4 w-4" />
+                                        )}
+                                        {saving ? 'Guardando...' : 'Guardar Perfil'}
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -310,6 +505,10 @@ export default function SettingsPage() {
                                             ? 'El tema se ajustará automáticamente según las preferencias de tu sistema'
                                             : `Tema ${theme === 'light' ? 'claro' : 'oscuro'} seleccionado`
                                         }
+                                    </p>
+                                    <p className="text-xs text-emerald-600 mt-2 flex items-center gap-1">
+                                        <Save className="h-3 w-3" />
+                                        El tema se guarda automáticamente al seleccionarlo
                                     </p>
                                 </div>
 

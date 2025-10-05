@@ -2,6 +2,7 @@
 
 import { useAuth } from "@/contexts/AuthContext";
 import { ApiKeyData, backendServiceDev, CreateApiKeyRequest } from "@/services/backendServiceDev";
+import { useNotifications } from "@/hooks/useNotifications";
 import {
     Activity,
     BarChart3,
@@ -35,6 +36,7 @@ export default function ApiKeysPage() {
     const [copiedKey, setCopiedKey] = useState<string | null>(null);
     const [newlyCreatedKey, setNewlyCreatedKey] = useState<CreatedApiKey | null>(null);
     const { user } = useAuth();
+    const { showSuccess, showError, confirm } = useNotifications();
 
     // Obtener plan del usuario actual
     const userPlan = user?.plan || 'pro';
@@ -98,32 +100,35 @@ export default function ApiKeysPage() {
             await fetchKeys();
             setNewKey({ name: "" });
             setShowCreateForm(false);
+            showSuccess('Clave API creada exitosamente');
         } catch (error) {
             console.error('Error creating API key:', error);
-            console.error('Error al crear la clave API. Por favor, inténtalo de nuevo.');
+            showError('Error al crear la clave API. Por favor, inténtalo de nuevo.');
         }
     };
 
     // Delete API key
     const handleDeleteKey = async (keyId: string) => {
-        if (!window.confirm('¿Estás seguro de que quieres eliminar esta clave API?')) {
-            return;
-        }
-
-        try {
-            await backendServiceDev.deleteApiKey(keyId);
-            console.error('Clave API eliminada exitosamente');
-            await fetchKeys();
-        } catch (error) {
-            console.error('Error deleting API key:', error);
-            console.error('Error al eliminar la clave API. Por favor, inténtalo de nuevo.');
-        }
+        confirm(
+            '¿Estás seguro de que quieres eliminar esta clave API?',
+            async () => {
+                try {
+                    await backendServiceDev.deleteApiKey(keyId);
+                    showSuccess('Clave API eliminada exitosamente');
+                    await fetchKeys();
+                } catch (error) {
+                    console.error('Error deleting API key:', error);
+                    showError('Error al eliminar la clave API. Por favor, inténtalo de nuevo.');
+                }
+            }
+        );
     };
 
     // Copy key to clipboard
     const copyToClipboard = (text: string, keyId: string) => {
         navigator.clipboard.writeText(text);
         setCopiedKey(keyId);
+        showSuccess('Clave copiada al portapapeles');
         setTimeout(() => setCopiedKey(null), 2000);
     };
 

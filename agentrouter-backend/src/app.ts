@@ -247,6 +247,23 @@ app.get('/v1/user-dev', getCurrentUserDev);
 app.put('/v1/user-dev', updateCurrentUserDev);
 app.put('/v1/user-notifications-dev', updateUserNotificationsDev);
 
+// Endpoint temporal para insertar registros de prueba
+app.post('/v1/test-insert-usage', async (req: Request, res: Response) => {
+    try {
+        const { error } = await supabase
+            .from('usage_records')
+            .insert([req.body]);
+
+        if (error) {
+            return res.status(500).json({ error: error.message });
+        }
+
+        res.json({ success: true, message: 'Test record inserted' });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to insert test record' });
+    }
+});
+
 // Rutas para validar webhooks
 app.post('/v1/validate-slack-webhook', validateSlackWebhook);
 app.post('/v1/validate-discord-webhook', validateDiscordWebhook);

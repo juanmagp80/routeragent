@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState, useRef } from 'react';
 
 type Theme = 'light' | 'dark' | 'system';
 
@@ -16,6 +16,7 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const [theme, setThemeState] = useState<Theme>('system');
     const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>('light');
+    const isInitialLoad = useRef(true);
 
     const themes = [
         { value: 'light' as const, label: 'Claro', icon: '☀️' },
@@ -26,9 +27,15 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     useEffect(() => {
         // Cargar tema guardado del localStorage
         const savedTheme = localStorage.getItem('theme') as Theme;
+        console.log('🎨 ThemeContext: Cargando tema del localStorage:', savedTheme);
         if (savedTheme && ['light', 'dark', 'system'].includes(savedTheme)) {
+            console.log('✅ ThemeContext: Aplicando tema guardado:', savedTheme);
             setThemeState(savedTheme);
+        } else {
+            console.log('⚠️ ThemeContext: No hay tema guardado, usando sistema');
         }
+        // Marcar que la carga inicial ha terminado
+        isInitialLoad.current = false;
     }, []);
 
     useEffect(() => {
@@ -51,8 +58,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
                 root.classList.remove('dark');
             }
 
-            // Guardar en localStorage
-            localStorage.setItem('theme', theme);
+            // No guardar automáticamente aquí, solo cuando el usuario selecciona explícitamente
         };
 
         applyTheme();
@@ -68,7 +74,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     }, [theme]);
 
     const setTheme = (newTheme: Theme) => {
+        console.log('🎯 Usuario cambió tema a:', newTheme);
         setThemeState(newTheme);
+        // Guardar explícitamente cuando el usuario cambia el tema
+        localStorage.setItem('theme', newTheme);
+        console.log('💾 ThemeContext: Tema guardado explícitamente en localStorage:', newTheme);
     };
 
     const value = {

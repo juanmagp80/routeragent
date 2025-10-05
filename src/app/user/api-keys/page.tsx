@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/contexts/AuthContext';
+import { useNotifications } from '@/hooks/useNotifications';
 import { backendService, type ApiKeyData, type CreateApiKeyRequest } from '@/services/backendService';
 import { motion } from 'framer-motion';
 import {
@@ -35,6 +36,7 @@ export default function ApiKeysPage() {
     const [creating, setCreating] = useState(false);
     const [createDialogOpen, setCreateDialogOpen] = useState(false);
     const [visibleKeys, setVisibleKeys] = useState<Record<string, boolean>>({});
+    const { showSuccess, showError, confirm } = useNotifications();
 
     const [newKey, setNewKey] = useState<CreateApiKeyRequest>({
         name: '',
@@ -73,7 +75,7 @@ export default function ApiKeysPage() {
         // Verificar sesión activa en Supabase antes de crear la API key
         const session = await import('@/config/database').then(m => m.supabase.auth.getSession());
         if (!session.data.session) {
-            alert('Debes iniciar sesión para crear una API key.');
+            showError('Debes iniciar sesión para crear una API key.');
             setCreating(false);
             return;
         }
@@ -89,34 +91,37 @@ export default function ApiKeysPage() {
                 usage_limit: 1000,
                 plan: 'free'
             });
+            showSuccess('API key creada exitosamente');
         } catch (error) {
             console.error('Error creating API key:', error);
-            alert('Error al crear la API key');
+            showError('Error al crear la API key');
         } finally {
             setCreating(false);
         }
     };
 
     const handleDeactivateKey = async (keyId: string) => {
-        if (!confirm('¿Estás seguro de que quieres desactivar esta API key?')) return;
-
-        try {
-            await backendService.deactivateApiKey(keyId);
-            setApiKeys(prev => prev.map(key =>
-                key.id === keyId ? { ...key, is_active: false } : key
-            ));
-        } catch (error) {
-            console.error('Error deactivating API key:', error);
-            alert('Error al desactivar la API key');
-        }
+        confirm(
+            '¿Estás seguro de que quieres desactivar esta API key?',
+            async () => {
+                try {
+                    await backendService.deactivateApiKey(keyId);
+                    setApiKeys(prev => prev.map(key =>
+                        key.id === keyId ? { ...key, is_active: false } : key
+                    ));
+                    showSuccess('API key desactivada exitosamente');
+                } catch (error) {
+                    console.error('Error deactivating API key:', error);
+                    showError('Error al desactivar la API key');
+                }
+            }
+        );
     };
 
     const copyToClipboard = (text: string) => {
         navigator.clipboard.writeText(text);
-        // Aquí podrías agregar una notificación de éxito
-    };
-
-    const toggleKeyVisibility = (keyId: string) => {
+        showSuccess('API key copiada al portapapeles');
+    };    const toggleKeyVisibility = (keyId: string) => {
         setVisibleKeys(prev => ({
             ...prev,
             [keyId]: !prev[keyId]

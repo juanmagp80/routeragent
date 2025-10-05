@@ -548,12 +548,13 @@ export const getMetricsDev = async (req: Request, res: Response) => {
             });
 
             // Crear tareas recientes
-            recentTasks = usageData.slice(0, 4).map(record => ({
+            recentTasks = usageData.slice(0, 4).map((record: any) => ({
                 model: record.model_used || 'unknown',
+                task_type: 'general', // Tipo de tarea
                 cost: parseFloat(record.cost) || 0,
-                latency: Math.floor(Math.random() * 200) + 50, // Latencia simulada
+                latency: record.latency_ms || Math.floor(Math.random() * 200) + 50,
                 status: 'completed',
-                timestamp: record.created_at
+                created_at: record.created_at // Campo correcto para el frontend
             }));
         }
 

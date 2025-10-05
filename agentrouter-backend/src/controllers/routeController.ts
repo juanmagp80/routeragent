@@ -91,7 +91,9 @@ export const routeTask = async (req: Request, res: Response) => {
         };
 
         try {
-            await logService.logUsage(usageRecord);
+            // Pasar el api_key_id al logService para que se pueda rastrear por usuario
+            const apiKeyId = req.apiKey?.id || null;
+            await logService.logUsage(usageRecord, apiKeyId);
             console.log(`Successfully logged usage for task ${task.id}`);
 
             // Registrar uso en API Key si está autenticado
