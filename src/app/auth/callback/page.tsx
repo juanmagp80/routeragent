@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { supabase } from '../../../config/database';
 import { User } from '@supabase/supabase-js';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { supabase } from '../../../config/database';
 
 // Función para sincronizar usuarios OAuth con nuestra base de datos
 async function syncOAuthUserWithDatabase(user: User) {
@@ -14,7 +14,7 @@ async function syncOAuthUserWithDatabase(user: User) {
     console.log('🔍 User identities:', JSON.stringify(user.identities, null, 2));
     console.log('🔍 Email directo:', user.email);
     console.log('🔍 ID de usuario:', user.id);
-    
+
     // Extraer el nombre del usuario de diferentes fuentes posibles
     let userName = 'Usuario';
     if (user.user_metadata?.full_name) {
@@ -33,7 +33,7 @@ async function syncOAuthUserWithDatabase(user: User) {
     }
 
     console.log('Nombre extraído:', userName);
-    
+
     // Verificar si el usuario ya existe en nuestra tabla
     const { data: existingUser, error: checkError } = await supabase
       .from('users')
@@ -48,7 +48,7 @@ async function syncOAuthUserWithDatabase(user: User) {
 
     // Usar upsert para manejar tanto inserción como actualización
     console.log(existingUser ? 'Usuario existe, actualizando...' : 'Usuario nuevo, creando...');
-    
+
     const { error: upsertError } = await supabase
       .from('users')
       .upsert({
@@ -93,13 +93,13 @@ export default function AuthCallbackPage() {
       try {
         // Verificar si hay una sesión activa (para OAuth callbacks)
         const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-        
+
         if (sessionData.session) {
           console.log('Sesión OAuth establecida:', sessionData.session);
-          
+
           // Sincronizar usuario con nuestra tabla personalizada
           await syncOAuthUserWithDatabase(sessionData.session.user);
-          
+
           // Crear y guardar datos del usuario en localStorage para que AuthContext los cargue
           const userData = {
             id: sessionData.session.user.id,
@@ -112,15 +112,15 @@ export default function AuthCallbackPage() {
             email_verified: true,
             created_at: sessionData.session.user.created_at || new Date().toISOString()
           };
-          
+
           localStorage.setItem('agentrouter_user', JSON.stringify(userData));
-          
+
           setStatus('success');
           setMessage('¡Autenticación exitosa! Redirigiendo...');
-          
+
           // Obtener la URL de redirección del parámetro 'next' o usar por defecto '/admin'
           const nextUrl = searchParams.get('next') || '/admin';
-          
+
           setTimeout(() => {
             router.push(nextUrl);
           }, 2000);
@@ -132,7 +132,7 @@ export default function AuthCallbackPage() {
         if (code) {
           // Intercambiar el código por una sesión
           const { data, error } = await supabase.auth.exchangeCodeForSession(code);
-          
+
           if (error) {
             console.error('Error intercambiando código:', error);
             setStatus('error');
@@ -143,10 +143,10 @@ export default function AuthCallbackPage() {
 
           if (data.session) {
             console.log('Sesión establecida vía código:', data.session);
-            
+
             // Sincronizar usuario con nuestra tabla personalizada
             await syncOAuthUserWithDatabase(data.session.user);
-            
+
             // Crear y guardar datos del usuario en localStorage para que AuthContext los cargue
             const userData = {
               id: data.session.user.id,
@@ -159,12 +159,12 @@ export default function AuthCallbackPage() {
               email_verified: true,
               created_at: data.session.user.created_at || new Date().toISOString()
             };
-            
+
             localStorage.setItem('agentrouter_user', JSON.stringify(userData));
-            
+
             setStatus('success');
             setMessage('¡Autenticación exitosa! Redirigiendo...');
-            
+
             const nextUrl = searchParams.get('next') || '/admin';
             setTimeout(() => {
               router.push(nextUrl);
@@ -197,7 +197,7 @@ export default function AuthCallbackPage() {
           console.log('Email verificado exitosamente:', sessionData2);
           setStatus('success');
           setMessage('¡Email verificado exitosamente! Redirigiendo...');
-          
+
           // Redirigir al dashboard después de 2 segundos
           setTimeout(() => {
             router.push('/admin');
@@ -229,7 +229,7 @@ export default function AuthCallbackPage() {
               <p className="text-gray-400">{message}</p>
             </>
           )}
-          
+
           {status === 'success' && (
             <>
               <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -241,7 +241,7 @@ export default function AuthCallbackPage() {
               <p className="text-gray-400">{message}</p>
             </>
           )}
-          
+
           {status === 'error' && (
             <>
               <div className="w-12 h-12 bg-red-500 rounded-full flex items-center justify-center mx-auto mb-4">

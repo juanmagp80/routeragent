@@ -1,7 +1,7 @@
 "use client";
 
 import { BackendMetrics, backendServiceDev } from "@/services/backendServiceDev";
-import { BarChart3, DollarSign, Key, TrendingUp, User, Sparkles } from "lucide-react";
+import { BarChart3, DollarSign, Key, Sparkles, TrendingUp, User } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "../../config/database";
 
@@ -22,7 +22,7 @@ export default function DashboardPage() {
 
             // Verificar si el usuario está autenticado
             const { data: { user }, error: authError } = await supabase.auth.getUser();
-            
+
             if (authError || !user) {
                 console.error('No authenticated user found:', authError);
                 return;
@@ -53,7 +53,7 @@ export default function DashboardPage() {
             }
 
             // Si no tiene API keys o fue creado recientemente, es un usuario nuevo
-            const isRecentUser = userData.created_at && 
+            const isRecentUser = userData.created_at &&
                 new Date(userData.created_at) > new Date(Date.now() - 24 * 60 * 60 * 1000); // 24 horas
             const hasNoApiKeys = !apiKeys || apiKeys.length === 0;
 
@@ -116,8 +116,8 @@ export default function DashboardPage() {
                                 <p className="text-sm text-gray-600">Genera tu primera clave de API</p>
                             </div>
                         </div>
-                        <a 
-                            href="/admin/keys" 
+                        <a
+                            href="/admin/keys"
                             className="inline-flex items-center text-emerald-600 hover:text-emerald-700 font-medium"
                         >
                             Crear API Key →
@@ -134,8 +134,8 @@ export default function DashboardPage() {
                                 <p className="text-sm text-gray-600">Realiza tu primera llamada</p>
                             </div>
                         </div>
-                        <a 
-                            href="/admin/test-api" 
+                        <a
+                            href="/admin/test-api"
                             className="inline-flex items-center text-blue-600 hover:text-blue-700 font-medium"
                         >
                             Probar API →
@@ -152,8 +152,8 @@ export default function DashboardPage() {
                                 <p className="text-sm text-gray-600">Personaliza tu cuenta</p>
                             </div>
                         </div>
-                        <a 
-                            href="/admin/settings" 
+                        <a
+                            href="/admin/settings"
                             className="inline-flex items-center text-purple-600 hover:text-purple-700 font-medium"
                         >
                             Configurar →
@@ -173,7 +173,7 @@ export default function DashboardPage() {
                             <p className="text-sm text-gray-500">Uso actual</p>
                             <p className="text-2xl font-semibold text-gray-900">0 / 1,000</p>
                             <div className="w-32 bg-gray-200 rounded-full h-2 mt-2">
-                                <div className="bg-emerald-500 h-2 rounded-full" style={{width: '0%'}}></div>
+                                <div className="bg-emerald-500 h-2 rounded-full" style={{ width: '0%' }}></div>
                             </div>
                         </div>
                     </div>

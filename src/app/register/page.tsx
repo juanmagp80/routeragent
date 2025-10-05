@@ -1,13 +1,13 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowRight, Check, Chrome, Eye, EyeOff, Github, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '../../contexts/AuthContext';
+import React, { useEffect, useState } from 'react';
 import { supabase } from '../../config/database';
-import { useNotifications } from '../../hooks/useNotifications';
 import { OAUTH_CONFIG } from '../../config/oauth';
+import { useAuth } from '../../contexts/AuthContext';
+import { useNotifications } from '../../hooks/useNotifications';
 
 export default function RegisterPage() {
   const { register, loading: authLoading, isHydrated } = useAuth();
@@ -114,7 +114,7 @@ export default function RegisterPage() {
     try {
       setSocialLoading(provider);
       const loadingToast = showLoading(`Conectando con ${provider === 'github' ? 'GitHub' : 'Google'}...`);
-      
+
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: provider,
         options: {
@@ -129,12 +129,12 @@ export default function RegisterPage() {
 
       // El usuario será redirigido automáticamente
       showSuccess(`Redirigiendo a ${provider === 'github' ? 'GitHub' : 'Google'}...`);
-      
+
     } catch (error: any) {
       console.error(`Error with ${provider} login:`, error);
-      
+
       let errorMessage = `Error al conectar con ${provider === 'github' ? 'GitHub' : 'Google'}`;
-      
+
       if (error.message?.includes('popup_closed')) {
         errorMessage = 'Ventana cerrada. Por favor, inténtalo de nuevo.';
       } else if (error.message?.includes('access_denied')) {
@@ -142,7 +142,7 @@ export default function RegisterPage() {
       } else if (error.message) {
         errorMessage = error.message;
       }
-      
+
       showError(errorMessage);
       setError(errorMessage);
     } finally {
@@ -284,8 +284,8 @@ export default function RegisterPage() {
                     onBlur={() => setFocusedField(null)}
                     name="name"
                     className={`w-full bg-white/5 border ${focusedField === 'name'
-                        ? 'border-emerald-400/50 ring-2 ring-emerald-400/20'
-                        : 'border-white/10'
+                      ? 'border-emerald-400/50 ring-2 ring-emerald-400/20'
+                      : 'border-white/10'
                       } text-white rounded-xl px-4 py-3 transition-all duration-300 placeholder-gray-500 focus:outline-none backdrop-blur-sm`}
                     placeholder="Juan Pérez"
                   />
@@ -304,8 +304,8 @@ export default function RegisterPage() {
                     onBlur={() => setFocusedField(null)}
                     name="email"
                     className={`w-full bg-white/5 border ${focusedField === 'email'
-                        ? 'border-emerald-400/50 ring-2 ring-emerald-400/20'
-                        : 'border-white/10'
+                      ? 'border-emerald-400/50 ring-2 ring-emerald-400/20'
+                      : 'border-white/10'
                       } text-white rounded-xl px-4 py-3 transition-all duration-300 placeholder-gray-500 focus:outline-none backdrop-blur-sm`}
                     placeholder="tu@empresa.com"
                   />
@@ -325,8 +325,8 @@ export default function RegisterPage() {
                       onBlur={() => setFocusedField(null)}
                       name="password"
                       className={`w-full bg-white/5 border ${focusedField === 'password'
-                          ? 'border-emerald-400/50 ring-2 ring-emerald-400/20'
-                          : 'border-white/10'
+                        ? 'border-emerald-400/50 ring-2 ring-emerald-400/20'
+                        : 'border-white/10'
                         } text-white rounded-xl px-4 py-3 pr-12 transition-all duration-300 placeholder-gray-500 focus:outline-none backdrop-blur-sm`}
                       placeholder="Crea una contraseña segura"
                     />
@@ -351,10 +351,10 @@ export default function RegisterPage() {
                           <div
                             key={level}
                             className={`h-1 flex-1 rounded-full transition-colors ${level <= passwordStrength
-                                ? passwordStrength <= 2 ? 'bg-red-400'
-                                  : passwordStrength <= 3 ? 'bg-yellow-400'
-                                    : 'bg-emerald-400'
-                                : 'bg-gray-600'
+                              ? passwordStrength <= 2 ? 'bg-red-400'
+                                : passwordStrength <= 3 ? 'bg-yellow-400'
+                                  : 'bg-emerald-400'
+                              : 'bg-gray-600'
                               }`}
                           />
                         ))}
@@ -391,10 +391,10 @@ export default function RegisterPage() {
                       onBlur={() => setFocusedField(null)}
                       name="confirmPassword"
                       className={`w-full bg-white/5 border ${focusedField === 'confirmPassword'
-                          ? 'border-emerald-400/50 ring-2 ring-emerald-400/20'
-                          : formData.confirmPassword && formData.password !== formData.confirmPassword
-                            ? 'border-red-400/50'
-                            : 'border-white/10'
+                        ? 'border-emerald-400/50 ring-2 ring-emerald-400/20'
+                        : formData.confirmPassword && formData.password !== formData.confirmPassword
+                          ? 'border-red-400/50'
+                          : 'border-white/10'
                         } text-white rounded-xl px-4 py-3 pr-12 transition-all duration-300 placeholder-gray-500 focus:outline-none backdrop-blur-sm`}
                       placeholder="Confirma tu contraseña"
                     />
@@ -446,7 +446,7 @@ export default function RegisterPage() {
                 </div>
 
                 <div className="mt-6 grid grid-cols-2 gap-3">
-                  <button 
+                  <button
                     onClick={() => handleSocialLogin('github')}
                     disabled={socialLoading !== null || isSubmitting}
                     className="w-full bg-white/5 border border-white/10 text-white py-2 px-4 rounded-xl font-medium hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-emerald-400 transition-all duration-300 flex items-center justify-center space-x-2 backdrop-blur-sm disabled:opacity-50 disabled:cursor-not-allowed"
@@ -458,7 +458,7 @@ export default function RegisterPage() {
                     )}
                     <span>GitHub</span>
                   </button>
-                  <button 
+                  <button
                     onClick={() => handleSocialLogin('google')}
                     disabled={socialLoading !== null || isSubmitting}
                     className="w-full bg-white/5 border border-white/10 text-white py-2 px-4 rounded-xl font-medium hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-emerald-400 transition-all duration-300 flex items-center justify-center space-x-2 backdrop-blur-sm disabled:opacity-50 disabled:cursor-not-allowed"

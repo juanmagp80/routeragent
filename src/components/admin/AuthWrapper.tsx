@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import React, { useEffect, useState } from "react";
 
 export default function AuthWrapper({ children }: { children: React.ReactNode }) {
     const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
@@ -12,14 +12,14 @@ export default function AuthWrapper({ children }: { children: React.ReactNode })
         const checkAuth = () => {
             if (typeof window !== 'undefined') {
                 // Por ahora, solo verificar si hay algún token o usuario en localStorage
-                const token = localStorage.getItem('token') || 
-                             localStorage.getItem('agentrouter_user') ||
-                             localStorage.getItem('supabase.auth.token');
-                
+                const token = localStorage.getItem('token') ||
+                    localStorage.getItem('agentrouter_user') ||
+                    localStorage.getItem('supabase.auth.token');
+
                 // BYPASS TEMPORAL: permitir acceso al dashboard para debugging
                 // TODO: Remover esto una vez que la autenticación esté funcionando
                 const isDevelopment = process.env.NODE_ENV === 'development';
-                
+
                 if (token || isDevelopment) {
                     setIsAuthenticated(true);
                     // Si no hay token pero estamos en desarrollo, crear uno temporal

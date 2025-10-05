@@ -1,13 +1,13 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowRight, Chrome, Eye, EyeOff, Github } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '../../contexts/AuthContext';
+import React, { useEffect, useState } from 'react';
 import { supabase } from '../../config/database';
-import { useNotifications } from '../../hooks/useNotifications';
 import { OAUTH_CONFIG } from '../../config/oauth';
+import { useAuth } from '../../contexts/AuthContext';
+import { useNotifications } from '../../hooks/useNotifications';
 
 export default function LoginPage() {
     const { login, loading: authLoading, isHydrated, authError } = useAuth();
@@ -119,7 +119,7 @@ export default function LoginPage() {
         try {
             setSocialLoading(provider);
             const loadingToast = showLoading(`Conectando con ${provider === 'github' ? 'GitHub' : 'Google'}...`);
-            
+
             const { data, error } = await supabase.auth.signInWithOAuth({
                 provider: provider,
                 options: {
@@ -134,12 +134,12 @@ export default function LoginPage() {
 
             // El usuario será redirigido automáticamente
             showSuccess(`Redirigiendo a ${provider === 'github' ? 'GitHub' : 'Google'}...`);
-            
+
         } catch (error: any) {
             console.error(`Error with ${provider} login:`, error);
-            
+
             let errorMessage = `Error al conectar con ${provider === 'github' ? 'GitHub' : 'Google'}`;
-            
+
             if (error.message?.includes('popup_closed')) {
                 errorMessage = 'Ventana cerrada. Por favor, inténtalo de nuevo.';
             } else if (error.message?.includes('access_denied')) {
@@ -147,7 +147,7 @@ export default function LoginPage() {
             } else if (error.message) {
                 errorMessage = error.message;
             }
-            
+
             showError(errorMessage);
             setError(errorMessage);
         } finally {
@@ -379,7 +379,7 @@ export default function LoginPage() {
                                 </div>
 
                                 <div className="mt-6 grid grid-cols-2 gap-3">
-                                    <button 
+                                    <button
                                         onClick={() => handleSocialLogin('github')}
                                         disabled={socialLoading !== null || isSubmitting || authLoading}
                                         className="w-full bg-white/5 border border-white/10 text-white py-2 px-4 rounded-xl font-medium hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-emerald-400 transition-all duration-300 flex items-center justify-center space-x-2 backdrop-blur-sm disabled:opacity-50 disabled:cursor-not-allowed"
@@ -391,7 +391,7 @@ export default function LoginPage() {
                                         )}
                                         <span>GitHub</span>
                                     </button>
-                                    <button 
+                                    <button
                                         onClick={() => handleSocialLogin('google')}
                                         disabled={socialLoading !== null || isSubmitting || authLoading}
                                         className="w-full bg-white/5 border border-white/10 text-white py-2 px-4 rounded-xl font-medium hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-emerald-400 transition-all duration-300 flex items-center justify-center space-x-2 backdrop-blur-sm disabled:opacity-50 disabled:cursor-not-allowed"

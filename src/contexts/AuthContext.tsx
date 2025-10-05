@@ -1,7 +1,7 @@
 "use client";
 
-import React, { createContext, ReactNode, useContext, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { createContext, ReactNode, useContext, useEffect, useState } from 'react';
 
 // Interfaz simplificada para el usuario
 export interface User {
@@ -94,16 +94,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const fetchUserData = async (): Promise<User | null> => {
         try {
             console.log('� === AUTHCONTEXT: INICIO FETCH USER DATA ===');
-            
+
             // Importar supabase aquí para evitar problemas de SSR
             const { supabase } = await import('../config/database');
-            
+
             // Obtener usuario autenticado de Supabase
             const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
-            
+
             console.log('🔍 AuthUser de Supabase:', JSON.stringify(authUser, null, 2));
             console.log('🔍 AuthError:', authError);
-            
+
             if (authError || !authUser) {
                 console.log('❌ No authenticated user found:', authError);
                 return null;
@@ -123,7 +123,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
             if (userError) {
                 console.error('❌ Error fetching user data from database:', userError);
-                
+
                 // Si el usuario no existe en la tabla personalizada, usar datos de auth
                 if (userError.code === 'PGRST116') {
                     console.log('⚠️ Usuario no encontrado en tabla personalizada, usando datos de auth');
@@ -140,7 +140,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                     };
                     return user;
                 }
-                
+
                 return null;
             }
 
