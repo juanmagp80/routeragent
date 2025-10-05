@@ -1,7 +1,7 @@
 "use client";
 
-import { User, UserService } from '@/services/userService';
 import { useNotifications } from '@/hooks/useNotifications';
+import { User, UserService } from '@/services/userService';
 import { useEffect, useState } from 'react';
 
 const userService = new UserService();

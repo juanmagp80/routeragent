@@ -9,7 +9,7 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 async function makeRealApiCall() {
     try {
         console.log('🔑 Obteniendo API keys disponibles...');
-        
+
         // Obtener una API key válida del usuario
         const { data: apiKeys, error: apiKeysError } = await supabase
             .from('api_keys')
@@ -28,7 +28,7 @@ async function makeRealApiCall() {
 
         // Insertar directamente un registro en usage_records
         console.log('📝 Creando registro de uso directo...');
-        
+
         const usageRecord = {
             user_id: '3a942f65-25e7-4de3-84cb-3df0268ff759',
             api_key_id: apiKey.id,
@@ -62,7 +62,7 @@ async function makeRealApiCall() {
         // También actualizar el usage_count de la API key
         const { error: updateError } = await supabase
             .from('api_keys')
-            .update({ 
+            .update({
                 usage_count: apiKey.usage_count + 1,
                 last_used_at: new Date().toISOString()
             })

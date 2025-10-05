@@ -121,7 +121,7 @@ export default function ApiKeysPage() {
     const copyToClipboard = (text: string) => {
         navigator.clipboard.writeText(text);
         showSuccess('API key copiada al portapapeles');
-    };    const toggleKeyVisibility = (keyId: string) => {
+    }; const toggleKeyVisibility = (keyId: string) => {
         setVisibleKeys(prev => ({
             ...prev,
             [keyId]: !prev[keyId]

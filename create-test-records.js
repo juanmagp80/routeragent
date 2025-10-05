@@ -2,7 +2,7 @@
 async function createTestRecords() {
     try {
         console.log('🧪 Creando registros de prueba para actividad reciente...');
-        
+
         const testRecords = [
             {
                 api_key_id: '7699c14a-e882-4033-9486-01723f84242c',
@@ -71,7 +71,7 @@ async function createTestRecords() {
                     },
                     body: JSON.stringify(record)
                 });
-                
+
                 if (response.ok) {
                     console.log(`✅ Inserted record for ${record.model_used}`);
                 } else {
@@ -81,9 +81,9 @@ async function createTestRecords() {
                 console.error(`Error inserting record for ${record.model_used}:`, error.message);
             }
         }
-        
+
         console.log('🎉 Proceso completado');
-        
+
     } catch (error) {
         console.error('❌ Error general:', error);
     }

@@ -66,13 +66,13 @@ export default function NotificationsPage() {
     const isQuietHours = () => {
         const now = new Date();
         const currentTime = now.getHours() * 60 + now.getMinutes();
-        
+
         const [startHour, startMin] = notificationSettings.quiet_hours_start.split(':').map(Number);
         const [endHour, endMin] = notificationSettings.quiet_hours_end.split(':').map(Number);
-        
+
         const startTime = startHour * 60 + startMin;
         const endTime = endHour * 60 + endMin;
-        
+
         // Si el periodo cruza la medianoche (ej: 22:00 - 08:00)
         if (startTime > endTime) {
             return currentTime >= startTime || currentTime <= endTime;
@@ -111,7 +111,7 @@ export default function NotificationsPage() {
                 setNotificationPreferences(preferences);
                 console.log('✅ Configuraciones de notificaciones cargadas:', preferences);
             }
-            
+
             const savedSettings = localStorage.getItem('notificationSettings');
             if (savedSettings) {
                 const settings = JSON.parse(savedSettings);
@@ -180,11 +180,11 @@ export default function NotificationsPage() {
 
             // Solicitar permisos (esto puede mostrar el diálogo del navegador)
             const permission = await Notification.requestPermission();
-            
+
             if (permission === 'granted') {
                 console.log('✅ Permisos de push notifications concedidos');
                 showSuccess('Notificaciones push activadas exitosamente');
-                
+
                 // Crear una notificación de prueba (respetando horas silenciosas)
                 const notificationSent = sendNotificationIfAllowed('RouterAI Notificaciones', {
                     body: 'Las notificaciones push están ahora activadas',
@@ -195,7 +195,7 @@ export default function NotificationsPage() {
                 if (!notificationSent && isQuietHours()) {
                     showInfo('Notificación activada. La notificación de prueba fue silenciada por las horas silenciosas configuradas.');
                 }
-                
+
                 return true;
             } else if (permission === 'denied') {
                 const errorMsg = 'Permisos de notificaciones denegados';
@@ -573,12 +573,12 @@ export default function NotificationsPage() {
                         onClick={async () => {
                             setSaving(true);
                             setError(null);
-                            
+
                             try {
                                 // Guardar en localStorage
                                 localStorage.setItem('notificationPreferences', JSON.stringify(notificationPreferences));
                                 localStorage.setItem('notificationSettings', JSON.stringify(notificationSettings));
-                                
+
                                 // Manejar permisos de push notifications
                                 if (notificationPreferences.push) {
                                     const success = await requestPushPermission();
@@ -590,15 +590,15 @@ export default function NotificationsPage() {
                                         }));
                                     }
                                 }
-                                
+
                                 console.log('✅ Configuración guardada:', {
                                     preferences: notificationPreferences,
                                     settings: notificationSettings
                                 });
-                                
+
                                 setMessage('Configuración guardada exitosamente');
                                 showSuccess('Configuración guardada exitosamente');
-                                
+
                                 setTimeout(() => {
                                     setMessage('');
                                 }, 3000);

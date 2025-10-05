@@ -1,9 +1,9 @@
 "use client";
 
-import { useAuth } from "@/hooks/useAuth";
-import { useTheme } from "@/hooks/useTheme";
-import { useNotifications } from "@/hooks/useNotifications";
 import { supabase } from "@/config/database";
+import { useAuth } from "@/hooks/useAuth";
+import { useNotifications } from "@/hooks/useNotifications";
+import { useTheme } from "@/hooks/useTheme";
 import {
     AlertTriangle,
     Bell,
@@ -25,7 +25,7 @@ import {
     User,
     X
 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 
 export default function SettingsPage() {
     const { user, loading } = useAuth();
@@ -76,7 +76,7 @@ export default function SettingsPage() {
     // Cargar datos del perfil desde la base de datos
     const loadProfileData = async () => {
         if (!user?.id) return;
-        
+
         setLoadingProfile(true);
         try {
             const { data: profile, error } = await supabase
@@ -162,12 +162,12 @@ export default function SettingsPage() {
             const savedSettings = localStorage.getItem('userSettings');
             if (savedSettings) {
                 const settings = JSON.parse(savedSettings);
-                
+
                 // Cargar configuraciones de API si existen
                 if (settings.apiSettings) {
                     setApiSettings(settings.apiSettings);
                 }
-                
+
                 console.log('✅ Configuración cargada desde localStorage');
             }
         } catch (error) {
@@ -190,10 +190,10 @@ export default function SettingsPage() {
                 const profileUpdated = await updateProfile();
                 allSuccessful = allSuccessful && profileUpdated;
             }
-            
+
             // Guardar configuración del tema explícitamente
             localStorage.setItem('theme', theme);
-            
+
             // Guardar otras configuraciones (API settings, etc.)
             const settingsToSave = {
                 theme: theme,
@@ -202,16 +202,16 @@ export default function SettingsPage() {
                 securitySettings: securitySettings,
                 savedAt: new Date().toISOString()
             };
-            
+
             localStorage.setItem('userSettings', JSON.stringify(settingsToSave));
-            
+
             if (allSuccessful) {
                 setMessage('Configuración guardada exitosamente');
                 showSuccess('Configuración guardada exitosamente');
             } else {
                 showWarning('Algunas configuraciones no se pudieron guardar');
             }
-            
+
         } catch (err) {
             console.error('Error saving settings:', err);
             showError('Error al guardar la configuración');
@@ -479,8 +479,8 @@ export default function SettingsPage() {
                                                     key={themeOption.value}
                                                     onClick={() => setTheme(themeOption.value)}
                                                     className={`p-4 rounded-lg border-2 transition-all hover:shadow-md ${theme === themeOption.value
-                                                            ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400'
-                                                            : 'border-border bg-card text-card-foreground hover:border-accent'
+                                                        ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400'
+                                                        : 'border-border bg-card text-card-foreground hover:border-accent'
                                                         }`}
                                                 >
                                                     <div className="flex flex-col items-center gap-3">

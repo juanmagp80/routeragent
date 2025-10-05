@@ -74,7 +74,7 @@ async function migrateUsageData() {
         }
 
         console.log(`✅ Migrados ${insertedRecords.length} registros a usage_records`);
-        
+
         // Mostrar algunos ejemplos
         console.log('\n📋 Ejemplos de registros migrados:');
         insertedRecords.slice(0, 3).forEach((record, index) => {

@@ -1,8 +1,8 @@
 "use client";
 
 import { useAuth } from "@/contexts/AuthContext";
-import { ApiKeyData, backendServiceDev, CreateApiKeyRequest } from "@/services/backendServiceDev";
 import { useNotifications } from "@/hooks/useNotifications";
+import { ApiKeyData, backendServiceDev, CreateApiKeyRequest } from "@/services/backendServiceDev";
 import {
     Activity,
     BarChart3,
@@ -153,8 +153,8 @@ export default function ApiKeysPage() {
                                 onClick={() => setShowCreateForm(!showCreateForm)}
                                 disabled={keys.length >= 5}
                                 className={`inline-flex items-center px-4 py-2 rounded-md text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${keys.length >= 5
-                                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                                        : 'bg-emerald-600 text-white hover:bg-emerald-700 focus:ring-emerald-500'
+                                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                    : 'bg-emerald-600 text-white hover:bg-emerald-700 focus:ring-emerald-500'
                                     }`}
                             >
                                 <Plus className="mr-2 h-4 w-4" />
