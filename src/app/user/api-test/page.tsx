@@ -7,13 +7,11 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
-import { useNotifications } from '@/hooks/useNotifications';
 import { backendService, type RouteRequest, type RouteResponse } from '@/services/backendService';
 import { Activity, CheckCircle, DollarSign, Loader2, XCircle, Zap } from 'lucide-react';
 import { useState } from 'react';
 
 export default function ApiTestPage() {
-    const { showSuccess, showError } = useNotifications();
     const [loading, setLoading] = useState(false);
     const [response, setResponse] = useState<RouteResponse | null>(null);
     const [error, setError] = useState<string | null>(null);
@@ -68,16 +66,16 @@ export default function ApiTestPage() {
     const clearCache = async () => {
         try {
             await backendService.clearCache();
-            showSuccess('Cache limpiado exitosamente');
+            alert('Cache limpiado exitosamente');
         } catch (err) {
-            showError('Error al limpiar cache');
+            alert('Error al limpiar cache');
         }
     };
 
     return (
         <div className="container mx-auto py-8 px-4">
             <div className="mb-8">
-                <h1 className="text-3xl font-bold mb-2">🧪 Test de API RouterAI</h1>
+                <h1 className="text-3xl font-bold mb-2">🧪 Test de API AgentRouter</h1>
                 <p className="text-muted-foreground">
                     Prueba la funcionalidad del router de modelos de IA
                 </p>

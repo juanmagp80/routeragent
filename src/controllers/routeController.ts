@@ -1,4 +1,19 @@
 // Controlador de rutas para AgentRouter
+import { supabase } from '../config/database';
+
+// Verificar configuración de Supabase
+const checkSupabaseConfig = () => {
+    try {
+        if (!supabase) {
+            console.error('❌ Supabase client no está inicializado');
+            return false;
+        }
+        return true;
+    } catch (error) {
+        console.error('❌ Error verificando configuración de Supabase:', error);
+        return false;
+    }
+};
 
 export const routeTask = async (req: any, res: any) => {
     try {
@@ -246,79 +261,153 @@ He procesado tu consulta y seleccionado el modelo ${selectedModel.name} como óp
 
 export const getMetrics = async (req: any, res: any) => {
     try {
-        // Simular métricas
-        const mockMetrics = [
-            {
-                model: "gpt-4o",
-                count: 45,
-                sum: 0.675
-            },
-            {
-                model: "claude-3",
-                count: 23,
-                sum: 0.69
-            },
-            {
-                model: "gpt-4o-mini",
-                count: 67,
-                sum: 0.134
-            },
-            {
-                model: "llama-3",
-                count: 89,
-                sum: 0.089
-            }
-        ];
+        // Obtener el usuario desde el request o usar el usuario por defecto para desarrollo
+        let userId: string | null = req.userId || req.user?.id || '3a942f65-25e7-4de3-84cb-3df0268ff759';
 
-        // Calcular resumen
-        const totalCost = mockMetrics.reduce((sum, m) => sum + (m.sum || 0), 0);
-        const totalRequests = mockMetrics.reduce((sum, m) => sum + (m.count || 0), 0);
-        const avgCostPerRequest = totalRequests > 0 ? totalCost / totalRequests : 0;
+        console.log('📊 Obteniendo métricas para usuario:', userId);
 
-        const summary = {
-            total_cost: totalCost,
-            total_requests: totalRequests,
-            avg_cost_per_request: avgCostPerRequest
+        // Verificar que supabase esté inicializado
+        if (!checkSupabaseConfig()) {
+            console.error('❌ Supabase client no está inicializado');
+            return res.status(500).json({
+                error: "Database connection error",
+                success: false
+            });
+        }
+
+        // Consultar datos reales de Supabase con manejo de errores mejorado
+        let tasks = null;
+        let apiKeys = null;
+        let tasksError = null;
+        let apiKeysError = null;
+
+        try {
+            const tasksResult = await supabase
+                .from('tasks')
+                .select('model_selected, cost, latency_ms, status, created_at, task_type')
+                .eq('user_id', userId)
+                .order('created_at', { ascending: false })
+                .limit(50);
+            
+            tasks = tasksResult.data;
+            tasksError = tasksResult.error;
+        } catch (error) {
+            console.error('Error consultando tasks:', error);
+            tasksError = error;
+        }
+
+        try {
+            const apiKeysResult = await supabase
+                .from('api_keys')
+                .select('id, usage_count')
+                .eq('user_id', userId)
+                .eq('is_active', true);
+            
+            apiKeys = apiKeysResult.data;
+            apiKeysError = apiKeysResult.error;
+        } catch (error) {
+            console.error('Error consultando api_keys:', error);
+            apiKeysError = error;
+        }
+
+        console.log('📊 Datos obtenidos:', { 
+            tasks: tasks?.length || 0, 
+            apiKeys: apiKeys?.length || 0,
+            tasksError: tasksError?.message || null, 
+            apiKeysError: apiKeysError?.message || null 
+        });
+
+        // Si hay errores en las consultas pero no son errores críticos, intentar continuar
+        if (tasksError && tasksError.message?.includes('relation') && tasksError.message?.includes('does not exist')) {
+            console.log('⚠️ Tabla tasks no existe, usando datos por defecto');
+            tasks = [];
+        }
+        
+        if (apiKeysError && apiKeysError.message?.includes('relation') && apiKeysError.message?.includes('does not exist')) {
+            console.log('⚠️ Tabla api_keys no existe, usando datos por defecto');
+            apiKeys = [];
+        }
+
+        // Solo devolver error si hay problemas críticos de conexión
+        if ((tasksError && !tasksError.message?.includes('does not exist')) || 
+            (apiKeysError && !apiKeysError.message?.includes('does not exist'))) {
+            console.log('⚠️ Error crítico consultando datos:', { tasksError, apiKeysError });
+        }
+        // Inicializar con datos por defecto
+        const defaultMetrics = {
+            metrics: [],
+            summary: {
+                total_cost: 0,
+                total_requests: 0,
+                avg_cost_per_request: 0,
+                active_api_keys: 0
+            },
+            recent_tasks: [],
+            success: true
         };
 
-        // Simular tareas recientes
-        const recentTasks = [
-            {
-                model: "claude-3",
-                cost: 0.015,
-                latency: 89,
-                status: "completed",
-                timestamp: new Date(Date.now() - 5 * 60 * 1000).toISOString()
-            },
-            {
-                model: "gpt-4",
-                cost: 0.032,
-                latency: 156,
-                status: "completed",
-                timestamp: new Date(Date.now() - 12 * 60 * 1000).toISOString()
-            },
-            {
-                model: "mistral-7b",
-                cost: 0.002,
-                latency: 167,
-                status: "completed",
-                timestamp: new Date(Date.now() - 18 * 60 * 1000).toISOString()
-            },
-            {
-                model: "llama-3",
-                cost: 0.001,
-                latency: 234,
-                status: "completed",
-                timestamp: new Date(Date.now() - 25 * 60 * 1000).toISOString()
-            }
-        ];
+        // Procesar datos reales si están disponibles
+        if (tasks && tasks.length > 0) {
+            // Agrupar métricas por modelo
+            const modelMetrics = tasks.reduce((acc: any, task: any) => {
+                const model = task.model_selected || 'unknown';
+                if (!acc[model]) {
+                    acc[model] = { count: 0, sum: 0 };
+                }
+                acc[model].count++;
+                acc[model].sum += parseFloat(task.cost || '0');
+                return acc;
+            }, {});
 
-        res.json({
-            metrics: mockMetrics,
-            summary,
-            recent_tasks: recentTasks,
-            success: true
-        });
+            const metricsArray = Object.entries(modelMetrics).map(([model, data]: [string, any]) => ({
+                model,
+                count: data.count,
+                sum: data.sum
+            }));
+
+            // Calcular resumen
+            const totalCost = tasks.reduce((sum: number, task: any) => sum + parseFloat(task.cost || '0'), 0);
+            const totalRequests = tasks.length;
+            const avgCostPerRequest = totalRequests > 0 ? totalCost / totalRequests : 0;
+            const activeApiKeys = apiKeys?.length || 0;
+
+            // Tareas recientes (últimas 5)
+            const recentTasks = tasks.slice(0, 5).map((task: any) => ({
+                model: task.model_selected || 'unknown',
+                cost: parseFloat(task.cost || '0'),
+                latency: task.latency_ms || 0,
+                status: task.status || 'completed',
+                timestamp: task.created_at,
+                task_type: task.task_type || 'general'
+            }));
+
+            const response = {
+                metrics: metricsArray,
+                summary: {
+                    total_cost: totalCost,
+                    total_requests: totalRequests,
+                    avg_cost_per_request: avgCostPerRequest,
+                    active_api_keys: activeApiKeys
+                },
+                recent_tasks: recentTasks,
+                success: true
+            };
+
+            console.log('✅ Métricas reales procesadas:', {
+                totalTasks: totalRequests,
+                totalCost,
+                modelsCount: metricsArray.length,
+                activeApiKeys
+            });
+
+            return res.json(response);
+        }
+
+        // Si no hay datos, devolver estructura por defecto pero con API keys si existen
+        defaultMetrics.summary.active_api_keys = apiKeys?.length || 0;
+        
+        console.log('📭 No hay datos de tareas para el usuario, devolviendo estructura por defecto');
+        return res.json(defaultMetrics);
 
     } catch (error) {
         console.error('Metrics error:', error);

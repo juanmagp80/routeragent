@@ -19,7 +19,7 @@ const isProduction = FORCE_PRODUCTION ||
 
 export const BACKEND_URL = isProduction
     ? 'https://routeragent.onrender.com'  // Producción
-    : 'http://localhost:3003';             // Desarrollo local
+    : 'http://localhost:3002';             // Desarrollo local
 
 console.log(`🔧 Backend URL Config:`, {
     FORCE_PRODUCTION,

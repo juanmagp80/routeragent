@@ -4,7 +4,7 @@ export async function GET() {
     try {
         console.log('🔄 Fetching billing data from backend...');
 
-        const response = await fetch('http://localhost:3003/v1/billing-dev', {
+        const response = await fetch('http://localhost:3002/v1/billing-dev', {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',

@@ -4,19 +4,24 @@
 export const robustRedirect = (url: string, delay: number = 500) => {
   console.log(`🔄 Iniciando redirección robusta a ${url}`);
   
-  // Guardar en localStorage para persistir a través de HMR
-  localStorage.setItem('pendingRedirect', url);
-  localStorage.setItem('redirectTimestamp', Date.now().toString());
+  // Solo usar localStorage en el cliente
+  if (typeof window !== 'undefined') {
+    // Guardar en localStorage para persistir a través de HMR
+    localStorage.setItem('pendingRedirect', url);
+    localStorage.setItem('redirectTimestamp', Date.now().toString());
+  }
   
   // Múltiples métodos de redirección
   setTimeout(() => {
     console.log(`🚀 Ejecutando redirección inmediata a ${url}`);
-    window.location.replace(url);
+    if (typeof window !== 'undefined') {
+      window.location.replace(url);
+    }
   }, delay);
   
   // Backup con href
   setTimeout(() => {
-    if (window.location.pathname !== url) {
+    if (typeof window !== 'undefined' && window.location.pathname !== url) {
       console.log(`🔄 Backup: redirigiendo con href a ${url}`);
       window.location.href = url;
     }
@@ -24,7 +29,7 @@ export const robustRedirect = (url: string, delay: number = 500) => {
   
   // Último recurso
   setTimeout(() => {
-    if (window.location.pathname !== url) {
+    if (typeof window !== 'undefined' && window.location.pathname !== url) {
       console.log(`⚡ Último recurso: forzando redirección a ${url}`);
       window.location.assign(url);
     }
@@ -56,6 +61,8 @@ export const checkPendingRedirect = () => {
 
 // Limpiar redirección cuando se complete
 export const clearPendingRedirect = () => {
-  localStorage.removeItem('pendingRedirect');
-  localStorage.removeItem('redirectTimestamp');
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem('pendingRedirect');
+    localStorage.removeItem('redirectTimestamp');
+  }
 };

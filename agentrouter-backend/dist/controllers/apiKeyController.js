@@ -7,7 +7,7 @@ const notificationService_1 = require("../services/notificationService");
 const apiKeyService = new apiKeyService_1.ApiKeyService();
 // Initialize Supabase client for dev functions
 const supabaseUrl = process.env.SUPABASE_URL || '';
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+const supabaseServiceKey = process.env.SUPABASE_KEY || '';
 const supabase = (0, supabase_js_1.createClient)(supabaseUrl, supabaseServiceKey);
 // Crear nueva API Key
 const createApiKey = async (req, res) => {
@@ -484,12 +484,13 @@ const getMetricsDev = async (req, res) => {
                 modelStats[model].sum += cost;
             });
             // Crear tareas recientes
-            recentTasks = usageData.slice(0, 4).map(record => ({
+            recentTasks = usageData.slice(0, 4).map((record) => ({
                 model: record.model_used || 'unknown',
+                task_type: 'general', // Tipo de tarea
                 cost: parseFloat(record.cost) || 0,
-                latency: Math.floor(Math.random() * 200) + 50, // Latencia simulada
+                latency: record.latency_ms || Math.floor(Math.random() * 200) + 50,
                 status: 'completed',
-                timestamp: record.created_at
+                created_at: record.created_at // Campo correcto para el frontend
             }));
         }
         // Convertir modelStats a array

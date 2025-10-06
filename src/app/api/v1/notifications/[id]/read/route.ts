@@ -7,7 +7,7 @@ export async function PUT(
     try {
         const notificationId = params.id;
 
-        const response = await fetch(`http://localhost:3003/v1/notifications/${notificationId}/read`, {
+        const response = await fetch(`http://localhost:3002/v1/notifications/${notificationId}/read`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',

@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3002';
 
 // Cliente Supabase para autenticación
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -69,6 +69,7 @@ export interface ApiKeyData {
     last_used_at?: string;
     created_at: string;
     plan: string;
+    key?: string; // Solo disponible cuando se crea la clave
 }
 
 export interface CreateApiKeyRequest {

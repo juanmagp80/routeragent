@@ -64,7 +64,7 @@ async function createTestRecords() {
         // Usar la API del backend en lugar de conectar directamente a Supabase
         for (const record of testRecords) {
             try {
-                const response = await fetch('http://localhost:3003/v1/test-insert-usage', {
+                const response = await fetch('http://localhost:3002/v1/test-insert-usage', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'

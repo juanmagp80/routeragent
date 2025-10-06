@@ -1,6 +1,7 @@
 export interface UsageRecord {
     id: string;
     user_id?: string;
+    api_key_id?: string;
     model_used: string;
     cost: number;
     latency_ms: number;

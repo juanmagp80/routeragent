@@ -55,8 +55,18 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es" className="scroll-smooth">
-      <body className={`${inter.variable} font-sans antialiased bg-background text-foreground transition-colors duration-200`}>
-        <ClientOnly>
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+      </head>
+      <body 
+        className={`${inter.variable} font-sans antialiased bg-background text-foreground transition-colors duration-200`} 
+        suppressHydrationWarning={true}
+      >
+        <ClientOnly fallback={
+          <div className="min-h-screen bg-background flex items-center justify-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          </div>
+        }>
           <ThemeProvider>
             <AuthProvider>
               <RedirectHandler />

@@ -87,7 +87,7 @@ export default function TestApiPage() {
 
         try {
             // Hacer request al endpoint de prueba
-            const response = await fetch('http://localhost:3003/v1/route', {
+            const response = await fetch('http://localhost:3002/v1/route', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

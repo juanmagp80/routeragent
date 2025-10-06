@@ -113,7 +113,10 @@ export default function AuthCallbackPage() {
             created_at: sessionData.session.user.created_at || new Date().toISOString()
           };
 
-          localStorage.setItem('agentrouter_user', JSON.stringify(userData));
+          // Solo guardar en localStorage si estamos en el cliente
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('agentrouter_user', JSON.stringify(userData));
+          }
 
           setStatus('success');
           setMessage('¡Autenticación exitosa! Redirigiendo...');
@@ -160,7 +163,10 @@ export default function AuthCallbackPage() {
               created_at: data.session.user.created_at || new Date().toISOString()
             };
 
-            localStorage.setItem('agentrouter_user', JSON.stringify(userData));
+            // Solo guardar en localStorage si estamos en el cliente
+            if (typeof window !== 'undefined') {
+              localStorage.setItem('agentrouter_user', JSON.stringify(userData));
+            }
 
             setStatus('success');
             setMessage('¡Autenticación exitosa! Redirigiendo...');

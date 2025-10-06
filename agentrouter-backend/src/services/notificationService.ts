@@ -2,7 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 import { Resend } from 'resend';
 
 const supabaseUrl = process.env.SUPABASE_URL!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+const supabaseServiceKey = process.env.SUPABASE_KEY!;
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 // Tipos para las notificaciones

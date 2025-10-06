@@ -70,13 +70,8 @@ export default function TestApiPage() {
 
     // Hacer request de prueba
     const handleTestRequest = async () => {
-        if (!apiKeyValue.trim() || !testRequest.prompt.trim()) {
-            console.error('Por favor ingresa la API key completa y escribe un prompt');
-            return;
-        }
-
-        if (!apiKeyValue.startsWith('ar_')) {
-            console.error('La API key debe comenzar con "ar_"');
+        if (!testRequest.prompt.trim()) {
+            console.error('Por favor escribe un prompt para probar');
             return;
         }
 
@@ -85,12 +80,11 @@ export default function TestApiPage() {
         setShowResponse(false);
 
         try {
-            // Hacer request al endpoint de prueba
-            const response = await fetch('http://localhost:3003/v1/route', {
+            // Hacer request al endpoint de prueba (sin autenticación)
+            const response = await fetch('http://localhost:3002/v1/route-test', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${apiKeyValue}`
+                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
                     input: testRequest.prompt,
@@ -270,21 +264,14 @@ export default function TestApiPage() {
                                 </p>
                             </div>
 
-                            {/* API Key completa */}
-                            <div>
-                                <label className="block text-sm font-bold text-gray-900 mb-3 flex items-center">
-                                    <FileText className="h-4 w-4 mr-2 text-emerald-600" />
-                                    API Key Completa *
-                                </label>
-                                <input
-                                    type="password"
-                                    value={apiKeyValue}
-                                    onChange={(e) => setApiKeyValue(e.target.value)}
-                                    className="w-full border-2 border-gray-300 rounded-xl shadow-sm py-3 px-4 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm font-mono"
-                                    placeholder="ar_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-                                />
-                                <p className="mt-2 text-xs text-gray-500">
-                                    Ingresa la API key completa para hacer la prueba
+                            {/* Información de modo prueba */}
+                            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                                <div className="flex items-center mb-2">
+                                    <FileText className="h-4 w-4 mr-2 text-blue-600" />
+                                    <span className="text-sm font-bold text-blue-900">Modo de Prueba</span>
+                                </div>
+                                <p className="text-xs text-blue-700">
+                                    Esta página usa el endpoint de prueba sin autenticación. No necesitas una API key para probar la funcionalidad básica.
                                 </p>
                             </div>
 
@@ -360,10 +347,10 @@ export default function TestApiPage() {
                             {/* Botón de prueba */}
                             <button
                                 onClick={handleTestRequest}
-                                disabled={loading || !apiKeyValue.trim() || !testRequest.prompt.trim()}
-                                className={`w-full flex items-center justify-center px-6 py-4 border border-transparent rounded-xl text-base font-bold text-white shadow-lg transition-all duration-200 transform ${loading || !apiKeyValue.trim() || !testRequest.prompt.trim()
+                                disabled={loading || !testRequest.prompt.trim()}
+                                className={`w-full flex items-center justify-center px-6 py-4 border border-transparent rounded-xl text-base font-bold text-white shadow-lg transition-all duration-200 transform ${loading || !testRequest.prompt.trim()
                                         ? 'bg-gray-400 cursor-not-allowed'
-                                        : 'bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 hover:scale-105 focus:outline-none focus:ring-4 focus:ring-purple-300'
+                                        : 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 hover:scale-105 focus:outline-none focus:ring-4 focus:ring-emerald-300'
                                     }`}
                             >
                                 {loading ? (
@@ -374,7 +361,7 @@ export default function TestApiPage() {
                                 ) : (
                                     <>
                                         <Play className="h-5 w-5 mr-3" />
-                                        Ejecutar Prueba
+                                        Probar Router IA
                                     </>
                                 )}
                             </button>

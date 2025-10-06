@@ -15,7 +15,7 @@ export default function ClientOnly({ children, fallback = null }: ClientOnlyProp
   }, []);
 
   if (!hasMounted) {
-    return <>{fallback}</>;
+    return <div style={{ visibility: 'hidden' }}>{fallback}</div>;
   }
 
   return <>{children}</>;

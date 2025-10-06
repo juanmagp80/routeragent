@@ -3,19 +3,32 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.LogService = void 0;
 const database_1 = require("../config/database");
 class LogService {
-    async logUsage(logEntry) {
+    async logUsage(logEntry, apiKeyId) {
         try {
-            const { error } = await database_1.supabase
+            // Insertar en usage_records (tabla principal para métricas)
+            const { error: recordError } = await database_1.supabase
+                .from('usage_records')
+                .insert([{
+                    ...logEntry,
+                    api_key_id: apiKeyId || null,
+                    created_at: new Date().toISOString()
+                }]);
+            if (recordError) {
+                console.error('Usage record error:', recordError);
+                throw new Error(`Failed to log usage record: ${recordError.message}`);
+            }
+            // También mantener el log en usage_logs para compatibilidad
+            const { error: logError } = await database_1.supabase
                 .from('usage_logs')
                 .insert([{
                     ...logEntry,
+                    api_key_id: apiKeyId || null,
                     created_at: new Date().toISOString()
                 }]);
-            if (error) {
-                console.error('Log error:', error);
-                throw new Error(`Failed to log usage: ${error.message}`);
+            if (logError) {
+                console.warn('Log error (non-critical):', logError);
             }
-            console.log('Successfully logged usage to Supabase');
+            console.log('Successfully logged usage to Supabase (usage_records and usage_logs)');
         }
         catch (error) {
             console.error('Error logging usage:', error);

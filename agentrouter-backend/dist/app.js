@@ -11,21 +11,32 @@ const helmet_1 = __importDefault(require("helmet"));
 const morgan_1 = __importDefault(require("morgan"));
 const stripe_1 = __importDefault(require("stripe"));
 // Cargar variables de entorno
-dotenv_1.default.config({ path: '.env.local' });
-dotenv_1.default.config(); // fallback para .env
-// Verificar que tenemos la clave de Stripe
+dotenv_1.default.config(); // Cargar .env primero
+dotenv_1.default.config({ path: '.env.local' }); // Luego .env.local si existe
+// Verificar variables de entorno críticas
+console.log('🔍 Verificando variables de entorno...');
 if (!process.env.STRIPE_SECRET_KEY) {
     console.error('❌ STRIPE_SECRET_KEY not found in environment variables');
     process.exit(1);
 }
-console.log('✅ Stripe key loaded:', process.env.STRIPE_SECRET_KEY?.substring(0, 12) + '...');
-// Verificar que tenemos la clave de Resend
-if (!process.env.RESEND_API_KEY) {
-    console.error('❌ RESEND_API_KEY not found in environment variables');
-    console.error('Please check your .env.local file and ensure RESEND_API_KEY is set');
+if (!process.env.SUPABASE_URL) {
+    console.error('❌ SUPABASE_URL not found in environment variables');
     process.exit(1);
 }
-console.log('✅ Resend key loaded:', process.env.RESEND_API_KEY?.substring(0, 12) + '...');
+if (!process.env.SUPABASE_KEY) {
+    console.error('❌ SUPABASE_KEY not found in environment variables');
+    process.exit(1);
+}
+console.log('✅ Stripe key loaded:', process.env.STRIPE_SECRET_KEY?.substring(0, 12) + '...');
+// Verificar que tenemos la clave de Resend (opcional)
+if (!process.env.RESEND_API_KEY) {
+    console.warn('⚠️ RESEND_API_KEY not found - email features will be disabled');
+}
+else {
+    console.log('✅ Resend key loaded:', process.env.RESEND_API_KEY?.substring(0, 12) + '...');
+}
+console.log('✅ Supabase URL loaded:', process.env.SUPABASE_URL?.substring(0, 30) + '...');
+console.log('✅ Supabase Key loaded:', process.env.SUPABASE_KEY?.substring(0, 20) + '...');
 // Inicializar Stripe
 const stripe = new stripe_1.default(process.env.STRIPE_SECRET_KEY, {
     apiVersion: '2023-10-16',
@@ -177,6 +188,21 @@ app.get('/v1/billing-dev', apiKeyController_1.getBillingDev);
 app.get('/v1/user-dev', apiKeyController_1.getCurrentUserDev);
 app.put('/v1/user-dev', apiKeyController_1.updateCurrentUserDev);
 app.put('/v1/user-notifications-dev', apiKeyController_1.updateUserNotificationsDev);
+// Endpoint temporal para insertar registros de prueba
+app.post('/v1/test-insert-usage', async (req, res) => {
+    try {
+        const { error } = await supabase
+            .from('usage_records')
+            .insert([req.body]);
+        if (error) {
+            return res.status(500).json({ error: error.message });
+        }
+        res.json({ success: true, message: 'Test record inserted' });
+    }
+    catch (error) {
+        res.status(500).json({ error: 'Failed to insert test record' });
+    }
+});
 // Rutas para validar webhooks
 app.post('/v1/validate-slack-webhook', apiKeyController_1.validateSlackWebhook);
 app.post('/v1/validate-discord-webhook', apiKeyController_1.validateDiscordWebhook);

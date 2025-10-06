@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 
 export async function PUT() {
     try {
-        const response = await fetch('http://localhost:3003/v1/notifications/read-all', {
+        const response = await fetch('http://localhost:3002/v1/notifications/read-all', {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',

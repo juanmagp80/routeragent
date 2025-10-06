@@ -7,25 +7,38 @@ import morgan from 'morgan';
 import Stripe from 'stripe';
 
 // Cargar variables de entorno
-dotenv.config({ path: '.env.local' });
-dotenv.config(); // fallback para .env
+dotenv.config(); // Cargar .env primero
+dotenv.config({ path: '.env.local' }); // Luego .env.local si existe
 
-// Verificar que tenemos la clave de Stripe
+// Verificar variables de entorno críticas
+console.log('🔍 Verificando variables de entorno...');
+
 if (!process.env.STRIPE_SECRET_KEY) {
     console.error('❌ STRIPE_SECRET_KEY not found in environment variables');
     process.exit(1);
 }
 
-console.log('✅ Stripe key loaded:', process.env.STRIPE_SECRET_KEY?.substring(0, 12) + '...');
-
-// Verificar que tenemos la clave de Resend
-if (!process.env.RESEND_API_KEY) {
-    console.error('❌ RESEND_API_KEY not found in environment variables');
-    console.error('Please check your .env.local file and ensure RESEND_API_KEY is set');
+if (!process.env.SUPABASE_URL) {
+    console.error('❌ SUPABASE_URL not found in environment variables');
     process.exit(1);
 }
 
-console.log('✅ Resend key loaded:', process.env.RESEND_API_KEY?.substring(0, 12) + '...');
+if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    console.error('❌ SUPABASE_SERVICE_ROLE_KEY not found in environment variables');
+    process.exit(1);
+}
+
+console.log('✅ Stripe key loaded:', process.env.STRIPE_SECRET_KEY?.substring(0, 12) + '...');
+
+// Verificar que tenemos la clave de Resend (opcional)
+if (!process.env.RESEND_API_KEY) {
+    console.warn('⚠️ RESEND_API_KEY not found - email features will be disabled');
+} else {
+    console.log('✅ Resend key loaded:', process.env.RESEND_API_KEY?.substring(0, 12) + '...');
+}
+
+console.log('✅ Supabase URL loaded:', process.env.SUPABASE_URL?.substring(0, 30) + '...');
+console.log('✅ Supabase Service Key loaded:', process.env.SUPABASE_SERVICE_ROLE_KEY?.substring(0, 20) + '...');
 
 // Inicializar Stripe
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {

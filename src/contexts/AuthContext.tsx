@@ -27,34 +27,123 @@ interface AuthContextType {
     refreshUser: () => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+export const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+// Función para obtener datos reales del usuario desde Supabase
+const fetchUserData = async (): Promise<User | null> => {
+    try {
+        console.log('🔍 === AUTHCONTEXT: INICIO FETCH USER DATA ===');
+
+        // Importar supabase aquí para evitar problemas de SSR
+        const { supabase } = await import('../config/database');
+
+        // Verificar si hay una sesión activa de Supabase
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        console.log('🔐 Sesión de Supabase:', { session: !!session, error: sessionError });
+
+        // Si no hay sesión y tenemos un usuario guardado, intentar crear una sesión
+        const savedUser = typeof window !== 'undefined' ? localStorage.getItem('agentrouter_user') : null;
+        if (!session && savedUser) {
+            try {
+                const userData = JSON.parse(savedUser);
+                console.log('🔐 Intentando autenticar usuario en Supabase:', userData.email);
+                
+                // Intentar sign in silencioso (esto no funcionará con email/password, pero es para RLS)
+                // En su lugar, usaremos el service role para esta operación específica
+            } catch (error) {
+                console.warn('Error parsing saved user for Supabase auth:', error);
+            }
+        }
+
+        // Obtener usuario de la base de datos
+        const { data: { user: authUser } } = await supabase.auth.getUser();
+        console.log('👤 Usuario de auth.getUser():', authUser);
+
+        // Si tenemos usuario autenticado, obtener datos completos
+        if (authUser) {
+            const { data: userData, error: userError } = await supabase
+                .from('users')
+                .select('*')
+                .eq('id', authUser.id)
+                .single();
+
+            if (userError) {
+                console.error('❌ Error obteniendo datos del usuario:', userError);
+                return null;
+            }
+
+            if (userData) {
+                console.log('✅ Datos del usuario obtenidos:', userData);
+                return {
+                    id: userData.id,
+                    name: userData.name || userData.email,
+                    email: userData.email,
+                    company: userData.company,
+                    plan: userData.plan || 'free',
+                    api_key_limit: userData.api_key_limit || 1000,
+                    is_active: userData.is_active ?? true,
+                    email_verified: userData.email_verified ?? false,
+                    created_at: userData.created_at
+                };
+            }
+        }
+
+        // Si no hay usuario autenticado pero tenemos datos guardados, usarlos
+        if (typeof window !== 'undefined' && savedUser) {
+            try {
+                const userData = JSON.parse(savedUser);
+                console.log('📱 Usando datos guardados localmente:', userData);
+                return userData;
+            } catch (error) {
+                console.warn('Error parsing saved user:', error);
+            }
+        }
+
+        console.log('❌ No se pudo obtener datos del usuario');
+        return null;
+    } catch (error) {
+        console.error('❌ Error en fetchUserData:', error);
+        return null;
+    }
+};
 
 export function AuthProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(false);
-    const [isHydrated, setIsHydrated] = useState(true);
+    const [isHydrated, setIsHydrated] = useState(false);
     const [authError, setAuthError] = useState<string | null>(null);
     const router = useRouter();
 
-    // Cargar usuario desde localStorage al inicializar y actualizar con datos reales
+    // Manejar la hidratación correctamente
     useEffect(() => {
+        setIsHydrated(true);
+
+        // Solo ejecutar después de la hidratación
         const initializeUser = async () => {
-            if (typeof window !== 'undefined') {
+            try {
+                // Verificar si estamos en el cliente
+                if (typeof window === 'undefined') return;
+
                 const savedUser = localStorage.getItem('agentrouter_user');
                 if (savedUser) {
                     try {
                         const userData = JSON.parse(savedUser);
                         setUser(userData);
 
-                        // Actualizar con datos reales del backend
-                        const realUserData = await fetchUserData();
-                        if (realUserData) {
-                            setUser(realUserData);
-                            localStorage.setItem('agentrouter_user', JSON.stringify(realUserData));
-                        }
+                        // Actualizar con datos reales del backend en background
+                        fetchUserData().then((realUserData) => {
+                            if (realUserData) {
+                                setUser(realUserData);
+                                if (typeof window !== 'undefined') {
+                                    localStorage.setItem('agentrouter_user', JSON.stringify(realUserData));
+                                }
+                            }
+                        }).catch(console.error);
                     } catch (error) {
                         console.warn('Error parsing saved user data:', error);
-                        localStorage.removeItem('agentrouter_user');
+                        if (typeof window !== 'undefined') {
+                            localStorage.removeItem('agentrouter_user');
+                        }
                     }
                 } else {
                     // Si no hay usuario guardado pero estamos en una página admin, obtener datos
@@ -62,10 +151,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                         const realUserData = await fetchUserData();
                         if (realUserData) {
                             setUser(realUserData);
-                            localStorage.setItem('agentrouter_user', JSON.stringify(realUserData));
+                            if (typeof window !== 'undefined') {
+                                localStorage.setItem('agentrouter_user', JSON.stringify(realUserData));
+                            }
                         }
                     }
                 }
+            } catch (error) {
+                console.error('Error initializing user:', error);
             }
         };
 
@@ -74,6 +167,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Escuchar cambios en localStorage para sincronizar datos del usuario
     useEffect(() => {
+        if (!isHydrated || typeof window === 'undefined') return;
+
         const handleStorageChange = (e: StorageEvent) => {
             if (e.key === 'agentrouter_user' && e.newValue) {
                 try {
@@ -88,83 +183,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         window.addEventListener('storage', handleStorageChange);
         return () => window.removeEventListener('storage', handleStorageChange);
-    }, []);
-
-    // Función para obtener datos reales del usuario desde Supabase
-    const fetchUserData = async (): Promise<User | null> => {
-        try {
-            console.log('� === AUTHCONTEXT: INICIO FETCH USER DATA ===');
-
-            // Importar supabase aquí para evitar problemas de SSR
-            const { supabase } = await import('../config/database');
-
-            // Obtener usuario autenticado de Supabase
-            const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
-
-            console.log('🔍 AuthUser de Supabase:', JSON.stringify(authUser, null, 2));
-            console.log('🔍 AuthError:', authError);
-
-            if (authError || !authUser) {
-                console.log('❌ No authenticated user found:', authError);
-                return null;
-            }
-
-            console.log('🔍 Buscando usuario en BD con ID:', authUser.id);
-
-            // Obtener datos del usuario de nuestra tabla personalizada
-            const { data: userData, error: userError } = await supabase
-                .from('users')
-                .select('*')
-                .eq('id', authUser.id)
-                .single();
-
-            console.log('🔍 UserData de BD:', JSON.stringify(userData, null, 2));
-            console.log('🔍 UserError:', userError);
-
-            if (userError) {
-                console.error('❌ Error fetching user data from database:', userError);
-
-                // Si el usuario no existe en la tabla personalizada, usar datos de auth
-                if (userError.code === 'PGRST116') {
-                    console.log('⚠️ Usuario no encontrado en tabla personalizada, usando datos de auth');
-                    const user: User = {
-                        id: authUser.id,
-                        name: authUser.user_metadata?.name || authUser.user_metadata?.full_name || 'Usuario',
-                        email: authUser.email || '',
-                        company: '',
-                        plan: 'free',
-                        api_key_limit: 1000,
-                        is_active: true,
-                        email_verified: true,
-                        created_at: authUser.created_at || new Date().toISOString()
-                    };
-                    return user;
-                }
-
-                return null;
-            }
-
-            // Convertir a formato de nuestro User interface
-            const user: User = {
-                id: userData.id,
-                name: userData.name,
-                email: userData.email,
-                company: userData.company || '',
-                plan: userData.plan || 'free',
-                api_key_limit: userData.api_usage_limit || 1000,
-                is_active: true,
-                email_verified: true,
-                created_at: userData.created_at
-            };
-
-            console.log('✅ Usuario formateado para AuthContext:', JSON.stringify(user, null, 2));
-            console.log('🔍 === AUTHCONTEXT: FIN FETCH USER DATA ===');
-            return user;
-        } catch (error) {
-            console.error('❌ Error fetching user data:', error);
-            return null;
-        }
-    };
+    }, [isHydrated]);
 
     const login = async (email: string, password: string) => {
         try {
@@ -187,7 +206,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             };
 
             setUser(mockUser);
-            localStorage.setItem('agentrouter_user', JSON.stringify(mockUser));
+            
+            // Solo acceder a localStorage en el cliente
+            if (typeof window !== 'undefined') {
+                localStorage.setItem('agentrouter_user', JSON.stringify(mockUser));
+            }
 
             // Redirigir al admin
             router.push('/admin');
@@ -217,7 +240,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             };
 
             setUser(mockUser);
-            localStorage.setItem('agentrouter_user', JSON.stringify(mockUser));
+            
+            // Solo acceder a localStorage en el cliente
+            if (typeof window !== 'undefined') {
+                localStorage.setItem('agentrouter_user', JSON.stringify(mockUser));
+            }
 
             // Redirigir al admin
             router.push('/admin');
@@ -231,7 +258,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const logout = () => {
         setUser(null);
-        localStorage.removeItem('agentrouter_user');
+        
+        // Solo acceder a localStorage en el cliente
+        if (typeof window !== 'undefined') {
+            localStorage.removeItem('agentrouter_user');
+        }
+        
         router.push('/login');
     };
 
@@ -240,7 +272,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const realUserData = await fetchUserData();
         if (realUserData) {
             setUser(realUserData);
-            localStorage.setItem('agentrouter_user', JSON.stringify(realUserData));
+            
+            // Solo acceder a localStorage en el cliente
+            if (typeof window !== 'undefined') {
+                localStorage.setItem('agentrouter_user', JSON.stringify(realUserData));
+            }
         }
     };
 

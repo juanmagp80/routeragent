@@ -2,7 +2,7 @@
 
 import { useAuth } from "@/contexts/AuthContext";
 import { useNotifications } from "@/hooks/useNotifications";
-import { ApiKeyData, backendServiceDev, CreateApiKeyRequest } from "@/services/backendServiceDev";
+import { backendService, type ApiKeyData, type CreateApiKeyRequest } from "@/services/backendService";
 import {
     Activity,
     BarChart3,
@@ -55,47 +55,51 @@ export default function ApiKeysPage() {
 
     // Fetch API keys
     const fetchKeys = async () => {
+        if (!user) return;
+        
         try {
             setLoading(true);
-            const response = await backendServiceDev.getApiKeys();
-            console.log('🔑 API Keys Response:', response);
-            console.log('🔑 API Keys Array:', response.api_keys);
-            console.log('🔑 Total Usage:', response.total_usage);
-
-            if (response.api_keys) {
-                setKeys(response.api_keys);
-                setTotalUsage(response.total_usage || 0);
-                setPlanLimit(response.plan_limit || 5000);
-            } else {
-                console.error('❌ No api_keys in response');
-                setKeys(response);
-            }
+            const keys = await backendService.getApiKeys();
+            console.log('🔑 API Keys Response:', keys);
+            
+            setKeys(keys);
+            // Para el servicio con autenticación, calcular el uso total
+            const totalUsageCount = keys.reduce((total, key) => total + (key.usage_count || 0), 0);
+            setTotalUsage(totalUsageCount);
+            setPlanLimit(5000); // Límite por defecto
         } catch (error) {
             console.error('Error fetching API keys:', error);
+            setKeys([]);
         } finally {
             setLoading(false);
         }
     };
 
     useEffect(() => {
-        fetchKeys();
-    }, []);
+        if (user) {
+            fetchKeys();
+        }
+    }, [user]);
 
     // Create new API key
     const handleCreateKey = async () => {
-        if (!newKey.name.trim()) return;
+        if (!newKey.name.trim() || !user) return;
 
         try {
             const keyData: CreateApiKeyRequest = {
                 name: newKey.name,
+                user_id: user.id,
                 plan: userPlan
             };
-            const response = await backendServiceDev.createApiKey(keyData);
+            const response = await backendService.createApiKey(keyData);
             console.log('🆕 Created API Key:', response);
 
             // Guardar la clave recién creada para mostrarla
-            // La respuesta debería ser directamente el ApiKeyData con full_key
-            setNewlyCreatedKey(response as any);
+            const createdKey: CreatedApiKey = {
+                ...response,
+                full_key: response.key || ''
+            };
+            setNewlyCreatedKey(createdKey);
 
             await fetchKeys();
             setNewKey({ name: "" });
@@ -113,7 +117,7 @@ export default function ApiKeysPage() {
             '¿Estás seguro de que quieres eliminar esta clave API?',
             async () => {
                 try {
-                    await backendServiceDev.deleteApiKey(keyId);
+                    await backendService.deleteApiKey(keyId);
                     showSuccess('Clave API eliminada exitosamente');
                     await fetchKeys();
                 } catch (error) {

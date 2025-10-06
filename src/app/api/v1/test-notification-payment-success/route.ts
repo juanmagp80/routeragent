@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
     try {
-        const response = await fetch(`${process.env.BACKEND_URL || 'http://localhost:3003'}/v1/test-notification-payment-success`, {
+        const response = await fetch(`${process.env.BACKEND_URL || 'http://localhost:3002'}/v1/test-notification-payment-success`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

@@ -1,9 +1,12 @@
 "use client";
 
 import { supabase } from "@/config/database";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/contexts/AuthContext";
 import { useNotifications } from "@/hooks/useNotifications";
 import { useTheme } from "@/hooks/useTheme";
+import { useAutoSave } from "@/hooks/useAutoSave";
+import { useBrowserNotifications } from "@/services/notificationService";
+import { useUserPreferences, UserPreferences } from "@/services/userPreferencesService";
 import {
     AlertTriangle,
     Bell,
@@ -31,11 +34,15 @@ export default function SettingsPage() {
     const { user, loading } = useAuth();
     const { theme, setTheme, themes, resolvedTheme } = useTheme();
     const { showSuccess, showError, showWarning } = useNotifications();
+    const browserNotifications = useBrowserNotifications();
+    const userPrefs = useUserPreferences(user?.id);
+    
     const [activeTab, setActiveTab] = useState('profile');
     const [saving, setSaving] = useState(false);
     const [message, setMessage] = useState('');
     const [showApiKey, setShowApiKey] = useState(false);
     const [loadingProfile, setLoadingProfile] = useState(false);
+    const [loadingPreferences, setLoadingPreferences] = useState(true);
 
     // Estados para configuraciones del perfil
     const [profileSettings, setProfileSettings] = useState({
@@ -47,14 +54,28 @@ export default function SettingsPage() {
         language: 'es'
     });
 
-    // Estados para preferencias
-    const [preferences, setPreferences] = useState({
-        theme: 'light',
-        notifications: true,
-        emailUpdates: true,
-        marketingEmails: false,
-        autoSave: true,
-        compactMode: false
+    // Estados para preferencias reales
+    const [userPreferences, setUserPreferences] = useState<UserPreferences>({
+        notifications: {
+            browser: false,
+            email: true,
+            marketing: false,
+            security: true,
+            usage_alerts: true,
+            cost_alerts: true
+        },
+        interface: {
+            theme: 'system',
+            auto_save: true,
+            language: 'es',
+            timezone: 'Europe/Madrid'
+        },
+        email_settings: {
+            weekly_reports: true,
+            monthly_billing: true,
+            feature_updates: true,
+            promotional: false
+        }
     });
 
     // Estados para seguridad
@@ -104,6 +125,98 @@ export default function SettingsPage() {
             setLoadingProfile(false);
         }
     };
+
+    // Cargar preferencias del usuario
+    const loadUserPreferences = async () => {
+        if (!user?.id) return;
+
+        setLoadingPreferences(true);
+        try {
+            const preferences = await userPrefs.getPreferences(user.id);
+            setUserPreferences(preferences);
+        } catch (error) {
+            console.error('Error loading user preferences:', error);
+            showError('Error al cargar las preferencias del usuario');
+        } finally {
+            setLoadingPreferences(false);
+        }
+    };
+
+    // Función para manejar cambios en notificaciones del navegador
+    const handleBrowserNotificationChange = async (enabled: boolean) => {
+        if (enabled && !browserNotifications.isSupported) {
+            showError('Este navegador no soporta notificaciones');
+            return;
+        }
+
+        if (enabled) {
+            const permission = await browserNotifications.requestPermission();
+            if (!permission) {
+                showError('Permisos de notificación denegados');
+                return;
+            }
+            showSuccess('Notificaciones del navegador habilitadas');
+        }
+
+        // Actualizar preferencias
+        const success = await userPrefs.updateNotificationPreference('browser', enabled);
+        if (success) {
+            setUserPreferences(prev => ({
+                ...prev,
+                notifications: { ...prev.notifications, browser: enabled }
+            }));
+        } else {
+            showError('Error al actualizar las preferencias de notificaciones');
+        }
+    };
+
+    // Función para manejar cambios en notificaciones por email
+    const handleEmailNotificationChange = async (type: keyof UserPreferences['notifications'], enabled: boolean) => {
+        const success = await userPrefs.updateNotificationPreference(type, enabled);
+        if (success) {
+            setUserPreferences(prev => ({
+                ...prev,
+                notifications: { ...prev.notifications, [type]: enabled }
+            }));
+            showSuccess('Preferencias de email actualizadas');
+        } else {
+            showError('Error al actualizar las preferencias de email');
+        }
+    };
+
+    // Función para manejar el guardado automático
+    const handleAutoSaveChange = async (enabled: boolean) => {
+        const success = await userPrefs.updateInterfacePreference('auto_save', enabled);
+        if (success) {
+            setUserPreferences(prev => ({
+                ...prev,
+                interface: { ...prev.interface, auto_save: enabled }
+            }));
+            showSuccess(`Guardado automático ${enabled ? 'habilitado' : 'deshabilitado'}`);
+        } else {
+            showError('Error al actualizar la configuración de guardado automático');
+        }
+    };
+
+    // Configurar auto-guardado
+    const autoSave = useAutoSave({
+        onSave: async () => {
+            try {
+                // Guardar perfil si estamos en esa pestaña
+                if (activeTab === 'profile') {
+                    const success = await updateProfile();
+                    return success;
+                }
+                return true;
+            } catch (error) {
+                console.error('Error en auto-guardado:', error);
+                return false;
+            }
+        },
+        delay: 3000, // 3 segundos
+        enabled: userPreferences.interface.auto_save,
+        showNotifications: true
+    });
 
     // Validar campos del perfil
     const validateProfile = () => {
@@ -158,25 +271,39 @@ export default function SettingsPage() {
 
     // Cargar configuración guardada al iniciar
     useEffect(() => {
-        try {
-            const savedSettings = localStorage.getItem('userSettings');
-            if (savedSettings) {
-                const settings = JSON.parse(savedSettings);
+        const loadInitialData = async () => {
+            if (!user?.id) return;
 
-                // Cargar configuraciones de API si existen
-                if (settings.apiSettings) {
-                    setApiSettings(settings.apiSettings);
+            try {
+                // Cargar datos del perfil
+                await loadProfileData();
+                
+                // Cargar preferencias del usuario
+                await loadUserPreferences();
+
+                // Cargar configuración local guardada (API settings, etc.)
+                const savedSettings = localStorage.getItem('userSettings');
+                if (savedSettings) {
+                    const settings = JSON.parse(savedSettings);
+                    if (settings.apiSettings) {
+                        setApiSettings(settings.apiSettings);
+                    }
+                    console.log('✅ Configuración local cargada desde localStorage');
                 }
-
-                console.log('✅ Configuración cargada desde localStorage');
+            } catch (error) {
+                console.warn('⚠️ Error cargando configuración inicial:', error);
             }
-        } catch (error) {
-            console.warn('⚠️ Error cargando configuración guardada:', error);
-        }
+        };
 
-        // Cargar datos del perfil
-        loadProfileData();
+        loadInitialData();
     }, [user?.id]);
+
+    // Efecto para auto-guardado cuando cambian los datos del perfil
+    useEffect(() => {
+        if (userPreferences.interface.auto_save && user?.id) {
+            autoSave.scheduleAutoSave();
+        }
+    }, [profileSettings, userPreferences.interface.auto_save, user?.id]);
 
     const handleSave = async () => {
         setSaving(true);
@@ -194,11 +321,10 @@ export default function SettingsPage() {
             // Guardar configuración del tema explícitamente
             localStorage.setItem('theme', theme);
 
-            // Guardar otras configuraciones (API settings, etc.)
+            // Guardar otras configuraciones locales (API settings, etc.)
             const settingsToSave = {
                 theme: theme,
                 apiSettings: apiSettings,
-                preferences: preferences,
                 securitySettings: securitySettings,
                 savedAt: new Date().toISOString()
             };
@@ -208,6 +334,11 @@ export default function SettingsPage() {
             if (allSuccessful) {
                 setMessage('Configuración guardada exitosamente');
                 showSuccess('Configuración guardada exitosamente');
+                
+                // Mostrar notificación del navegador si está habilitada
+                if (userPreferences.notifications.browser) {
+                    browserNotifications.showSuccess('Configuración guardada exitosamente');
+                }
             } else {
                 showWarning('Algunas configuraciones no se pudieron guardar');
             }
@@ -464,6 +595,9 @@ export default function SettingsPage() {
                                 <h2 className="text-xl font-semibold text-card-foreground">
                                     Preferencias de la Aplicación
                                 </h2>
+                                {loadingPreferences && (
+                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                                )}
                             </div>
 
                             <div className="space-y-6">
@@ -512,58 +646,122 @@ export default function SettingsPage() {
                                     </p>
                                 </div>
 
-                                {/* Configuraciones de toggle */}
+                                {/* Configuraciones de notificaciones */}
                                 <div className="space-y-4">
-                                    <h3 className="text-lg font-medium text-card-foreground">Configuraciones Generales</h3>
+                                    <h3 className="text-lg font-medium text-card-foreground">Notificaciones</h3>
 
-                                    {[
-                                        {
-                                            key: 'notifications',
-                                            label: 'Notificaciones',
-                                            desc: 'Recibir notificaciones en el navegador',
-                                            icon: Bell
-                                        },
-                                        {
-                                            key: 'emailUpdates',
-                                            label: 'Actualizaciones por email',
-                                            desc: 'Recibir noticias y actualizaciones del producto',
-                                            icon: Mail
-                                        },
-                                        {
-                                            key: 'autoSave',
-                                            label: 'Guardado automático',
-                                            desc: 'Guardar cambios automáticamente',
-                                            icon: Save
-                                        },
-                                        {
-                                            key: 'compactMode',
-                                            label: 'Modo compacto',
-                                            desc: 'Interfaz más compacta y densa',
-                                            icon: Monitor
-                                        }
-                                    ].map(({ key, label, desc, icon: Icon }) => (
-                                        <div key={key} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                                            <div className="flex items-center gap-3">
-                                                <Icon className="h-5 w-5 text-gray-600" />
-                                                <div>
-                                                    <p className="font-medium text-gray-900">{label}</p>
-                                                    <p className="text-sm text-gray-500">{desc}</p>
-                                                </div>
+                                    {/* Notificaciones del navegador */}
+                                    <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg border border-border">
+                                        <div className="flex items-center gap-3">
+                                            <Bell className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                                            <div>
+                                                <p className="font-medium text-card-foreground">Notificaciones del navegador</p>
+                                                <p className="text-sm text-muted-foreground">
+                                                    Recibir notificaciones push en este navegador
+                                                    {!browserNotifications.isSupported && (
+                                                        <span className="text-red-500 ml-2">(No soportado)</span>
+                                                    )}
+                                                </p>
                                             </div>
-                                            <label className="relative inline-flex items-center cursor-pointer">
-                                                <input
-                                                    type="checkbox"
-                                                    className="sr-only peer"
-                                                    checked={preferences[key as keyof typeof preferences] as boolean}
-                                                    onChange={(e) => setPreferences(prev => ({
-                                                        ...prev,
-                                                        [key]: e.target.checked
-                                                    }))}
-                                                />
-                                                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
-                                            </label>
                                         </div>
-                                    ))}
+                                        <label className="relative inline-flex items-center cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                className="sr-only peer"
+                                                checked={userPreferences.notifications.browser}
+                                                disabled={!browserNotifications.isSupported || loadingPreferences}
+                                                onChange={(e) => handleBrowserNotificationChange(e.target.checked)}
+                                            />
+                                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"></div>
+                                        </label>
+                                    </div>
+
+                                    {/* Notificaciones por email */}
+                                    <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg border border-border">
+                                        <div className="flex items-center gap-3">
+                                            <Mail className="h-5 w-5 text-green-600 dark:text-green-400" />
+                                            <div>
+                                                <p className="font-medium text-card-foreground">Actualizaciones por email</p>
+                                                <p className="text-sm text-muted-foreground">Recibir notificaciones importantes por correo electrónico</p>
+                                            </div>
+                                        </div>
+                                        <label className="relative inline-flex items-center cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                className="sr-only peer"
+                                                checked={userPreferences.notifications.email}
+                                                disabled={loadingPreferences}
+                                                onChange={(e) => handleEmailNotificationChange('email', e.target.checked)}
+                                            />
+                                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 dark:peer-focus:ring-green-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed"></div>
+                                        </label>
+                                    </div>
+
+                                    {/* Alertas de seguridad */}
+                                    <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg border border-border">
+                                        <div className="flex items-center gap-3">
+                                            <Shield className="h-5 w-5 text-red-600 dark:text-red-400" />
+                                            <div>
+                                                <p className="font-medium text-card-foreground">Alertas de seguridad</p>
+                                                <p className="text-sm text-muted-foreground">Notificaciones sobre actividad de seguridad</p>
+                                            </div>
+                                        </div>
+                                        <label className="relative inline-flex items-center cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                className="sr-only peer"
+                                                checked={userPreferences.notifications.security}
+                                                disabled={loadingPreferences}
+                                                onChange={(e) => handleEmailNotificationChange('security', e.target.checked)}
+                                            />
+                                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-red-300 dark:peer-focus:ring-red-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed"></div>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                {/* Configuraciones de la interfaz */}
+                                <div className="space-y-4">
+                                    <h3 className="text-lg font-medium text-card-foreground">Configuración de la Interfaz</h3>
+
+                                    {/* Guardado automático */}
+                                    <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg border border-border">
+                                        <div className="flex items-center gap-3">
+                                            <Save className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                                            <div>
+                                                <p className="font-medium text-card-foreground">Guardado automático</p>
+                                                <p className="text-sm text-muted-foreground">
+                                                    Guardar cambios automáticamente cada 3 segundos
+                                                    {autoSave.hasUnsavedChanges && (
+                                                        <span className="text-orange-500 ml-2">(Hay cambios sin guardar)</span>
+                                                    )}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <label className="relative inline-flex items-center cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                className="sr-only peer"
+                                                checked={userPreferences.interface.auto_save}
+                                                disabled={loadingPreferences}
+                                                onChange={(e) => handleAutoSaveChange(e.target.checked)}
+                                            />
+                                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 dark:peer-focus:ring-purple-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-purple-600 disabled:opacity-50 disabled:cursor-not-allowed"></div>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                {/* Información de estado */}
+                                <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
+                                    <div className="flex items-center gap-2 text-blue-700 dark:text-blue-300">
+                                        <Monitor className="h-4 w-4" />
+                                        <span className="text-sm font-medium">Estado de las notificaciones:</span>
+                                    </div>
+                                    <ul className="mt-2 text-sm text-blue-600 dark:text-blue-400 space-y-1">
+                                        <li>• Navegador: {browserNotifications.permission === 'granted' ? '✅ Habilitadas' : 
+                                            browserNotifications.permission === 'denied' ? '❌ Bloqueadas' : '⚠️ Sin configurar'}</li>
+                                        <li>• Email: {userPreferences.notifications.email ? '✅ Habilitadas' : '❌ Deshabilitadas'}</li>
+                                        <li>• Auto-guardado: {userPreferences.interface.auto_save ? '✅ Activo' : '❌ Inactivo'}</li>
+                                    </ul>
                                 </div>
                             </div>
                         </div>
@@ -788,10 +986,42 @@ export default function SettingsPage() {
                             )}
                         </button>
 
-                        <button className="px-6 py-3 border border-gray-300 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors">
+                        {userPreferences.interface.auto_save && (
+                            <button
+                                onClick={() => autoSave.saveNow()}
+                                disabled={autoSave.isSaving || !autoSave.hasUnsavedChanges}
+                                className="px-6 py-3 border border-purple-300 text-purple-700 dark:text-purple-300 dark:border-purple-600 rounded-xl font-medium hover:bg-purple-50 dark:hover:bg-purple-950 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                            >
+                                {autoSave.isSaving ? (
+                                    <>
+                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-purple-700"></div>
+                                        Auto-guardando...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Save className="h-4 w-4" />
+                                        Guardar Ahora
+                                    </>
+                                )}
+                            </button>
+                        )}
+
+                        <button className="px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
                             Cancelar
                         </button>
                     </div>
+
+                    {/* Información de auto-guardado */}
+                    {userPreferences.interface.auto_save && (
+                        <div className="mt-4 p-3 bg-purple-50 dark:bg-purple-950 border border-purple-200 dark:border-purple-800 rounded-lg">
+                            <div className="flex items-center gap-2 text-purple-700 dark:text-purple-300">
+                                <Save className="h-4 w-4" />
+                                <span className="text-sm font-medium">
+                                    Auto-guardado activo: Los cambios se guardan automáticamente cada 3 segundos
+                                </span>
+                            </div>
+                        </div>
+                    )}
 
                     {/* Mensaje de estado */}
                     {message && (

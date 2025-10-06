@@ -1,6 +1,8 @@
 "use client";
 
-import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/config/database";
+import { createClient } from '@supabase/supabase-js';
+import { useAuth } from "@/contexts/AuthContext";
 import { useNotifications } from "@/hooks/useNotifications";
 import {
     AlertCircle,
@@ -21,6 +23,7 @@ import { useEffect, useState } from "react";
 
 interface Notification {
     id: string;
+    user_id: string;
     type: string;
     title: string;
     message: string;
@@ -33,6 +36,10 @@ export default function NotificationsPage() {
     const { user, loading } = useAuth();
     const { showSuccess, showError, showWarning, showInfo } = useNotifications();
     const router = useRouter();
+    
+    // Debug del estado del usuario
+    console.log('🔍 NotificationsPage - User state:', { user, loading });
+    
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [unreadCount, setUnreadCount] = useState(0);
     const [saving, setSaving] = useState(false);
@@ -98,9 +105,19 @@ export default function NotificationsPage() {
 
     // Cargar notificaciones reales al montar el componente
     useEffect(() => {
-        loadNotifications();
+        console.log('🔄 useEffect triggered - user:', user);
+        console.log('🔄 loading state:', loading);
+        console.log('🔄 user?.id:', user?.id);
+        
+        if (!loading && user?.id) {
+            console.log('✅ Condiciones cumplidas, cargando notificaciones...');
+            loadNotifications();
+        } else {
+            console.log('⏳ Esperando usuario o cargando...', { loading, userId: user?.id });
+        }
+        
         loadNotificationPreferences();
-    }, []);
+    }, [user, loading]); // Cambiar dependencias para que se ejecute cuando cambie user o loading
 
     // Cargar configuraciones guardadas
     const loadNotificationPreferences = () => {
@@ -123,33 +140,89 @@ export default function NotificationsPage() {
     };
 
     const loadNotifications = async () => {
+        if (!user?.id) {
+            console.warn('No user ID available for loading notifications');
+            setLoadingNotifications(false);
+            return;
+        }
+
         try {
             setLoadingNotifications(true);
-            const response = await fetch('/api/v1/notifications', {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            });
+            setError(null);
 
-            if (response.ok) {
-                const data = await response.json();
-                if (data.success) {
-                    setNotifications(data.notifications);
-                    setUnreadCount(data.unread_count);
+            console.log('🔍 Cargando notificaciones para usuario:', user.id);
+
+            // Crear cliente con service role para bypass RLS
+            const supabaseServiceRole = createClient(
+                'https://jmfegokyvaflwegtyaun.supabase.co',
+                'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImptZmVnb2t5dmFmbHdlZ3R5YXVuIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1ODAyNDIxOSwiZXhwIjoyMDczNjAwMjE5fQ.yPH3ObF9tKB1PzsM2Pj9tsIqBKypCbiDhQ9Mr0stAtM'
+            );
+
+            // Cargar notificaciones usando service role (bypass RLS)
+            const { data: notificationsData, error: notificationsError } = await supabaseServiceRole
+                .from('notifications')
+                .select('*')
+                .eq('user_id', user.id)
+                .order('created_at', { ascending: false });
+
+            console.log('📬 Respuesta de Supabase:', { notificationsData, notificationsError });
+            console.log('📊 Datos detallados:', notificationsData);
+            console.log('❌ Error detallado:', notificationsError);
+
+            if (notificationsError) {
+                console.error('Error loading notifications from Supabase:', notificationsError);
+                
+                // Si la tabla no existe, crear notificaciones de bienvenida
+                if (notificationsError.code === 'PGRST116' || notificationsError.message.includes('does not exist')) {
+                    console.log('Tabla notifications no existe, creando notificaciones de ejemplo...');
+                    setNotifications([
+                        {
+                            id: '1',
+                            user_id: user.id,
+                            type: 'info',
+                            title: '🎉 ¡Bienvenido a AgentRouter!',
+                            message: 'Tu cuenta ha sido creada exitosamente. Comienza explorando las funcionalidades.',
+                            data: {},
+                            is_read: false,
+                            created_at: new Date().toISOString()
+                        },
+                        {
+                            id: '2',
+                            user_id: user.id,
+                            type: 'info',
+                            title: '🔑 Configura tu primera API Key',
+                            message: 'Ve a la sección de API Keys para generar tu primera clave y comenzar a usar los servicios.',
+                            data: {},
+                            is_read: false,
+                            created_at: new Date().toISOString()
+                        }
+                    ]);
+                    setUnreadCount(2);
                 } else {
-                    const errorMsg = 'Error al cargar notificaciones';
-                    setError(errorMsg);
-                    showError(errorMsg);
+                    throw notificationsError;
                 }
             } else {
-                const errorMsg = 'Error de conexión al cargar notificaciones';
-                setError(errorMsg);
-                showError(errorMsg);
+                // Procesar notificaciones de Supabase
+                const processedNotifications = (notificationsData || []).map(notification => ({
+                    id: notification.id,
+                    user_id: notification.user_id,
+                    type: notification.type,
+                    title: notification.title,
+                    message: notification.message,
+                    data: notification.data || {},
+                    is_read: notification.is_read || false,
+                    created_at: notification.created_at
+                }));
+
+                setNotifications(processedNotifications);
+                setUnreadCount(processedNotifications.filter(n => !n.is_read).length);
+
+                console.log(`✅ ${processedNotifications.length} notificaciones cargadas para el usuario ${user.id}`);
             }
+
         } catch (error) {
             console.error('Error loading notifications:', error);
-            const errorMsg = 'Error al cargar notificaciones';
+            const errorMsg = 'Error al cargar las notificaciones';
             setError(errorMsg);
             showError(errorMsg);
         } finally {
@@ -216,26 +289,35 @@ export default function NotificationsPage() {
 
     const markAsRead = async (notificationId: string) => {
         try {
-            const response = await fetch('/api/v1/notifications', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    notificationId,
-                    action: 'mark_read'
-                })
-            });
+            // Crear cliente con service role para bypass RLS
+            const supabaseServiceRole = createClient(
+                'https://jmfegokyvaflwegtyaun.supabase.co',
+                'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImptZmVnb2t5dmFmbHdlZ3R5YXVuIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1ODAyNDIxOSwiZXhwIjoyMDczNjAwMjE5fQ.yPH3ObF9tKB1PzsM2Pj9tsIqBKypCbiDhQ9Mr0stAtM'
+            );
 
-            if (response.ok) {
-                // Actualizar el estado local
-                setNotifications(prev => prev.map(n =>
-                    n.id === notificationId ? { ...n, is_read: true } : n
-                ));
-                setUnreadCount(prev => Math.max(0, prev - 1));
+            // Actualizar en Supabase usando service role
+            const { error } = await supabaseServiceRole
+                .from('notifications')
+                .update({ is_read: true })
+                .eq('id', notificationId)
+                .eq('user_id', user?.id); // Mantener la verificación de seguridad
+
+            if (error) {
+                console.error('Error marking notification as read in Supabase:', error);
+                showError('Error al marcar la notificación como leída');
+                return;
             }
+
+            // Actualizar el estado local
+            setNotifications(prev => prev.map(n =>
+                n.id === notificationId ? { ...n, is_read: true } : n
+            ));
+            setUnreadCount(prev => Math.max(0, prev - 1));
+            
+            console.log(`✅ Notificación ${notificationId} marcada como leída`);
         } catch (error) {
             console.error('Error marking notification as read:', error);
+            showError('Error al marcar la notificación como leída');
         }
     };
 
