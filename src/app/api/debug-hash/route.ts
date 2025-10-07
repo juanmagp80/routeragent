@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
+import { NextRequest, NextResponse } from 'next/server';
 
 const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
 
     } catch (error) {
         console.error('💥 Error en debug-hash:', error);
-        return NextResponse.json({ 
+        return NextResponse.json({
             error: 'Error en debug hash',
             details: error instanceof Error ? error.message : 'Error desconocido'
         }, { status: 500 });

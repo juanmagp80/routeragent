@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { NextRequest, NextResponse } from 'next/server';
 
 // Usar el service role key para bypass RLS
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -16,13 +16,13 @@ export async function GET(request: NextRequest) {
     try {
         const { searchParams } = new URL(request.url);
         const userId = searchParams.get('userId');
-        
+
         if (!userId) {
             return NextResponse.json({ error: 'Missing userId parameter' });
         }
-        
+
         console.log('📊 [ADMIN-METRICS] Cargando métricas para usuario:', userId);
-        
+
         // Consultas optimizadas con privilegios de admin
         const [
             { data: apiKeys, error: apiKeysError },
@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
                 .select('id, name, is_active')
                 .eq('user_id', userId)
                 .eq('is_active', true),
-            
+
             // Actividad reciente (últimas 10)
             supabaseAdmin
                 .from('usage_logs')
@@ -44,13 +44,13 @@ export async function GET(request: NextRequest) {
                 .eq('user_id', userId)
                 .order('created_at', { ascending: false })
                 .limit(10),
-            
+
             // Todos los logs para calcular totales
             supabaseAdmin
                 .from('usage_logs')
                 .select('cost, latency_ms')
                 .eq('user_id', userId),
-            
+
             // Datos del usuario
             supabaseAdmin
                 .from('users')
@@ -81,7 +81,7 @@ export async function GET(request: NextRequest) {
             totalCost: metrics.cost,
             requestsThisMonth: usageLogs?.length || 0, // Simplificado
             costThisMonth: metrics.cost,
-            avgResponseTime: (usageLogs && usageLogs.length > 0) 
+            avgResponseTime: (usageLogs && usageLogs.length > 0)
                 ? Math.round(usageLogs.reduce((sum, log) => sum + (log.latency_ms || 0), 0) / usageLogs.length)
                 : 0,
             mostUsedModel: 'GPT-4o Mini' // Simplificado
@@ -119,9 +119,9 @@ export async function GET(request: NextRequest) {
 
     } catch (error) {
         console.error('❌ Error en admin-metrics:', error);
-        return NextResponse.json({ 
-            error: 'Internal server error', 
-            details: error 
+        return NextResponse.json({
+            error: 'Internal server error',
+            details: error
         });
     }
 }

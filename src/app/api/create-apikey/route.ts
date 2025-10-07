@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { NextResponse } from 'next/server';
 
 const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -31,9 +31,9 @@ export async function POST() {
 
         if (createError) {
             console.error('❌ Error creando API key:', createError);
-            return NextResponse.json({ 
+            return NextResponse.json({
                 error: 'Error creando API key',
-                details: createError.message 
+                details: createError.message
             }, { status: 500 });
         }
 
@@ -68,7 +68,7 @@ export async function POST() {
 
     } catch (error) {
         console.error('💥 Error en create-apikey:', error);
-        return NextResponse.json({ 
+        return NextResponse.json({
             error: 'Error creando API key',
             details: error instanceof Error ? error.message : 'Error desconocido'
         }, { status: 500 });

@@ -99,7 +99,7 @@ export default function TestSavePage() {
                 <h1 className="text-2xl font-bold text-gray-900 mb-6">
                     🧪 Pruebas de Guardado de Datos
                 </h1>
-                
+
                 <div className="space-y-4 mb-6">
                     <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                         <h2 className="font-semibold text-blue-900 mb-2">Usuario Actual:</h2>
@@ -139,7 +139,7 @@ export default function TestSavePage() {
                     <h2 className="text-lg font-semibold text-gray-900 mb-4">
                         📊 Resultado de la Prueba
                     </h2>
-                    
+
                     <div className={`p-4 rounded-lg mb-4 ${result.error ? 'bg-red-50 border border-red-200' : 'bg-green-50 border border-green-200'}`}>
                         <div className="flex items-center gap-2 mb-2">
                             {result.error ? '❌' : '✅'}

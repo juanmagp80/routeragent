@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
 
     } catch (error) {
         console.error('💥 Error en quick-dashboard:', error);
-        return NextResponse.json({ 
+        return NextResponse.json({
             error: 'Error cargando métricas rápidas',
             details: error instanceof Error ? error.message : 'Error desconocido'
         }, { status: 500 });

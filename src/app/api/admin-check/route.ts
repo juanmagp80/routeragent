@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { NextRequest, NextResponse } from 'next/server';
 
 // Usar el service role key para bypass RLS
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -15,9 +15,9 @@ const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
 export async function GET(request: NextRequest) {
     try {
         const userId = '761ce82d-0f07-4f70-9b63-987a668b0907';
-        
+
         console.log('🔍 Consultando usuario con admin privileges...');
-        
+
         // Consultar usuario con privilegios de admin
         const { data: userData, error: userError } = await supabaseAdmin
             .from('users')
@@ -47,17 +47,17 @@ export async function GET(request: NextRequest) {
                 user_exists: !userError && userData,
                 has_api_keys: !keysError && apiKeys && apiKeys.length > 0,
                 has_activity: !activityError && recentActivity && recentActivity.length > 0,
-                problem_diagnosis: userError ? 'Usuario no encontrado' : 
-                                   (keysError ? 'Error consultando API keys' : 
-                                   (!recentActivity || recentActivity.length === 0 ? 'Sin actividad' : 'Todo OK'))
+                problem_diagnosis: userError ? 'Usuario no encontrado' :
+                    (keysError ? 'Error consultando API keys' :
+                        (!recentActivity || recentActivity.length === 0 ? 'Sin actividad' : 'Todo OK'))
             }
         });
 
     } catch (error) {
         console.error('❌ Error en admin-check:', error);
-        return NextResponse.json({ 
-            error: 'Internal server error', 
-            details: error 
+        return NextResponse.json({
+            error: 'Internal server error',
+            details: error
         });
     }
 }

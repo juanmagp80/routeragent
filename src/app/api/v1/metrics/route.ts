@@ -4,13 +4,13 @@ import { getAnalyticsController } from '../../../../controllers/analyticsControl
 export async function GET(req: NextRequest) {
     try {
         console.log('🔍 === API METRICS ENDPOINT ===');
-        
+
         // Intentar obtener el usuario del header de autorización o cookie
         const authHeader = req.headers.get('authorization');
         const userIdFromHeader = req.headers.get('x-user-id');
-        
+
         console.log('📥 Headers recibidos:', { authHeader: !!authHeader, userId: userIdFromHeader });
-        
+
         // Crear objetos mock para req y res
         const mockReq = {
             body: {},
@@ -35,12 +35,12 @@ export async function GET(req: NextRequest) {
         };
 
         console.log('🔄 Llamando controlador de analytics con datos reales...');
-        
+
         // Llamar al nuevo controlador de analytics
         await getAnalyticsController(mockReq, mockRes);
 
         console.log('✅ Controlador ejecutado, devolviendo respuesta');
-        
+
         // Devolver la respuesta
         return NextResponse.json(mockRes.jsonData, { status: mockRes.statusCode });
 
@@ -48,10 +48,10 @@ export async function GET(req: NextRequest) {
         console.error('💥 API metrics error:', error);
         console.error('💥 Stack trace:', error instanceof Error ? error.stack : 'No stack trace');
         return NextResponse.json(
-            { 
-                error: 'Internal server error', 
-                success: false, 
-                details: error instanceof Error ? error.message : 'Error desconocido' 
+            {
+                error: 'Internal server error',
+                success: false,
+                details: error instanceof Error ? error.message : 'Error desconocido'
             },
             { status: 500 }
         );

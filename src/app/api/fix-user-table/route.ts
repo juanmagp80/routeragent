@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { NextRequest, NextResponse } from 'next/server';
 
 // Usar el service role key para bypass RLS
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -17,9 +17,9 @@ export async function POST(request: NextRequest) {
         const userId = '761ce82d-0f07-4f70-9b63-987a668b0907';
         const userEmail = 'juanmagpdev@gmail.com';
         const userName = 'Juan Manuel Garrido';
-        
+
         console.log('🏗️ Creando usuario con admin privileges...');
-        
+
         // Usar supabaseAdmin para bypass RLS
         const { data: newUser, error: insertError } = await supabaseAdmin
             .from('users')
@@ -38,8 +38,8 @@ export async function POST(request: NextRequest) {
 
         if (insertError) {
             console.error('❌ Error insertando usuario:', insertError);
-            return NextResponse.json({ 
-                error: 'Error creating user', 
+            return NextResponse.json({
+                error: 'Error creating user',
                 details: insertError,
                 action: 'attempted_insert'
             });
@@ -55,9 +55,9 @@ export async function POST(request: NextRequest) {
             .single();
 
         if (checkError) {
-            return NextResponse.json({ 
-                error: 'Error verifying user creation', 
-                details: checkError 
+            return NextResponse.json({
+                error: 'Error verifying user creation',
+                details: checkError
             });
         }
 
@@ -76,8 +76,8 @@ export async function POST(request: NextRequest) {
 
     } catch (error) {
         console.error('❌ Error en fix-user-table:', error);
-        return NextResponse.json({ 
-            error: 'Internal server error', 
+        return NextResponse.json({
+            error: 'Internal server error',
             details: error,
             note: 'May need SUPABASE_SERVICE_ROLE_KEY environment variable'
         });

@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { NextRequest, NextResponse } from 'next/server';
 
 // Usar el service role key para diagnóstico
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -16,11 +16,11 @@ const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
 export async function GET(request: NextRequest) {
     try {
         const userId = '761ce82d-0f07-4f70-9b63-987a668b0907';
-        
+
         // 1. Verificar auth.uid() con cliente anon
         const { data: authCheck, error: authError } = await supabaseAnon
             .rpc('get_current_user_id');
-        
+
         // 2. Verificar datos del usuario con admin
         const { data: userAdmin, error: userAdminError } = await supabaseAdmin
             .from('users')
@@ -53,16 +53,16 @@ export async function GET(request: NextRequest) {
                 auth_user: authUser,
                 app_user: userAdmin
             },
-            recommendation: !authError && authCheck === userId 
+            recommendation: !authError && authCheck === userId
                 ? 'Auth is working, RLS should work'
                 : 'Auth issue - user not properly authenticated'
         });
 
     } catch (error) {
         console.error('❌ Error en diagnose-auth:', error);
-        return NextResponse.json({ 
-            error: 'Internal server error', 
-            details: error 
+        return NextResponse.json({
+            error: 'Internal server error',
+            details: error
         });
     }
 }

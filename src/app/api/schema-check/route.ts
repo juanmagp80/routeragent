@@ -1,10 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/config/database';
+import { NextResponse } from 'next/server';
 
 export async function GET() {
     try {
         console.log('🔍 [SCHEMA-CHECK] Verificando esquema de usage_logs...');
-        
+
         // Intentar obtener un registro de la tabla para ver las columnas
         const { data, error } = await supabase
             .from('usage_logs')

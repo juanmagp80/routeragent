@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { NextRequest, NextResponse } from 'next/server';
 
 // Usar el service role key para bypass RLS
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -15,11 +15,11 @@ const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
 export async function DELETE(request: NextRequest, { params }: { params: { keyId: string } }) {
     try {
         const keyId = params.keyId;
-        
+
         if (!keyId || keyId === 'TU_API_KEY_ID_AQUI') {
-            return NextResponse.json({ 
+            return NextResponse.json({
                 error: 'Missing or invalid API key ID',
-                success: false 
+                success: false
             }, { status: 400 });
         }
 
@@ -33,10 +33,10 @@ export async function DELETE(request: NextRequest, { params }: { params: { keyId
 
         if (deleteError) {
             console.error('❌ [DELETE-API-KEY] Error:', deleteError);
-            return NextResponse.json({ 
+            return NextResponse.json({
                 error: 'Failed to delete API key',
                 details: deleteError,
-                success: false 
+                success: false
             }, { status: 500 });
         }
 
@@ -49,9 +49,9 @@ export async function DELETE(request: NextRequest, { params }: { params: { keyId
 
     } catch (error) {
         console.error('❌ Error en delete-api-key:', error);
-        return NextResponse.json({ 
-            error: 'Internal server error', 
-            details: error 
+        return NextResponse.json({
+            error: 'Internal server error',
+            details: error
         }, { status: 500 });
     }
 }

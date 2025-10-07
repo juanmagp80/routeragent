@@ -1,8 +1,8 @@
 "use client";
 
 import { useAuth } from "@/contexts/AuthContext";
-import { getUserMetrics, getUserStats, UserMetrics, UserStats } from "@/services/userMetrics";
 import { getQuickMetrics, QuickMetrics } from "@/services/quickMetrics";
+import { getUserMetrics, getUserStats, UserMetrics, UserStats } from "@/services/userMetrics";
 import { BarChart3, DollarSign, Key, Sparkles, TrendingUp, User } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "../../config/database";
@@ -31,7 +31,7 @@ export default function DashboardPage() {
 
     const loadQuickMetrics = async () => {
         if (!user) return;
-        
+
         try {
             console.log('⚡ [QUICK] Cargando métricas rápidas...');
             const quickData = await getQuickMetrics(user.id);
@@ -64,12 +64,12 @@ export default function DashboardPage() {
             if (userError) {
                 console.error('Error fetching user data:', userError);
                 console.log('⚠️ Usando endpoint admin como fallback...');
-                
+
                 // Si falla la consulta directa, usar endpoint admin
                 try {
                     const adminResponse = await fetch(`/api/admin-metrics?userId=${user.id}`);
                     const adminData = await adminResponse.json();
-                    
+
                     if (adminData.success) {
                         console.log('✅ Datos cargados via admin endpoint');
                         setMetrics(adminData.metrics);
@@ -112,11 +112,11 @@ export default function DashboardPage() {
                 setIsNewUser(true);
             } else {
                 console.log('📊 Loading real metrics for existing user...');
-                
+
                 // Intentar cargar métricas con cliente autenticado primero
                 try {
                     console.log('🔍 Intentando carga directa con cliente autenticado...');
-                    
+
                     // Consultas directas con cliente autenticado
                     const [apiKeysResult, activityResult, logsResult] = await Promise.all([
                         supabase
@@ -124,14 +124,14 @@ export default function DashboardPage() {
                             .select('id', { count: 'exact', head: true })
                             .eq('user_id', user.id)
                             .eq('is_active', true),
-                        
+
                         supabase
                             .from('usage_logs')
                             .select('id, task_type, model_used, cost, created_at, status, tokens_used')
                             .eq('user_id', user.id)
                             .order('created_at', { ascending: false })
                             .limit(10),
-                            
+
                         supabase
                             .from('usage_logs')
                             .select('cost, latency_ms')
@@ -179,22 +179,22 @@ export default function DashboardPage() {
                         console.log('✅ Métricas cargadas directamente:', directMetrics);
                         setMetrics(directMetrics);
                         setStats(directStats);
-                        
+
                     } else {
                         throw new Error('Consultas directas fallaron, usando fallback admin');
                     }
-                    
+
                 } catch (directError) {
                     console.log('⚠️ Consultas directas fallaron, usando endpoint working...', directError);
-                    
+
                     // Usar el endpoint que sabemos que funciona
                     try {
                         const activityResponse = await fetch(`/api/simple-activity?userId=${user.id}`);
                         const activityData = await activityResponse.json();
-                        
+
                         if (activityData.success && activityData.activity) {
                             console.log('✅ Actividad cargada con endpoint working:', activityData.count, 'registros');
-                            
+
                             // Crear métricas básicas con la actividad que funciona
                             const workingMetrics = {
                                 requests: activityData.count,
@@ -203,7 +203,7 @@ export default function DashboardPage() {
                                 apiKeysCount: 1, // Sabemos que tiene al menos 1 API key activa
                                 recentActivity: activityData.activity
                             };
-                            
+
                             const workingStats = {
                                 totalRequests: activityData.count,
                                 totalCost: workingMetrics.cost,
@@ -212,7 +212,7 @@ export default function DashboardPage() {
                                 avgResponseTime: Math.round(activityData.activity.reduce((sum: number, activity: any) => sum + (activity.latency_ms || 0), 0) / activityData.count),
                                 mostUsedModel: 'GPT-4o Mini'
                             };
-                            
+
                             console.log('✅ Métricas creadas con endpoint working:', workingMetrics);
                             setMetrics(workingMetrics);
                             setStats(workingStats);
@@ -221,7 +221,7 @@ export default function DashboardPage() {
                         }
                     } catch (workingError) {
                         console.log('❌ Endpoint working también falló, usando fallback getUserMetrics...', workingError);
-                        
+
                         // Último recurso
                         const [userMetrics, userStats] = await Promise.all([
                             getUserMetrics(user.id),
@@ -342,8 +342,8 @@ export default function DashboardPage() {
                                 {quickMetrics ? `${quickMetrics.requests} / 1,000` : '0 / 1,000'}
                             </p>
                             <div className="w-32 bg-gray-200 rounded-full h-2 mt-2">
-                                <div 
-                                    className="bg-emerald-500 h-2 rounded-full" 
+                                <div
+                                    className="bg-emerald-500 h-2 rounded-full"
                                     style={{ width: quickMetrics ? `${Math.min((quickMetrics.requests / 1000) * 100, 100)}%` : '0%' }}
                                 ></div>
                             </div>
@@ -406,8 +406,8 @@ export default function DashboardPage() {
                         <div>
                             <p className="text-sm font-medium text-gray-600">Tiempo Promedio</p>
                             <p className="text-2xl font-semibold text-gray-900">
-                                {stats?.avgResponseTime && stats.avgResponseTime > 0 
-                                    ? `${stats.avgResponseTime}ms` 
+                                {stats?.avgResponseTime && stats.avgResponseTime > 0
+                                    ? `${stats.avgResponseTime}ms`
                                     : '0ms'}
                             </p>
                         </div>
@@ -459,15 +459,14 @@ export default function DashboardPage() {
                                     </div>
                                     <div className="text-right">
                                         <div className="flex items-center space-x-2">
-                                            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                                                activity.status === 'completed' 
-                                                    ? 'bg-green-100 text-green-800' 
+                                            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${activity.status === 'completed'
+                                                    ? 'bg-green-100 text-green-800'
                                                     : activity.status === 'failed'
-                                                    ? 'bg-red-100 text-red-800'
-                                                    : 'bg-yellow-100 text-yellow-800'
-                                            }`}>
-                                                {activity.status === 'completed' ? '✓ Completado' : 
-                                                 activity.status === 'failed' ? '✗ Error' : '⏳ Procesando'}
+                                                        ? 'bg-red-100 text-red-800'
+                                                        : 'bg-yellow-100 text-yellow-800'
+                                                }`}>
+                                                {activity.status === 'completed' ? '✓ Completado' :
+                                                    activity.status === 'failed' ? '✗ Error' : '⏳ Procesando'}
                                             </span>
                                             <span className="text-sm text-gray-600">${activity.cost.toFixed(4)}</span>
                                         </div>

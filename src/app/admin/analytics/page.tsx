@@ -1,8 +1,8 @@
 "use client";
 
+import { useAuth } from "@/contexts/AuthContext";
 import { Activity, BarChart3, Clock, Cpu, TrendingUp, Zap } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useAuth } from "@/contexts/AuthContext";
 
 // Interfaz para los datos de métricas
 interface MetricsData {
@@ -42,7 +42,7 @@ export default function AnalyticsPage() {
     const loadAnalytics = async () => {
         const startTime = Date.now();
         console.log('📊 [ANALYTICS] Iniciando carga de analíticas...');
-        
+
         try {
             setLoading(true);
 
@@ -89,24 +89,24 @@ export default function AnalyticsPage() {
                     metricsCount: metricsData?.metrics?.length || 0,
                     recentTasksCount: metricsData?.recent_tasks?.length || 0
                 });
-                
+
                 // Validar estructura de datos
                 if (!metricsData || typeof metricsData !== 'object') {
                     console.warn('⚠️ [ANALYTICS] Estructura de datos inválida');
                     throw new Error('Estructura de respuesta inválida');
                 }
-                
+
                 setMetrics(metricsData);
 
             } catch (fetchError) {
                 clearTimeout(timeoutId);
-                
+
                 if (fetchError instanceof Error && fetchError.name === 'AbortError') {
                     console.warn('⏰ [ANALYTICS] Operación cancelada por timeout');
                 } else {
                     console.warn('⚠️ [ANALYTICS] Error en fetch:', fetchError);
                 }
-                
+
                 // Usar datos por defecto para usuario nuevo
                 setMetrics({
                     metrics: [],
@@ -158,7 +158,7 @@ export default function AnalyticsPage() {
     const requestsPerDay = Math.round(totalRequests / 7); // Estimado semanal
 
     // Modelo más usado - con verificación de array vacío y valor inicial
-    const mostUsedModel = metrics?.metrics && metrics.metrics.length > 0 
+    const mostUsedModel = metrics?.metrics && metrics.metrics.length > 0
         ? metrics.metrics.reduce((prev, current) =>
             (prev.count > current.count) ? prev : current
         )
@@ -176,7 +176,7 @@ export default function AnalyticsPage() {
                         Analytics RouterAI
                     </h1>
                     <p className="mt-2 text-gray-600">
-                        {isNewUser 
+                        {isNewUser
                             ? "¡Bienvenido! Configura tu primera API Key para comenzar a ver estadísticas"
                             : "Estadísticas detalladas de uso y rendimiento de tus integraciones"
                         }
@@ -435,11 +435,10 @@ export default function AnalyticsPage() {
                             metrics.recent_tasks.map((task, index) => (
                                 <div key={index} className="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl border hover:shadow-md transition-shadow">
                                     <div className="flex items-center">
-                                        <div className={`w-3 h-3 rounded-full mr-3 ${
-                                            task.status === 'completed' ? 'bg-green-500' : 
-                                            task.status === 'pending' ? 'bg-yellow-500' : 
-                                            'bg-red-500'
-                                        }`}></div>
+                                        <div className={`w-3 h-3 rounded-full mr-3 ${task.status === 'completed' ? 'bg-green-500' :
+                                                task.status === 'pending' ? 'bg-yellow-500' :
+                                                    'bg-red-500'
+                                            }`}></div>
                                         <div>
                                             <p className="font-semibold text-gray-900">{task.model}</p>
                                             <p className="text-sm text-gray-600">

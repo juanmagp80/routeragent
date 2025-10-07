@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { NextRequest, NextResponse } from 'next/server';
 
 // Usar el service role key para bypass RLS
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -16,13 +16,13 @@ export async function GET(request: NextRequest) {
     try {
         const { searchParams } = new URL(request.url);
         const userId = searchParams.get('userId');
-        
+
         if (!userId) {
             return NextResponse.json({ error: 'Missing userId parameter' });
         }
-        
+
         console.log('📊 [SIMPLE-ACTIVITY] Cargando actividad para:', userId);
-        
+
         // Solo obtener actividad reciente con admin - usando columnas que sabemos que existen
         const { data: recentActivity, error: activityError } = await supabaseAdmin
             .from('usage_logs')
@@ -38,9 +38,9 @@ export async function GET(request: NextRequest) {
         });
 
         if (activityError) {
-            return NextResponse.json({ 
-                error: 'Error fetching activity', 
-                details: activityError 
+            return NextResponse.json({
+                error: 'Error fetching activity',
+                details: activityError
             });
         }
 
@@ -64,9 +64,9 @@ export async function GET(request: NextRequest) {
 
     } catch (error) {
         console.error('❌ Error en simple-activity:', error);
-        return NextResponse.json({ 
-            error: 'Internal server error', 
-            details: error 
+        return NextResponse.json({
+            error: 'Internal server error',
+            details: error
         });
     }
 }

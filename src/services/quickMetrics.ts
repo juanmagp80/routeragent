@@ -10,7 +10,7 @@ export interface QuickMetrics {
 
 export async function getQuickMetrics(userId: string): Promise<QuickMetrics> {
     console.log('⚡ [QUICK-METRICS] Carga súper rápida para:', userId);
-    
+
     try {
         // Solo las consultas esenciales, sin timeouts complejos
         const [requestsResult, apiKeysResult] = await Promise.allSettled([
@@ -19,7 +19,7 @@ export async function getQuickMetrics(userId: string): Promise<QuickMetrics> {
                 .from('usage_logs')
                 .select('cost')
                 .eq('user_id', userId),
-            
+
             // Contar API keys activas
             supabase
                 .from('api_keys')

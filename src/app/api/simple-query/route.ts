@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { NextResponse } from 'next/server';
 
 const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -9,7 +9,7 @@ const supabase = createClient(
 export async function GET() {
     try {
         const targetUserId = '761ce82d-0f07-4f70-9b63-987a668b0907';
-        
+
         console.log('🔍 Consulta directa para user_id:', targetUserId);
 
         // Consulta exacta que debería usar el dashboard
@@ -62,7 +62,7 @@ export async function GET() {
 
     } catch (error) {
         console.error('💥 Error en simple-query:', error);
-        return NextResponse.json({ 
+        return NextResponse.json({
             error: 'Error en consulta simple',
             details: error instanceof Error ? error.message : 'Error desconocido'
         }, { status: 500 });

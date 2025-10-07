@@ -5,7 +5,7 @@ export async function GET(request: NextRequest) {
     try {
         // Para testing, usar un user_id conocido
         const userId = '761ce82d-0f07-4f70-9b63-987a668b0907';
-        
+
         // Obtener datos del usuario
         const { data: userData, error: userError } = await supabase
             .from('users')

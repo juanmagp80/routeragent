@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
+import { NextRequest, NextResponse } from 'next/server';
 
 const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -36,9 +36,9 @@ export async function POST(request: NextRequest) {
                 .single();
 
             if (createError) {
-                return NextResponse.json({ 
-                    error: 'Error creando API key', 
-                    details: createError.message 
+                return NextResponse.json({
+                    error: 'Error creando API key',
+                    details: createError.message
                 }, { status: 500 });
             }
 
@@ -64,16 +64,16 @@ export async function POST(request: NextRequest) {
                 .single();
 
             if (findError || !activeKey) {
-                return NextResponse.json({ 
+                return NextResponse.json({
                     error: 'No se encontró API key activa para reasignar',
-                    details: findError?.message 
+                    details: findError?.message
                 }, { status: 404 });
             }
 
             // Actualizar para que pertenezca a tu usuario
             const { data: updatedKey, error: updateError } = await supabase
                 .from('api_keys')
-                .update({ 
+                .update({
                     user_id: targetUserId,
                     name: 'Reassigned Test Key',
                     updated_at: new Date().toISOString()
@@ -83,9 +83,9 @@ export async function POST(request: NextRequest) {
                 .single();
 
             if (updateError) {
-                return NextResponse.json({ 
+                return NextResponse.json({
                     error: 'Error reasignando API key',
-                    details: updateError.message 
+                    details: updateError.message
                 }, { status: 500 });
             }
 
@@ -98,13 +98,13 @@ export async function POST(request: NextRequest) {
             });
         }
 
-        return NextResponse.json({ 
-            error: 'Acción no válida. Usa "create_new" o "assign_existing"' 
+        return NextResponse.json({
+            error: 'Acción no válida. Usa "create_new" o "assign_existing"'
         }, { status: 400 });
 
     } catch (error) {
         console.error('💥 Error en fix-apikey:', error);
-        return NextResponse.json({ 
+        return NextResponse.json({
             error: 'Error procesando API key',
             details: error instanceof Error ? error.message : 'Error desconocido'
         }, { status: 500 });

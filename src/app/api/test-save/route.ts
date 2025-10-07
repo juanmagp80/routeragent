@@ -1,13 +1,13 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/config/database';
+import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
     try {
         console.log('🧪 [TEST-SAVE] Iniciando prueba de guardado...');
-        
+
         const body = await request.json();
         const { user_id, test_message } = body;
-        
+
         if (!user_id) {
             return NextResponse.json({ error: 'user_id requerido' }, { status: 400 });
         }
@@ -28,9 +28,9 @@ export async function POST(request: NextRequest) {
 
         if (error) {
             console.error('❌ [TEST-SAVE] Error insertando:', error);
-            return NextResponse.json({ 
-                error: 'Error insertando datos', 
-                details: error.message 
+            return NextResponse.json({
+                error: 'Error insertando datos',
+                details: error.message
             }, { status: 500 });
         }
 
@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
 
     } catch (error) {
         console.error('💥 [TEST-SAVE] Error general:', error);
-        return NextResponse.json({ 
+        return NextResponse.json({
             error: 'Error interno del servidor',
             details: error instanceof Error ? error.message : 'Error desconocido'
         }, { status: 500 });

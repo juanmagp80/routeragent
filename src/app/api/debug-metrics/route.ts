@@ -1,12 +1,12 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { getUserMetrics, getUserStats } from '@/services/userMetrics';
+import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {
     try {
         const userId = '761ce82d-0f07-4f70-9b63-987a668b0907'; // Tu user ID
-        
+
         console.log('🔍 [METRICS-DEBUG] Obteniendo métricas para:', userId);
-        
+
         // Obtener métricas usando las funciones del dashboard
         const [userMetrics, userStats] = await Promise.allSettled([
             getUserMetrics(userId),

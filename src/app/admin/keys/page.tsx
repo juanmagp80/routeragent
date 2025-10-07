@@ -57,10 +57,10 @@ export default function ApiKeysPage() {
     // Fetch API keys con timeout y mejor manejo de errores
     const fetchKeys = async () => {
         if (!user) return;
-        
+
         const startTime = Date.now();
         console.log('🔑 [API-KEYS] Iniciando carga de API keys...');
-        
+
         try {
             setLoading(true);
 
@@ -101,9 +101,9 @@ export default function ApiKeysPage() {
                 }
 
                 // Establecer límite del plan
-                const realPlanLimit = user.plan === 'free' ? 1000 : 
-                                     user.plan === 'starter' ? 5000 : 
-                                     user.plan === 'pro' ? 10000 : 50000;
+                const realPlanLimit = user.plan === 'free' ? 1000 :
+                    user.plan === 'starter' ? 5000 :
+                        user.plan === 'pro' ? 10000 : 50000;
                 setPlanLimit(realPlanLimit);
 
                 clearTimeout(loadTimeout);

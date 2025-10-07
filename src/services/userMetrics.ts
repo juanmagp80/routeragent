@@ -70,7 +70,7 @@ export async function getUserMetrics(userId: string): Promise<UserMetrics> {
                     .select('id', { count: 'exact', head: true })
                     .eq('user_id', userId)
                     .eq('is_active', true),
-                
+
                 // Query 2: Obtener actividad reciente (solo últimas 10)
                 supabase
                     .from('usage_logs')
@@ -78,20 +78,20 @@ export async function getUserMetrics(userId: string): Promise<UserMetrics> {
                     .eq('user_id', userId)
                     .order('created_at', { ascending: false })
                     .limit(10),
-                    
+
                 // Query 3: Suma total de costos
                 supabase
                     .from('usage_logs')
                     .select('cost')
                     .eq('user_id', userId),
-                    
+
                 // Query 4: Info del usuario
                 supabase
                     .from('users')
                     .select('api_key_limit, plan')
                     .eq('id', userId)
                     .single(),
-                
+
                 // Query 5: Contar total de requests
                 supabase
                     .from('usage_logs')
@@ -176,7 +176,7 @@ export async function getUserMetrics(userId: string): Promise<UserMetrics> {
     } catch (error) {
         const loadTime = Date.now() - startTime;
         console.error(`❌ [METRICS] Error después de ${loadTime}ms:`, error);
-        
+
         // Retornar datos por defecto si todo falla
         return {
             requests: 0,
@@ -213,7 +213,7 @@ export async function getUserStats(userId: string): Promise<UserStats> {
         }
 
         const allData = data || [];
-        
+
         if (allData.length === 0) {
             console.log('📊 [STATS] No hay datos de uso para el usuario');
             return getDefaultStats();
@@ -223,21 +223,21 @@ export async function getUserStats(userId: string): Promise<UserStats> {
         const totalRequests = allData.length;
         const totalCost = allData.reduce((sum: number, item: any) => sum + parseFloat(item.cost || '0'), 0);
 
-        const thisMonthData = allData.filter((item: any) => 
+        const thisMonthData = allData.filter((item: any) =>
             new Date(item.created_at) >= firstDayThisMonth
         );
         const requestsThisMonth = thisMonthData.length;
         const costThisMonth = thisMonthData.reduce((sum: number, item: any) => sum + parseFloat(item.cost || '0'), 0);
 
         // Calcular tiempo promedio de respuesta
-        const dataWithResponseTime = allData.filter((item: any) => 
+        const dataWithResponseTime = allData.filter((item: any) =>
             item.latency_ms && item.latency_ms > 0
         );
-        
+
         let avgResponseTime = 0;
         if (dataWithResponseTime.length > 0) {
             avgResponseTime = Math.round(
-                dataWithResponseTime.reduce((sum: number, item: any) => sum + item.latency_ms, 0) / 
+                dataWithResponseTime.reduce((sum: number, item: any) => sum + item.latency_ms, 0) /
                 dataWithResponseTime.length
             );
         } else if (totalRequests > 0) {
@@ -251,7 +251,7 @@ export async function getUserStats(userId: string): Promise<UserStats> {
             return acc;
         }, {} as Record<string, number>);
 
-        const mostUsedModel = Object.keys(modelCounts).length > 0 
+        const mostUsedModel = Object.keys(modelCounts).length > 0
             ? Object.keys(modelCounts).reduce((a, b) => modelCounts[a] > modelCounts[b] ? a : b)
             : 'N/A';
 

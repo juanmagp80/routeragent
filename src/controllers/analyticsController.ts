@@ -11,7 +11,7 @@ const FIXED_USER_ID = '761ce82d-0f07-4f70-9b63-987a668b0907';
 
 export const getAnalyticsController = async (req: any, res: any) => {
     console.log('🎯 === Analytics Controller ===');
-    
+
     try {
         // Usar el ID de usuario fijo
         const targetUserId = FIXED_USER_ID;
@@ -51,16 +51,16 @@ export const getAnalyticsController = async (req: any, res: any) => {
         const keys = apiKeys || [];
 
         // Calcular métricas por modelo
-        const modelMetrics = logs.reduce((acc: Record<string, {count: number, sum: number}>, log) => {
+        const modelMetrics = logs.reduce((acc: Record<string, { count: number, sum: number }>, log) => {
             const model = log.model_name || 'unknown';
             const cost = parseFloat(log.cost) || 0;
-            
+
             if (!acc[model]) {
                 acc[model] = { count: 0, sum: 0 };
             }
             acc[model].count += 1;
             acc[model].sum += cost;
-            
+
             return acc;
         }, {});
 

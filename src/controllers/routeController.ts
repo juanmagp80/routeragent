@@ -16,7 +16,7 @@ async function saveBasicActivity(req: any, task: any, cost: number) {
         // Hashear la API key para buscarla en la base de datos
         const crypto = require('crypto');
         const keyHash = crypto.createHash('sha256').update(apiKey).digest('hex');
-        
+
         const { data: apiKeyData, error: apiKeyError } = await supabase
             .from('api_keys')
             .select('user_id')
@@ -66,9 +66,9 @@ export const routeTask = async (req: any, res: any) => {
         const task = req.body;
 
         if (!task || !task.input) {
-            return res.status(400).json({ 
-                error: "Input requerido", 
-                success: false 
+            return res.status(400).json({
+                error: "Input requerido",
+                success: false
             });
         }
 
@@ -77,7 +77,7 @@ export const routeTask = async (req: any, res: any) => {
 
         // Respuesta simulada
         const responseText = `Respuesta procesada: ${task.input}`;
-        
+
         console.log('✅ [ROUTE-TASK] Task procesado, guardando actividad...');
 
         // Guardar actividad en la base de datos

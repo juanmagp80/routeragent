@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { NextRequest, NextResponse } from 'next/server';
 
 const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
 
     } catch (error) {
         console.error('💥 Error en test-apikey:', error);
-        return NextResponse.json({ 
+        return NextResponse.json({
             error: 'Error en test',
             details: error instanceof Error ? error.message : 'Error desconocido'
         }, { status: 500 });

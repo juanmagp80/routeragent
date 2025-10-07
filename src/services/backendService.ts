@@ -116,12 +116,12 @@ export class BackendService {
      * Hace una request HTTP al backend con autenticación
      */
     private async makeRequest<T>(
-        endpoint: string, 
+        endpoint: string,
         options: RequestInit = {},
         requiresAuth: boolean = false
     ): Promise<T> {
         const url = `${this.baseUrl}${endpoint}`;
-        
+
         const headers: Record<string, string> = {
             'Content-Type': 'application/json',
             ...options.headers as Record<string, string>
@@ -137,11 +137,11 @@ export class BackendService {
 
         try {
             console.log(`🌐 Backend request: ${options.method || 'GET'} ${url}`);
-            
+
             // Crear AbortController para timeout
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 segundos timeout
-            
+
             const response = await fetch(url, {
                 ...options,
                 headers,
@@ -156,7 +156,7 @@ export class BackendService {
 
             const data = await response.json();
             console.log(`✅ Backend response:`, data);
-            
+
             return data;
         } catch (error) {
             if (error instanceof Error && error.name === 'AbortError') {
@@ -173,10 +173,10 @@ export class BackendService {
      */
     async routeTask(request: RouteRequest, apiKey?: string): Promise<RouteResponse> {
         const headers: Record<string, string> = {};
-        
+
         // Usar ruta de testing si no hay API key, ruta normal si la hay
         const endpoint = apiKey ? '/v1/route' : '/v1/route-test';
-        
+
         if (apiKey) {
             headers['Authorization'] = `Bearer ${apiKey}`;
         }

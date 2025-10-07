@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { NextRequest, NextResponse } from 'next/server';
 
 const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -9,7 +9,7 @@ const supabase = createClient(
 export async function GET(request: NextRequest) {
     try {
         console.log('🔍 DEBUG USER_ID - Investigando discrepancia de datos');
-        
+
         // 1. Ver todos los registros de usage_logs con sus user_id
         const { data: allUsageLogs, error: usageError } = await supabase
             .from('usage_logs')
@@ -81,7 +81,7 @@ export async function GET(request: NextRequest) {
 
     } catch (error) {
         console.error('💥 Error en debug-userid:', error);
-        return NextResponse.json({ 
+        return NextResponse.json({
             error: 'Error en debug',
             details: error instanceof Error ? error.message : 'Error desconocido'
         }, { status: 500 });
