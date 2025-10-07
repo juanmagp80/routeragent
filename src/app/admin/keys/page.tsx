@@ -3,6 +3,7 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { useNotifications } from "@/hooks/useNotifications";
 import { backendService, type ApiKeyData, type CreateApiKeyRequest } from "@/services/backendService";
+import { getUserMetrics } from "@/services/userMetrics";
 import {
     Activity,
     BarChart3,
@@ -47,9 +48,9 @@ export default function ApiKeysPage() {
         enterprise: 'Enterprise'
     };
     const planLimits = {
-        free: '100 requests',
-        starter: '1,000 requests',
-        pro: '5,000 requests',
+        free: '1,000 requests',
+        starter: '5,000 requests',
+        pro: '10,000 requests',
         enterprise: 'Unlimited'
     };
 
@@ -63,10 +64,22 @@ export default function ApiKeysPage() {
             console.log('🔑 API Keys Response:', keys);
             
             setKeys(keys);
-            // Para el servicio con autenticación, calcular el uso total
-            const totalUsageCount = keys.reduce((total, key) => total + (key.usage_count || 0), 0);
-            setTotalUsage(totalUsageCount);
-            setPlanLimit(5000); // Límite por defecto
+            
+            // Obtener métricas reales del usuario para mostrar el uso correcto
+            const userMetrics = await getUserMetrics(user.id);
+            setTotalUsage(userMetrics.requests);
+            
+            // Establecer límite real basado en el plan del usuario
+            const realPlanLimit = user.plan === 'free' ? 1000 : 
+                                 user.plan === 'starter' ? 5000 : 
+                                 user.plan === 'pro' ? 10000 : 50000;
+            setPlanLimit(realPlanLimit);
+            
+            console.log('📊 Métricas de usuario obtenidas:', {
+                requests: userMetrics.requests,
+                planLimit: realPlanLimit,
+                userPlan: user.plan
+            });
         } catch (error) {
             console.error('Error fetching API keys:', error);
             setKeys([]);

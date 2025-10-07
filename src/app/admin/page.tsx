@@ -1,30 +1,32 @@
 "use client";
 
-import { BackendMetrics, backendServiceDev } from "@/services/backendServiceDev";
+import { useAuth } from "@/contexts/AuthContext";
+import { getUserMetrics, getUserStats, UserMetrics, UserStats } from "@/services/userMetrics";
 import { BarChart3, DollarSign, Key, Sparkles, TrendingUp, User } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "../../config/database";
 
 export default function DashboardPage() {
-    const [metrics, setMetrics] = useState<BackendMetrics | null>(null);
+    const { user, loading: authLoading } = useAuth();
+    const [metrics, setMetrics] = useState<UserMetrics | null>(null);
+    const [stats, setStats] = useState<UserStats | null>(null);
     const [loading, setLoading] = useState(true);
     const [isNewUser, setIsNewUser] = useState<boolean>(false);
     const [userInfo, setUserInfo] = useState<any>(null);
 
     useEffect(() => {
-        checkUserAndLoadMetrics();
-    }, []);
+        if (!authLoading && user) {
+            checkUserAndLoadMetrics();
+        }
+    }, [user, authLoading]);
 
     const checkUserAndLoadMetrics = async () => {
         try {
-            console.log('� Checking user status...');
+            console.log('📊 Checking user status...');
             setLoading(true);
 
-            // Verificar si el usuario está autenticado
-            const { data: { user }, error: authError } = await supabase.auth.getUser();
-
-            if (authError || !user) {
-                console.error('No authenticated user found:', authError);
+            if (!user) {
+                console.error('No authenticated user found');
                 return;
             }
 
@@ -43,10 +45,13 @@ export default function DashboardPage() {
             setUserInfo(userData);
 
             // Verificar si el usuario tiene API keys (para determinar si es nuevo)
+            console.log('🔍 Buscando API keys para usuario ID:', user.id);
             const { data: apiKeys, error: keysError } = await supabase
                 .from('api_keys')
-                .select('id')
+                .select('id, name, is_active')
                 .eq('user_id', user.id);
+
+            console.log('🔑 API keys encontradas:', apiKeys, 'Error:', keysError);
 
             if (keysError) {
                 console.error('Error checking API keys:', keysError);
@@ -57,14 +62,23 @@ export default function DashboardPage() {
                 new Date(userData.created_at) > new Date(Date.now() - 24 * 60 * 60 * 1000); // 24 horas
             const hasNoApiKeys = !apiKeys || apiKeys.length === 0;
 
+            console.log('🕐 Usuario reciente?', isRecentUser, 'Creado:', userData.created_at);
+            console.log('🔑 No tiene API keys?', hasNoApiKeys, 'Count:', apiKeys?.length);
+            console.log('🎯 Es usuario nuevo?', isRecentUser && hasNoApiKeys);
+
             if (isRecentUser && hasNoApiKeys) {
                 console.log('🎉 New user detected!');
                 setIsNewUser(true);
             } else {
-                console.log('📊 Loading metrics for existing user...');
-                const metricsData = await backendServiceDev.getMetrics();
-                console.log('✅ Metrics loaded:', metricsData);
-                setMetrics(metricsData);
+                console.log('📊 Loading real metrics for existing user...');
+                // Cargar métricas reales del usuario
+                const [userMetrics, userStats] = await Promise.all([
+                    getUserMetrics(user.id),
+                    getUserStats(user.id)
+                ]);
+                console.log('✅ Real metrics loaded:', { userMetrics, userStats });
+                setMetrics(userMetrics);
+                setStats(userStats);
             }
         } catch (error) {
             console.error('❌ Error checking user status:', error);
@@ -203,7 +217,7 @@ export default function DashboardPage() {
                     <div className="flex items-center justify-between">
                         <div>
                             <p className="text-sm font-medium text-gray-600">Total requests</p>
-                            <p className="text-2xl font-semibold text-gray-900">{metrics?.summary.total_requests.toLocaleString() || '0'}</p>
+                            <p className="text-2xl font-semibold text-gray-900">{metrics?.requests?.toLocaleString() || '0'}</p>
                         </div>
                         <div className="h-8 w-8 bg-emerald-100 rounded-lg flex items-center justify-center group-hover:bg-emerald-200 transition-colors duration-300">
                             <BarChart3 className="h-4 w-4 text-emerald-600 group-hover:scale-110 transition-transform duration-300" />
@@ -218,7 +232,7 @@ export default function DashboardPage() {
                     <div className="flex items-center justify-between">
                         <div>
                             <p className="text-sm font-medium text-gray-600">Claves API</p>
-                            <p className="text-2xl font-semibold text-gray-900">{metrics?.summary.active_api_keys || '0'}</p>
+                            <p className="text-2xl font-semibold text-gray-900">{metrics?.apiKeysCount || '0'}</p>
                         </div>
                         <div className="h-8 w-8 bg-emerald-100 rounded-lg flex items-center justify-center group-hover:bg-emerald-200 transition-colors duration-300">
                             <Key className="h-4 w-4 text-emerald-600 group-hover:scale-110 transition-transform duration-300" />
@@ -232,30 +246,34 @@ export default function DashboardPage() {
                 <div className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-lg hover:border-purple-300 transition-all duration-300 group">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-sm font-medium text-gray-600">Rendimiento</p>
-                            <p className="text-2xl font-semibold text-gray-900">98.5%</p>
+                            <p className="text-sm font-medium text-gray-600">Tiempo Promedio</p>
+                            <p className="text-2xl font-semibold text-gray-900">
+                                {stats?.avgResponseTime && stats.avgResponseTime > 0 
+                                    ? `${stats.avgResponseTime}ms` 
+                                    : '0ms'}
+                            </p>
                         </div>
                         <div className="h-8 w-8 bg-purple-100 rounded-lg flex items-center justify-center group-hover:bg-purple-200 transition-colors duration-300">
                             <TrendingUp className="h-4 w-4 text-purple-600 group-hover:scale-110 transition-transform duration-300" />
                         </div>
                     </div>
                     <div className="mt-2">
-                        <p className="text-xs text-gray-500">Tiempo de actividad</p>
+                        <p className="text-xs text-gray-500">Respuesta de API</p>
                     </div>
                 </div>
 
                 <div className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-lg hover:border-emerald-300 transition-all duration-300 group">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-sm font-medium text-gray-600">Respuesta</p>
-                            <p className="text-2xl font-semibold text-gray-900">1.2s</p>
+                            <p className="text-sm font-medium text-gray-600">Costo Total</p>
+                            <p className="text-2xl font-semibold text-gray-900">${metrics?.cost?.toFixed(4) || '0.0000'}</p>
                         </div>
                         <div className="h-8 w-8 bg-emerald-100 rounded-lg flex items-center justify-center group-hover:bg-emerald-200 transition-colors duration-300">
                             <DollarSign className="h-4 w-4 text-emerald-600 group-hover:scale-110 transition-transform duration-300" />
                         </div>
                     </div>
                     <div className="mt-2">
-                        <p className="text-xs text-gray-500">Tiempo promedio</p>
+                        <p className="text-xs text-gray-500">Gastado en total</p>
                     </div>
                 </div>
             </div>
@@ -268,29 +286,37 @@ export default function DashboardPage() {
                 </div>
 
                 <div className="p-6">
-                    {metrics?.recent_tasks && metrics.recent_tasks.length > 0 ? (
+                    {metrics?.recentActivity && metrics.recentActivity.length > 0 ? (
                         <div className="space-y-3">
-                            {metrics.recent_tasks.map((task, index) => (
-                                <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-all duration-200 group">
+                            {metrics.recentActivity.map((activity, index) => (
+                                <div key={activity.id || index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-all duration-200 group">
                                     <div className="flex items-center space-x-3">
                                         <div className="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center group-hover:bg-emerald-200 transition-colors duration-200">
                                             <BarChart3 className="h-4 w-4 text-emerald-600" />
                                         </div>
                                         <div>
-                                            <p className="font-medium text-gray-900">{task.model}</p>
-                                            <p className="text-sm text-gray-500 capitalize">{task.task_type}</p>
+                                            <p className="font-medium text-gray-900">{activity.model_used}</p>
+                                            <p className="text-sm text-gray-500 capitalize">{activity.task_type}</p>
                                         </div>
                                     </div>
                                     <div className="text-right">
                                         <div className="flex items-center space-x-2">
-                                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                                ✓ Completado
+                                            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                                                activity.status === 'completed' 
+                                                    ? 'bg-green-100 text-green-800' 
+                                                    : activity.status === 'failed'
+                                                    ? 'bg-red-100 text-red-800'
+                                                    : 'bg-yellow-100 text-yellow-800'
+                                            }`}>
+                                                {activity.status === 'completed' ? '✓ Completado' : 
+                                                 activity.status === 'failed' ? '✗ Error' : '⏳ Procesando'}
                                             </span>
+                                            <span className="text-sm text-gray-600">${activity.cost.toFixed(4)}</span>
                                         </div>
                                         <p className="text-sm text-gray-500 mt-1">
                                             {(() => {
                                                 try {
-                                                    const date = new Date(task.created_at);
+                                                    const date = new Date(activity.created_at);
                                                     if (isNaN(date.getTime())) {
                                                         return 'Fecha no válida';
                                                     }
@@ -302,7 +328,7 @@ export default function DashboardPage() {
                                                         year: '2-digit'
                                                     });
                                                 } catch (error) {
-                                                    console.error('Error parsing date:', task.created_at, error);
+                                                    console.error('Error parsing date:', activity.created_at, error);
                                                     return 'Fecha no disponible';
                                                 }
                                             })()}

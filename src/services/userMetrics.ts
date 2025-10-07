@@ -41,17 +41,8 @@ export async function getUserMetrics(userId: string): Promise<UserMetrics> {
     try {
         console.log('📊 Obteniendo métricas para usuario:', userId);
 
-        // 1. Intentar obtener métricas del backend primero
-        let backendMetrics = null;
-        try {
-            const isBackendAvailable = await backendService.healthCheck();
-            if (isBackendAvailable) {
-                backendMetrics = await backendService.getMetrics();
-                console.log('🎯 Métricas del backend obtenidas:', backendMetrics);
-            }
-        } catch (backendError) {
-            console.warn('⚠️ Backend no disponible, usando datos de Supabase:', backendError);
-        }
+        // 1. NO usar métricas del backend - solo datos reales de Supabase
+        console.log('🎯 Usando únicamente datos reales de Supabase para el usuario');
 
         // 2. Obtener datos de Supabase como respaldo o complemento
         const { data: usageLogs, error: usageError } = await supabase
@@ -73,9 +64,8 @@ export async function getUserMetrics(userId: string): Promise<UserMetrics> {
 
         const { data: apiKeys, error: keysError } = await supabase
             .from('api_keys')
-            .select('id')
-            .eq('user_id', userId)
-            .eq('is_active', true);
+            .select('id, is_active')
+            .eq('user_id', userId);
 
         const { data: userData, error: userError } = await supabase
             .from('users')
@@ -87,35 +77,29 @@ export async function getUserMetrics(userId: string): Promise<UserMetrics> {
             console.error('Error obteniendo métricas de Supabase:', { usageError, tasksError, recordsError, keysError, userError });
         }
 
-        // 3. Calcular métricas combinando backend y Supabase
+        console.log('✅ Datos obtenidos de Supabase:', {
+            usageLogsCount: usageLogs?.length || 0,
+            tasksCount: tasks?.length || 0,
+            usageRecordsCount: usageRecords?.length || 0,
+            apiKeysCount: apiKeys?.length || 0,
+            apiKeysData: apiKeys,
+            userData: userData
+        });
+
+        // 3. Calcular métricas usando ÚNICAMENTE datos reales de Supabase
         let totalRequests = 0;
         let totalCost = 0;
         let recentActivity: ActivityRecord[] = [];
 
-        if (backendMetrics && backendMetrics.success) {
-            // Usar métricas del backend si están disponibles
-            totalRequests = backendMetrics.summary.total_requests || 0;
-            totalCost = backendMetrics.summary.total_cost || 0;
-            
-            // Convertir recent_tasks del backend al formato ActivityRecord
-            recentActivity = (backendMetrics.recent_tasks || []).map(task => ({
-                id: `backend_${Date.now()}_${Math.random()}`,
-                task_type: 'general', // El backend no incluye task_type en recent_tasks
-                model_used: task.model,
-                cost: task.cost,
-                created_at: task.timestamp,
-                status: task.status,
-                tokens_used: Math.ceil(task.latency / 10) // Estimación
-            }));
-        } else {
-            // Fallback a cálculos con datos de Supabase
-            totalRequests = (usageLogs?.length || 0) + (tasks?.length || 0);
-            const totalCostFromRecords = usageRecords?.reduce((sum, record) => sum + parseFloat(record.cost || '0'), 0) || 0;
-            const totalCostFromTasks = tasks?.reduce((sum, task) => sum + parseFloat(task.cost || '0'), 0) || 0;
-            totalCost = totalCostFromRecords + totalCostFromTasks;
-            
-            // Formatear actividad reciente desde Supabase
-            recentActivity = (tasks || []).map(task => ({
+        // Calcular datos reales de Supabase
+        totalRequests = (usageLogs?.length || 0) + (tasks?.length || 0);
+        const totalCostFromRecords = usageRecords?.reduce((sum, record) => sum + parseFloat(record.cost || '0'), 0) || 0;
+        const totalCostFromTasks = tasks?.reduce((sum, task) => sum + parseFloat(task.cost || '0'), 0) || 0;
+        totalCost = totalCostFromRecords + totalCostFromTasks;
+        
+        // Formatear actividad reciente desde Supabase ÚNICAMENTE
+        if (tasks && tasks.length > 0) {
+            recentActivity = tasks.map(task => ({
                 id: task.id,
                 task_type: task.task_type || 'unknown',
                 model_used: task.model_selected || 'unknown',
@@ -135,7 +119,7 @@ export async function getUserMetrics(userId: string): Promise<UserMetrics> {
             userLimit,
             apiKeysCount,
             activityCount: recentActivity.length,
-            source: backendMetrics ? 'backend' : 'supabase'
+            source: 'supabase'
         });
 
         return {
@@ -198,15 +182,16 @@ export async function getUserStats(userId: string): Promise<UserStats> {
             console.log('Tabla usage_records no existe aún, usando datos simulados');
         }
 
-        // Si no hay datos reales, retornar estadísticas por defecto
+        // Si no hay datos reales, retornar estadísticas por defecto con valores realistas
         if (allTasks.length === 0 && allRecords.length === 0) {
+            console.log('📊 No hay datos de uso real para el usuario, retornando valores por defecto');
             return {
                 totalRequests: 0,
                 totalCost: 0,
                 requestsThisMonth: 0,
                 costThisMonth: 0,
-                avgResponseTime: 0,
-                mostUsedModel: 'N/A'
+                avgResponseTime: 0, // 0 en lugar de N/A cuando no hay datos
+                mostUsedModel: 'Ninguno'
             };
         }
 
@@ -236,9 +221,20 @@ export async function getUserStats(userId: string): Promise<UserStats> {
         const requestsThisMonth = thisMonthData.length;
         const costThisMonth = thisMonthData.reduce((sum, item) => sum + item.cost, 0);
 
-        const avgResponseTime = allData.length > 0 
-            ? allData.reduce((sum, item) => sum + (item.latency_ms || 0), 0) / allData.length 
-            : 0;
+        // Calcular tiempo promedio de respuesta con mejor manejo de datos
+        const dataWithLatency = allData.filter(item => item.latency_ms && item.latency_ms > 0);
+        let avgResponseTime = 0;
+        
+        if (dataWithLatency.length > 0) {
+            avgResponseTime = dataWithLatency.reduce((sum, item) => sum + item.latency_ms, 0) / dataWithLatency.length;
+            console.log('📊 Tiempo promedio calculado:', Math.round(avgResponseTime), 'ms de', dataWithLatency.length, 'registros');
+        } else if (totalRequests > 0) {
+            // Si no hay datos de latencia pero sí hay requests, usar un valor estimado
+            avgResponseTime = 1200; // Valor estimado por defecto: 1.2 segundos
+            console.log('⚠️ No hay datos de latencia, usando valor estimado:', avgResponseTime, 'ms');
+        } else {
+            console.log('📊 No hay datos para calcular tiempo promedio');
+        }
 
         // Encontrar modelo más usado
         const modelCounts = allData.reduce((acc, item) => {

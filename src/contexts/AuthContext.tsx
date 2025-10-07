@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { createContext, ReactNode, useContext, useEffect, useState } from 'react';
+import { supabase } from '../config/database';
 
 // Interfaz simplificada para el usuario
 export interface User {
@@ -29,279 +30,260 @@ interface AuthContextType {
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Función para obtener datos reales del usuario desde Supabase
-const fetchUserData = async (): Promise<User | null> => {
+// Función para obtener datos del usuario desde la tabla users usando el ID de Supabase Auth
+const fetchUserFromDatabase = async (supabaseUserId: string): Promise<User | null> => {
     try {
-        console.log('🔍 === AUTHCONTEXT: INICIO FETCH USER DATA ===');
+        console.log('📊 Obteniendo datos del usuario:', supabaseUserId);
+        
+        const { data: userData, error } = await supabase
+            .from('users')
+            .select('*')
+            .eq('id', supabaseUserId)
+            .single();
 
-        // Importar supabase aquí para evitar problemas de SSR
-        const { supabase } = await import('../config/database');
-
-        // Verificar si hay una sesión activa de Supabase
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-        console.log('🔐 Sesión de Supabase:', { session: !!session, error: sessionError });
-
-        // Si no hay sesión y tenemos un usuario guardado, intentar crear una sesión
-        const savedUser = typeof window !== 'undefined' ? localStorage.getItem('agentrouter_user') : null;
-        if (!session && savedUser) {
-            try {
-                const userData = JSON.parse(savedUser);
-                console.log('🔐 Intentando autenticar usuario en Supabase:', userData.email);
-                
-                // Intentar sign in silencioso (esto no funcionará con email/password, pero es para RLS)
-                // En su lugar, usaremos el service role para esta operación específica
-            } catch (error) {
-                console.warn('Error parsing saved user for Supabase auth:', error);
+        if (error) {
+            if (error.code === 'PGRST116') {
+                console.log('👤 Usuario no existe en tabla users, creando...');
+                return null; // Usuario no existe, será creado
             }
+            throw error;
         }
 
-        // Obtener usuario de la base de datos
-        const { data: { user: authUser } } = await supabase.auth.getUser();
-        console.log('👤 Usuario de auth.getUser():', authUser);
-
-        // Si tenemos usuario autenticado, obtener datos completos
-        if (authUser) {
-            const { data: userData, error: userError } = await supabase
-                .from('users')
-                .select('*')
-                .eq('id', authUser.id)
-                .single();
-
-            if (userError) {
-                console.error('❌ Error obteniendo datos del usuario:', userError);
-                return null;
-            }
-
-            if (userData) {
-                console.log('✅ Datos del usuario obtenidos:', userData);
-                return {
-                    id: userData.id,
-                    name: userData.name || userData.email,
-                    email: userData.email,
-                    company: userData.company,
-                    plan: userData.plan || 'free',
-                    api_key_limit: userData.api_key_limit || 1000,
-                    is_active: userData.is_active ?? true,
-                    email_verified: userData.email_verified ?? false,
-                    created_at: userData.created_at
-                };
-            }
-        }
-
-        // Si no hay usuario autenticado pero tenemos datos guardados, usarlos
-        if (typeof window !== 'undefined' && savedUser) {
-            try {
-                const userData = JSON.parse(savedUser);
-                console.log('📱 Usando datos guardados localmente:', userData);
-                return userData;
-            } catch (error) {
-                console.warn('Error parsing saved user:', error);
-            }
-        }
-
-        console.log('❌ No se pudo obtener datos del usuario');
-        return null;
+        console.log('✅ Datos del usuario obtenidos:', userData);
+        return userData as User;
     } catch (error) {
-        console.error('❌ Error en fetchUserData:', error);
+        console.error('❌ Error obteniendo datos del usuario:', error);
+        return null;
+    }
+};
+
+// Función para crear usuario en la tabla users si no existe
+const createUserInDatabase = async (supabaseUser: any): Promise<User | null> => {
+    try {
+        console.log('🆕 Creando usuario en base de datos:', supabaseUser);
+        
+        const newUser = {
+            id: supabaseUser.id,
+            email: supabaseUser.email,
+            name: supabaseUser.user_metadata?.full_name || 
+                  supabaseUser.user_metadata?.name || 
+                  supabaseUser.email?.split('@')[0] || 
+                  'Usuario',
+            company: '',
+            plan: 'free',
+            api_key_limit: 3,
+            is_active: true,
+            email_verified: true,
+            preferences: {},
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+        };
+
+        const { data: createdUser, error } = await supabase
+            .from('users')
+            .insert([newUser])
+            .select()
+            .single();
+
+        if (error) {
+            throw error;
+        }
+
+        console.log('✅ Usuario creado exitosamente:', createdUser);
+        return createdUser as User;
+    } catch (error) {
+        console.error('❌ Error creando usuario:', error);
         return null;
     }
 };
 
 export function AuthProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
     const [isHydrated, setIsHydrated] = useState(false);
     const [authError, setAuthError] = useState<string | null>(null);
     const router = useRouter();
 
-    // Manejar la hidratación correctamente
-    useEffect(() => {
-        setIsHydrated(true);
+    // Función para obtener y sincronizar el usuario
+    const refreshUser = async () => {
+        try {
+            console.log('🔄 Refrescando datos del usuario...');
+            
+            // Obtener sesión actual de Supabase
+            const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+            
+            if (sessionError) {
+                console.error('❌ Error obteniendo sesión:', sessionError);
+                setUser(null);
+                return;
+            }
 
-        // Solo ejecutar después de la hidratación
-        const initializeUser = async () => {
-            try {
-                // Verificar si estamos en el cliente
-                if (typeof window === 'undefined') return;
-
-                const savedUser = localStorage.getItem('agentrouter_user');
-                if (savedUser) {
-                    try {
-                        const userData = JSON.parse(savedUser);
-                        setUser(userData);
-
-                        // Actualizar con datos reales del backend en background
-                        fetchUserData().then((realUserData) => {
-                            if (realUserData) {
-                                setUser(realUserData);
-                                if (typeof window !== 'undefined') {
-                                    localStorage.setItem('agentrouter_user', JSON.stringify(realUserData));
-                                }
-                            }
-                        }).catch(console.error);
-                    } catch (error) {
-                        console.warn('Error parsing saved user data:', error);
-                        if (typeof window !== 'undefined') {
-                            localStorage.removeItem('agentrouter_user');
-                        }
+            if (session?.user) {
+                console.log('✅ Sesión activa encontrada:', session.user.email);
+                console.log('🔍 ID del usuario:', session.user.id);
+                console.log('🔍 Metadata del usuario:', session.user.user_metadata);
+                
+                // Intentar obtener usuario de la base de datos
+                let userData = await fetchUserFromDatabase(session.user.id);
+                
+                // Si no existe, crearlo
+                if (!userData) {
+                    console.log('⚠️ Usuario no existe en tabla users, creando...');
+                    userData = await createUserInDatabase(session.user);
+                } else {
+                    console.log('✅ Usuario ya existe en tabla users:', userData.name);
+                }
+                
+                if (userData) {
+                    console.log('✅ Usuario final para setUser:', userData);
+                    setUser(userData);
+                    // Guardar en localStorage para uso offline
+                    if (typeof window !== 'undefined') {
+                        localStorage.setItem('agentrouter_user', JSON.stringify(userData));
+                        console.log('💾 Usuario guardado en localStorage');
                     }
                 } else {
-                    // Si no hay usuario guardado pero estamos en una página admin, obtener datos
-                    if (window.location.pathname.startsWith('/admin')) {
-                        const realUserData = await fetchUserData();
-                        if (realUserData) {
-                            setUser(realUserData);
-                            if (typeof window !== 'undefined') {
-                                localStorage.setItem('agentrouter_user', JSON.stringify(realUserData));
-                            }
-                        }
-                    }
+                    console.log('❌ No se pudo obtener/crear usuario, setUser(null)');
+                    setUser(null);
                 }
-            } catch (error) {
-                console.error('Error initializing user:', error);
-            }
-        };
-
-        initializeUser();
-    }, []);
-
-    // Escuchar cambios en localStorage para sincronizar datos del usuario
-    useEffect(() => {
-        if (!isHydrated || typeof window === 'undefined') return;
-
-        const handleStorageChange = (e: StorageEvent) => {
-            if (e.key === 'agentrouter_user' && e.newValue) {
-                try {
-                    const userData = JSON.parse(e.newValue);
-                    console.log('🔄 Usuario actualizado desde localStorage:', userData);
-                    setUser(userData);
-                } catch (error) {
-                    console.warn('Error parsing updated user data:', error);
+            } else {
+                console.log('❌ No hay sesión activa');
+                setUser(null);
+                // Limpiar localStorage
+                if (typeof window !== 'undefined') {
+                    localStorage.removeItem('agentrouter_user');
                 }
             }
-        };
+        } catch (error) {
+            console.error('❌ Error refrescando usuario:', error);
+            setUser(null);
+        }
+    };
 
-        window.addEventListener('storage', handleStorageChange);
-        return () => window.removeEventListener('storage', handleStorageChange);
-    }, [isHydrated]);
-
+    // Función de login personalizada (para retrocompatibilidad)
     const login = async (email: string, password: string) => {
         try {
             setLoading(true);
             setAuthError(null);
-
-            // Obtener datos reales del usuario desde el backend
-            const realUserData = await fetchUserData();
-
-            const mockUser: User = realUserData || {
-                id: '3a942f65-25e7-4de3-84cb-3df0268ff759', // ID que coincide con el backend
-                name: 'Juan Manuel Garrido - Test',
-                email: email,
-                company: 'RouterAI Inc',
-                plan: 'pro',
-                api_key_limit: 5,
-                is_active: true,
-                email_verified: true,
-                created_at: new Date().toISOString()
-            };
-
-            setUser(mockUser);
             
-            // Solo acceder a localStorage en el cliente
-            if (typeof window !== 'undefined') {
-                localStorage.setItem('agentrouter_user', JSON.stringify(mockUser));
+            const { data, error } = await supabase.auth.signInWithPassword({
+                email,
+                password
+            });
+
+            if (error) {
+                throw error;
             }
 
-            // Redirigir al admin
-            router.push('/admin');
+            if (data.user) {
+                await refreshUser();
+                router.push('/admin/analytics');
+            }
         } catch (error: any) {
-            setAuthError(error.message || 'Error en el login');
-            throw error;
+            console.error('Error de login:', error);
+            setAuthError(error.message);
         } finally {
             setLoading(false);
         }
     };
 
+    // Función de registro personalizada (para retrocompatibilidad)
     const register = async (name: string, email: string, password: string) => {
         try {
             setLoading(true);
             setAuthError(null);
-
-            // Simulación de registro exitoso
-            const mockUser: User = {
-                id: '3a942f65-25e7-4de3-84cb-3df0268ff759', // ID que coincide con el backend
-                name: name,
-                email: email,
-                plan: 'pro',
-                api_key_limit: 5,
-                is_active: true,
-                email_verified: true,
-                created_at: new Date().toISOString()
-            };
-
-            setUser(mockUser);
             
-            // Solo acceder a localStorage en el cliente
-            if (typeof window !== 'undefined') {
-                localStorage.setItem('agentrouter_user', JSON.stringify(mockUser));
+            const { data, error } = await supabase.auth.signUp({
+                email,
+                password,
+                options: {
+                    data: {
+                        name: name,
+                        full_name: name
+                    }
+                }
+            });
+
+            if (error) {
+                throw error;
             }
 
-            // Redirigir al admin
-            router.push('/admin');
+            if (data.user) {
+                await refreshUser();
+                router.push('/admin/analytics');
+            }
         } catch (error: any) {
-            setAuthError(error.message || 'Error en el registro');
-            throw error;
+            console.error('Error de registro:', error);
+            setAuthError(error.message);
         } finally {
             setLoading(false);
         }
     };
 
-    const logout = () => {
-        setUser(null);
-        
-        // Solo acceder a localStorage en el cliente
-        if (typeof window !== 'undefined') {
-            localStorage.removeItem('agentrouter_user');
-        }
-        
-        router.push('/login');
-    };
-
-    const refreshUser = async () => {
-        console.log('🔄 Refreshing user data...');
-        const realUserData = await fetchUserData();
-        if (realUserData) {
-            setUser(realUserData);
-            
-            // Solo acceder a localStorage en el cliente
-            if (typeof window !== 'undefined') {
-                localStorage.setItem('agentrouter_user', JSON.stringify(realUserData));
+    // Función de logout
+    const logout = async () => {
+        try {
+            const { error } = await supabase.auth.signOut();
+            if (error) {
+                console.error('Error during logout:', error);
             }
+            
+            setUser(null);
+            if (typeof window !== 'undefined') {
+                localStorage.removeItem('agentrouter_user');
+            }
+            router.push('/login');
+        } catch (error) {
+            console.error('Error in logout function:', error);
         }
     };
 
-    const value: AuthContextType = {
-        user,
-        login,
-        register,
-        logout,
-        loading,
-        isHydrated,
-        authError,
-        refreshUser,
-    };
+    // Inicialización y listener de auth
+    useEffect(() => {
+        setIsHydrated(true);
+        
+        // Cargar usuario inicial
+        refreshUser().finally(() => setLoading(false));
+
+        // Listener para cambios de autenticación
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(
+            async (event, session) => {
+                console.log('🔐 Auth state cambió:', event, session?.user?.email);
+                
+                if (event === 'SIGNED_IN') {
+                    await refreshUser();
+                } else if (event === 'SIGNED_OUT') {
+                    setUser(null);
+                    if (typeof window !== 'undefined') {
+                        localStorage.removeItem('agentrouter_user');
+                    }
+                }
+            }
+        );
+
+        return () => subscription.unsubscribe();
+    }, []);
 
     return (
-        <AuthContext.Provider value={value}>
+        <AuthContext.Provider value={{
+            user,
+            login,
+            register,
+            logout,
+            loading,
+            isHydrated,
+            authError,
+            refreshUser
+        }}>
             {children}
         </AuthContext.Provider>
     );
 }
 
-export function useAuth() {
+export const useAuth = () => {
     const context = useContext(AuthContext);
     if (context === undefined) {
         throw new Error('useAuth must be used within an AuthProvider');
     }
     return context;
-}
+};

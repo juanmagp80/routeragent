@@ -34,6 +34,11 @@ export default function Sidebar() {
     const router = useRouter();
     const { user } = useAuth();
 
+    // Debug: logs para ver qué usuario tenemos en sidebar
+    console.log('🔍 SIDEBAR: Usuario actual:', user);
+    console.log('🔍 SIDEBAR: user?.name:', user?.name);
+    console.log('🔍 SIDEBAR: user?.email:', user?.email);
+
     const handleLogout = () => {
         // Limpiar todas las sesiones y tokens
         if (typeof window !== 'undefined') {

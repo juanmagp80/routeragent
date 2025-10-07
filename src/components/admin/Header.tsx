@@ -14,6 +14,8 @@ export default function AdminHeader() {
     // Debug: logs para ver qué usuario tenemos
     console.log('🔍 HEADER: Usuario actual:', user);
     console.log('🔍 HEADER: user?.name:', user?.name);
+    console.log('🔍 HEADER: user?.email:', user?.email);
+    console.log('🔍 HEADER: Timestamp:', new Date().toISOString());
 
     // Función para obtener notificaciones
     const fetchNotifications = async () => {
