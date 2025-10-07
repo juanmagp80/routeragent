@@ -54,36 +54,76 @@ export default function ApiKeysPage() {
         enterprise: 'Unlimited'
     };
 
-    // Fetch API keys
+    // Fetch API keys con timeout y mejor manejo de errores
     const fetchKeys = async () => {
         if (!user) return;
         
+        const startTime = Date.now();
+        console.log('🔑 [API-KEYS] Iniciando carga de API keys...');
+        
         try {
             setLoading(true);
-            const keys = await backendService.getApiKeys();
-            console.log('🔑 API Keys Response:', keys);
-            
-            setKeys(keys);
-            
-            // Obtener métricas reales del usuario para mostrar el uso correcto
-            const userMetrics = await getUserMetrics(user.id);
-            setTotalUsage(userMetrics.requests);
-            
-            // Establecer límite real basado en el plan del usuario
-            const realPlanLimit = user.plan === 'free' ? 1000 : 
-                                 user.plan === 'starter' ? 5000 : 
-                                 user.plan === 'pro' ? 10000 : 50000;
-            setPlanLimit(realPlanLimit);
-            
-            console.log('📊 Métricas de usuario obtenidas:', {
-                requests: userMetrics.requests,
-                planLimit: realPlanLimit,
-                userPlan: user.plan
-            });
+
+            // Timeout para toda la operación: 8 segundos
+            const loadTimeout = setTimeout(() => {
+                console.warn('⏰ [API-KEYS] Timeout - usando datos por defecto');
+                setKeys([]);
+                setTotalUsage(0);
+                setPlanLimit(user.plan === 'free' ? 1000 : user.plan === 'pro' ? 10000 : 50000);
+                setLoading(false);
+            }, 8000);
+
+            try {
+                // Cargar API keys y métricas en paralelo
+                const results = await Promise.allSettled([
+                    backendService.getApiKeys(),
+                    getUserMetrics(user.id)
+                ]);
+
+                const [keysResult, metricsResult] = results;
+
+                // Procesar API keys
+                if (keysResult.status === 'fulfilled') {
+                    console.log('✅ [API-KEYS] API keys cargadas:', keysResult.value.length);
+                    setKeys(keysResult.value);
+                } else {
+                    console.warn('⚠️ [API-KEYS] Error cargando API keys:', keysResult.reason);
+                    setKeys([]);
+                }
+
+                // Procesar métricas
+                if (metricsResult.status === 'fulfilled') {
+                    console.log('✅ [API-KEYS] Métricas cargadas:', metricsResult.value.requests);
+                    setTotalUsage(metricsResult.value.requests);
+                } else {
+                    console.warn('⚠️ [API-KEYS] Error cargando métricas:', metricsResult.reason);
+                    setTotalUsage(0);
+                }
+
+                // Establecer límite del plan
+                const realPlanLimit = user.plan === 'free' ? 1000 : 
+                                     user.plan === 'starter' ? 5000 : 
+                                     user.plan === 'pro' ? 10000 : 50000;
+                setPlanLimit(realPlanLimit);
+
+                clearTimeout(loadTimeout);
+
+            } catch (loadError) {
+                console.error('❌ [API-KEYS] Error en carga:', loadError);
+                setKeys([]);
+                setTotalUsage(0);
+                setPlanLimit(user.plan === 'free' ? 1000 : 10000);
+                clearTimeout(loadTimeout);
+            }
+
         } catch (error) {
-            console.error('Error fetching API keys:', error);
+            console.error('❌ [API-KEYS] Error general:', error);
             setKeys([]);
+            setTotalUsage(0);
+            setPlanLimit(1000);
         } finally {
+            const loadTime = Date.now() - startTime;
+            console.log(`⏱️ [API-KEYS] Carga completada en ${loadTime}ms`);
             setLoading(false);
         }
     };

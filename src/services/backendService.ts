@@ -247,9 +247,18 @@ export class BackendService {
      * Desactiva una API key
      */
     async deactivateApiKey(keyId: string): Promise<void> {
-        await this.makeRequest(`/v1/api-keys/${keyId}`, {
-            method: 'DELETE'
-        }, true);
+        // Usar endpoint local del frontend en lugar del backend
+        const response = await fetch(`/api/delete-api-key/${keyId}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to delete API key');
+        }
     }
 
     /**

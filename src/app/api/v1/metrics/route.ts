@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getMetricsReal } from '../../../../controllers/realMetrics';
+import { getAnalyticsController } from '../../../../controllers/analyticsController';
 
 export async function GET(req: NextRequest) {
     try {
@@ -34,10 +34,10 @@ export async function GET(req: NextRequest) {
             }
         };
 
-        console.log('🔄 Llamando controlador de métricas reales...');
+        console.log('🔄 Llamando controlador de analytics con datos reales...');
         
-        // Llamar al controlador de métricas reales
-        await getMetricsReal(mockReq, mockRes);
+        // Llamar al nuevo controlador de analytics
+        await getAnalyticsController(mockReq, mockRes);
 
         console.log('✅ Controlador ejecutado, devolviendo respuesta');
         

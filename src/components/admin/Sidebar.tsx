@@ -4,13 +4,17 @@ import { useAuth } from "@/contexts/AuthContext";
 import {
     BarChart3,
     Bell,
+    Bug,
+    CheckCircle,
     CreditCard,
+    Database,
     HelpCircle,
     Key,
     LayoutDashboard,
     LogOut,
     Play,
     Settings,
+    TestTube,
     User,
     Users
 } from "lucide-react";
@@ -21,6 +25,10 @@ const navigation = [
     { name: "Panel Principal", href: "/admin", icon: LayoutDashboard },
     { name: "Claves API", href: "/admin/keys", icon: Key },
     { name: "Prueba API", href: "/admin/test-api", icon: Play },
+    { name: "Generar Actividad", href: "/admin/test-activity", icon: TestTube },
+    { name: "Validar API Key", href: "/admin/validate-api", icon: CheckCircle },
+    { name: "Debug Datos", href: "/admin/debug-data", icon: Bug },
+    { name: "Test Guardado", href: "/admin/test-save", icon: Database },
     { name: "Analíticas", href: "/admin/analytics", icon: BarChart3 },
     { name: "Usuarios", href: "/admin/users", icon: Users },
     { name: "Facturación", href: "/admin/billing", icon: CreditCard },

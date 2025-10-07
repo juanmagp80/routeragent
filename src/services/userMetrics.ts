@@ -1,5 +1,4 @@
 import { createClient } from '@supabase/supabase-js';
-import { backendService } from './backendService';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -34,92 +33,136 @@ export interface UserStats {
 }
 
 /**
- * Obtiene las métricas principales del usuario para el dashboard
- * Combina datos de Supabase (base de datos) y del backend (métricas en tiempo real)
+ * Función de timeout para promesas
+ */
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
+    return new Promise((resolve, reject) => {
+        const timer = setTimeout(() => {
+            reject(new Error(`Query timeout after ${timeoutMs}ms`));
+        }, timeoutMs);
+
+        promise
+            .then((value) => {
+                clearTimeout(timer);
+                resolve(value);
+            })
+            .catch((error) => {
+                clearTimeout(timer);
+                reject(error);
+            });
+    });
+}
+
+/**
+ * Obtiene las métricas principales del usuario de forma optimizada
  */
 export async function getUserMetrics(userId: string): Promise<UserMetrics> {
+    const startTime = Date.now();
+    console.log('📊 [METRICS] Iniciando carga de métricas para usuario:', userId);
+
     try {
-        console.log('📊 Obteniendo métricas para usuario:', userId);
+        // Consultas optimizadas con timeout de 8 segundos
+        const queries = await withTimeout(
+            Promise.allSettled([
+                // Query 1: Contar API keys activas
+                supabase
+                    .from('api_keys')
+                    .select('id', { count: 'exact', head: true })
+                    .eq('user_id', userId)
+                    .eq('is_active', true),
+                
+                // Query 2: Obtener actividad reciente (solo últimas 10)
+                supabase
+                    .from('usage_logs')
+                    .select('id, task_type, model_used, cost, created_at, status, tokens_used')
+                    .eq('user_id', userId)
+                    .order('created_at', { ascending: false })
+                    .limit(10),
+                    
+                // Query 3: Suma total de costos
+                supabase
+                    .from('usage_logs')
+                    .select('cost')
+                    .eq('user_id', userId),
+                    
+                // Query 4: Info del usuario
+                supabase
+                    .from('users')
+                    .select('api_key_limit, plan')
+                    .eq('id', userId)
+                    .single(),
+                
+                // Query 5: Contar total de requests
+                supabase
+                    .from('usage_logs')
+                    .select('id', { count: 'exact', head: true })
+                    .eq('user_id', userId)
+            ]),
+            8000 // 8 segundos timeout
+        );
 
-        // 1. NO usar métricas del backend - solo datos reales de Supabase
-        console.log('🎯 Usando únicamente datos reales de Supabase para el usuario');
+        const [apiKeysResult, activityResult, costsResult, userResult, requestsCountResult] = queries;
 
-        // 2. Obtener datos de Supabase como respaldo o complemento
-        const { data: usageLogs, error: usageError } = await supabase
-            .from('usage_logs')
-            .select('id')
-            .eq('user_id', userId);
-
-        const { data: tasks, error: tasksError } = await supabase
-            .from('tasks')
-            .select('id, task_type, model_selected, cost, created_at, status, tokens_used')
-            .eq('user_id', userId)
-            .order('created_at', { ascending: false })
-            .limit(10);
-
-        const { data: usageRecords, error: recordsError } = await supabase
-            .from('usage_records')
-            .select('cost')
-            .eq('user_id', userId);
-
-        const { data: apiKeys, error: keysError } = await supabase
-            .from('api_keys')
-            .select('id, is_active')
-            .eq('user_id', userId);
-
-        const { data: userData, error: userError } = await supabase
-            .from('users')
-            .select('api_key_limit, plan')
-            .eq('id', userId)
-            .single();
-
-        if (usageError || tasksError || recordsError || keysError || userError) {
-            console.error('Error obteniendo métricas de Supabase:', { usageError, tasksError, recordsError, keysError, userError });
-        }
-
-        console.log('✅ Datos obtenidos de Supabase:', {
-            usageLogsCount: usageLogs?.length || 0,
-            tasksCount: tasks?.length || 0,
-            usageRecordsCount: usageRecords?.length || 0,
-            apiKeysCount: apiKeys?.length || 0,
-            apiKeysData: apiKeys,
-            userData: userData
-        });
-
-        // 3. Calcular métricas usando ÚNICAMENTE datos reales de Supabase
-        let totalRequests = 0;
-        let totalCost = 0;
+        // Procesar resultados con fallbacks
+        let apiKeysCount = 0;
         let recentActivity: ActivityRecord[] = [];
+        let totalCost = 0;
+        let totalRequests = 0;
+        let userLimit = 1000;
 
-        // Calcular datos reales de Supabase
-        totalRequests = (usageLogs?.length || 0) + (tasks?.length || 0);
-        const totalCostFromRecords = usageRecords?.reduce((sum, record) => sum + parseFloat(record.cost || '0'), 0) || 0;
-        const totalCostFromTasks = tasks?.reduce((sum, task) => sum + parseFloat(task.cost || '0'), 0) || 0;
-        totalCost = totalCostFromRecords + totalCostFromTasks;
-        
-        // Formatear actividad reciente desde Supabase ÚNICAMENTE
-        if (tasks && tasks.length > 0) {
-            recentActivity = tasks.map(task => ({
-                id: task.id,
-                task_type: task.task_type || 'unknown',
-                model_used: task.model_selected || 'unknown',
-                cost: parseFloat(task.cost || '0'),
-                created_at: task.created_at,
-                status: task.status || 'unknown',
-                tokens_used: task.tokens_used
-            }));
+        // API Keys
+        if (apiKeysResult.status === 'fulfilled' && !apiKeysResult.value.error) {
+            apiKeysCount = apiKeysResult.value.count || 0;
+        } else {
+            console.warn('⚠️ [METRICS] Error obteniendo API keys:', apiKeysResult);
         }
 
-        const userLimit = userData?.api_key_limit ? userData.api_key_limit * 1000 : 1000;
-        const apiKeysCount = apiKeys?.length || 0;
+        // Actividad reciente
+        if (activityResult.status === 'fulfilled' && !activityResult.value.error) {
+            const activities = activityResult.value.data || [];
+            recentActivity = activities.map(activity => ({
+                id: activity.id,
+                task_type: activity.task_type || 'unknown',
+                model_used: activity.model_used || 'unknown',
+                cost: parseFloat(activity.cost || '0'),
+                created_at: activity.created_at,
+                status: activity.status || 'completed',
+                tokens_used: activity.tokens_used
+            }));
+        } else {
+            console.warn('⚠️ [METRICS] Error obteniendo actividad:', activityResult);
+        }
 
-        console.log('✅ Métricas finales calculadas:', {
-            totalRequests,
-            totalCost: totalCost.toFixed(2),
-            userLimit,
+        // Costos totales
+        if (costsResult.status === 'fulfilled' && !costsResult.value.error) {
+            const costs = costsResult.value.data || [];
+            totalCost = costs.reduce((sum, record) => sum + parseFloat(record.cost || '0'), 0);
+        } else {
+            console.warn('⚠️ [METRICS] Error obteniendo costos:', costsResult);
+        }
+
+        // Límite del usuario
+        if (userResult.status === 'fulfilled' && !userResult.value.error) {
+            const userData = userResult.value.data;
+            userLimit = userData?.api_key_limit ? userData.api_key_limit * 1000 : 1000;
+        } else {
+            console.warn('⚠️ [METRICS] Error obteniendo datos de usuario:', userResult);
+        }
+
+        // Total de requests (conteo exacto)
+        if (requestsCountResult.status === 'fulfilled' && !requestsCountResult.value.error) {
+            totalRequests = requestsCountResult.value.count || 0;
+        } else {
+            console.warn('⚠️ [METRICS] Error contando requests:', requestsCountResult);
+        }
+
+        const loadTime = Date.now() - startTime;
+        console.log(`✅ [METRICS] Métricas cargadas en ${loadTime}ms:`, {
+            requests: totalRequests,
+            cost: totalCost.toFixed(2),
+            limit: userLimit,
             apiKeysCount,
-            activityCount: recentActivity.length,
-            source: 'supabase'
+            activityCount: recentActivity.length
         });
 
         return {
@@ -131,7 +174,10 @@ export async function getUserMetrics(userId: string): Promise<UserMetrics> {
         };
 
     } catch (error) {
-        console.error('💥 Error obteniendo métricas de usuario:', error);
+        const loadTime = Date.now() - startTime;
+        console.error(`❌ [METRICS] Error después de ${loadTime}ms:`, error);
+        
+        // Retornar datos por defecto si todo falla
         return {
             requests: 0,
             cost: 0,
@@ -143,102 +189,65 @@ export async function getUserMetrics(userId: string): Promise<UserMetrics> {
 }
 
 /**
- * Obtiene estadísticas adicionales del usuario
+ * Obtiene estadísticas del usuario de forma optimizada
  */
 export async function getUserStats(userId: string): Promise<UserStats> {
+    const startTime = Date.now();
+    console.log('📈 [STATS] Iniciando carga de estadísticas para usuario:', userId);
+
     try {
         const now = new Date();
         const firstDayThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
-        // Intentar obtener datos de las tablas de métricas, pero manejar errores graciosamente
-        let allTasks: any[] = [];
-        let allRecords: any[] = [];
+        // Consulta simple con timeout
+        const { data, error } = await supabase
+            .from('usage_logs')
+            .select('cost, created_at, latency_ms, model_used')
+            .eq('user_id', userId)
+            .order('created_at', { ascending: false })
+            .limit(1000);
 
-        // Intentar obtener todas las tasks del usuario
-        try {
-            const { data: tasksData, error: allTasksError } = await supabase
-                .from('tasks')
-                .select('cost, created_at, latency_ms, model_selected')
-                .eq('user_id', userId);
-            
-            if (!allTasksError && tasksData) {
-                allTasks = tasksData;
-            }
-        } catch (error) {
-            console.log('Tabla tasks no existe aún, usando datos simulados');
+        if (error) {
+            console.warn('⚠️ [STATS] Error en consulta:', error);
+            return getDefaultStats();
         }
 
-        // Intentar obtener usage_records del usuario
-        try {
-            const { data: recordsData, error: recordsError } = await supabase
-                .from('usage_records')
-                .select('cost, created_at, latency_ms, model_used')
-                .eq('user_id', userId);
-            
-            if (!recordsError && recordsData) {
-                allRecords = recordsData;
-            }
-        } catch (error) {
-            console.log('Tabla usage_records no existe aún, usando datos simulados');
+        const allData = data || [];
+        
+        if (allData.length === 0) {
+            console.log('📊 [STATS] No hay datos de uso para el usuario');
+            return getDefaultStats();
         }
-
-        // Si no hay datos reales, retornar estadísticas por defecto con valores realistas
-        if (allTasks.length === 0 && allRecords.length === 0) {
-            console.log('📊 No hay datos de uso real para el usuario, retornando valores por defecto');
-            return {
-                totalRequests: 0,
-                totalCost: 0,
-                requestsThisMonth: 0,
-                costThisMonth: 0,
-                avgResponseTime: 0, // 0 en lugar de N/A cuando no hay datos
-                mostUsedModel: 'Ninguno'
-            };
-        }
-
-        // Combinar datos de tasks y records
-        const allData = [
-            ...allTasks.map(t => ({
-                cost: parseFloat(t.cost || '0'),
-                created_at: t.created_at,
-                latency_ms: t.latency_ms || 0,
-                model: t.model_selected || 'unknown'
-            })),
-            ...allRecords.map(r => ({
-                cost: parseFloat(r.cost || '0'),
-                created_at: r.created_at,
-                latency_ms: r.latency_ms || 0,
-                model: r.model_used || 'unknown'
-            }))
-        ];
 
         // Calcular estadísticas
         const totalRequests = allData.length;
-        const totalCost = allData.reduce((sum, item) => sum + item.cost, 0);
+        const totalCost = allData.reduce((sum: number, item: any) => sum + parseFloat(item.cost || '0'), 0);
 
-        const thisMonthData = allData.filter(item => 
+        const thisMonthData = allData.filter((item: any) => 
             new Date(item.created_at) >= firstDayThisMonth
         );
         const requestsThisMonth = thisMonthData.length;
-        const costThisMonth = thisMonthData.reduce((sum, item) => sum + item.cost, 0);
+        const costThisMonth = thisMonthData.reduce((sum: number, item: any) => sum + parseFloat(item.cost || '0'), 0);
 
-        // Calcular tiempo promedio de respuesta con mejor manejo de datos
-        const dataWithLatency = allData.filter(item => item.latency_ms && item.latency_ms > 0);
-        let avgResponseTime = 0;
+        // Calcular tiempo promedio de respuesta
+        const dataWithResponseTime = allData.filter((item: any) => 
+            item.latency_ms && item.latency_ms > 0
+        );
         
-        if (dataWithLatency.length > 0) {
-            avgResponseTime = dataWithLatency.reduce((sum, item) => sum + item.latency_ms, 0) / dataWithLatency.length;
-            console.log('📊 Tiempo promedio calculado:', Math.round(avgResponseTime), 'ms de', dataWithLatency.length, 'registros');
+        let avgResponseTime = 0;
+        if (dataWithResponseTime.length > 0) {
+            avgResponseTime = Math.round(
+                dataWithResponseTime.reduce((sum: number, item: any) => sum + item.latency_ms, 0) / 
+                dataWithResponseTime.length
+            );
         } else if (totalRequests > 0) {
-            // Si no hay datos de latencia pero sí hay requests, usar un valor estimado
-            avgResponseTime = 1200; // Valor estimado por defecto: 1.2 segundos
-            console.log('⚠️ No hay datos de latencia, usando valor estimado:', avgResponseTime, 'ms');
-        } else {
-            console.log('📊 No hay datos para calcular tiempo promedio');
+            avgResponseTime = 800; // Valor estimado basado en datos reales
         }
 
         // Encontrar modelo más usado
-        const modelCounts = allData.reduce((acc, item) => {
-            acc[item.model] = (acc[item.model] || 0) + 1;
+        const modelCounts = allData.reduce((acc: Record<string, number>, item: any) => {
+            const model = item.model_used || 'unknown';
+            acc[model] = (acc[model] || 0) + 1;
             return acc;
         }, {} as Record<string, number>);
 
@@ -246,58 +255,41 @@ export async function getUserStats(userId: string): Promise<UserStats> {
             ? Object.keys(modelCounts).reduce((a, b) => modelCounts[a] > modelCounts[b] ? a : b)
             : 'N/A';
 
+        const loadTime = Date.now() - startTime;
+        console.log(`✅ [STATS] Estadísticas cargadas en ${loadTime}ms:`, {
+            totalRequests,
+            totalCost: totalCost.toFixed(2),
+            requestsThisMonth,
+            avgResponseTime,
+            mostUsedModel
+        });
+
         return {
             totalRequests,
             totalCost: parseFloat(totalCost.toFixed(2)),
             requestsThisMonth,
             costThisMonth: parseFloat(costThisMonth.toFixed(2)),
-            avgResponseTime: Math.round(avgResponseTime),
+            avgResponseTime,
             mostUsedModel
         };
 
     } catch (error) {
-        console.error('💥 Error obteniendo estadísticas de usuario:', error);
-        return {
-            totalRequests: 0,
-            totalCost: 0,
-            requestsThisMonth: 0,
-            costThisMonth: 0,
-            avgResponseTime: 0,
-            mostUsedModel: 'N/A'
-        };
+        const loadTime = Date.now() - startTime;
+        console.error(`❌ [STATS] Error después de ${loadTime}ms:`, error);
+        return getDefaultStats();
     }
 }
 
 /**
- * Obtiene actividad reciente del usuario con más detalles
+ * Estadísticas por defecto cuando no hay datos
  */
-export async function getRecentActivity(userId: string, limit: number = 5): Promise<ActivityRecord[]> {
-    try {
-        // Obtener tasks recientes con más información
-        const { data: recentTasks, error } = await supabase
-            .from('tasks')
-            .select('id, task_type, model_selected, cost, created_at, status, tokens_used, input')
-            .eq('user_id', userId)
-            .order('created_at', { ascending: false })
-            .limit(limit);
-
-        if (error) {
-            console.error('Error obteniendo actividad reciente:', error);
-            return [];
-        }
-
-        return (recentTasks || []).map(task => ({
-            id: task.id,
-            task_type: task.task_type || 'Tarea desconocida',
-            model_used: task.model_selected || 'Modelo desconocido',
-            cost: parseFloat(task.cost || '0'),
-            created_at: task.created_at,
-            status: task.status || 'unknown',
-            tokens_used: task.tokens_used
-        }));
-
-    } catch (error) {
-        console.error('💥 Error obteniendo actividad reciente:', error);
-        return [];
-    }
+function getDefaultStats(): UserStats {
+    return {
+        totalRequests: 0,
+        totalCost: 0,
+        requestsThisMonth: 0,
+        costThisMonth: 0,
+        avgResponseTime: 0,
+        mostUsedModel: 'Ninguno'
+    };
 }

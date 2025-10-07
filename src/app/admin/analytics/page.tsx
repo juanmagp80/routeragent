@@ -40,45 +40,89 @@ export default function AnalyticsPage() {
     }, [user, authLoading]);
 
     const loadAnalytics = async () => {
+        const startTime = Date.now();
+        console.log('📊 [ANALYTICS] Iniciando carga de analíticas...');
+        
         try {
-            console.log('📊 Loading analytics for user:', user?.id);
             setLoading(true);
 
-            // Headers para incluir información del usuario
-            const headers: Record<string, string> = {
-                'Content-Type': 'application/json',
-            };
+            // Timeout para toda la operación: 6 segundos
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => {
+                console.warn('⏰ [ANALYTICS] Timeout - usando datos por defecto');
+                controller.abort();
+            }, 6000);
 
-            if (user?.id) {
-                headers['x-user-id'] = user.id;
+            try {
+                // Headers para incluir información del usuario
+                const headers: Record<string, string> = {
+                    'Content-Type': 'application/json',
+                };
+
+                if (user?.id) {
+                    headers['x-user-id'] = user.id;
+                }
+
+                console.log('📡 [ANALYTICS] Consultando endpoint de métricas...');
+
+                // Usar nuestro propio endpoint interno con timeout
+                const response = await fetch('/api/v1/metrics', {
+                    method: 'GET',
+                    headers,
+                    signal: controller.signal
+                });
+
+                clearTimeout(timeoutId);
+
+                console.log('� [ANALYTICS] Respuesta recibida:', response.status);
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.warn('⚠️ [ANALYTICS] Error en endpoint:', response.status, errorText);
+                    throw new Error(`HTTP ${response.status}: ${errorText}`);
+                }
+
+                const metricsData = await response.json();
+                console.log('✅ [ANALYTICS] Datos de analíticas cargados:', {
+                    totalRequests: metricsData?.summary?.total_requests || 0,
+                    totalCost: metricsData?.summary?.total_cost || 0,
+                    metricsCount: metricsData?.metrics?.length || 0,
+                    recentTasksCount: metricsData?.recent_tasks?.length || 0
+                });
+                
+                // Validar estructura de datos
+                if (!metricsData || typeof metricsData !== 'object') {
+                    console.warn('⚠️ [ANALYTICS] Estructura de datos inválida');
+                    throw new Error('Estructura de respuesta inválida');
+                }
+                
+                setMetrics(metricsData);
+
+            } catch (fetchError) {
+                clearTimeout(timeoutId);
+                
+                if (fetchError instanceof Error && fetchError.name === 'AbortError') {
+                    console.warn('⏰ [ANALYTICS] Operación cancelada por timeout');
+                } else {
+                    console.warn('⚠️ [ANALYTICS] Error en fetch:', fetchError);
+                }
+                
+                // Usar datos por defecto para usuario nuevo
+                setMetrics({
+                    metrics: [],
+                    summary: {
+                        total_cost: 0,
+                        total_requests: 0,
+                        avg_cost_per_request: 0,
+                        active_api_keys: 0,
+                    },
+                    recent_tasks: []
+                });
             }
 
-            // Usar nuestro propio endpoint interno en lugar del backend externo
-            const response = await fetch('/api/v1/metrics', {
-                method: 'GET',
-                headers
-            });
-
-            console.log('📡 Response status:', response.status);
-
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error('❌ Response error:', errorText);
-                throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
-            }
-
-            const metricsData = await response.json();
-            console.log('✅ Analytics loaded:', metricsData);
-            
-            // Validar que los datos tengan la estructura esperada
-            if (!metricsData || typeof metricsData !== 'object') {
-                throw new Error('Invalid response format');
-            }
-            
-            setMetrics(metricsData);
         } catch (error) {
-            console.error('❌ Error loading analytics:', error);
-            // Datos por defecto en caso de error (usuario nuevo)
+            console.error('❌ [ANALYTICS] Error general:', error);
+            // Datos por defecto en caso de error total
             setMetrics({
                 metrics: [],
                 summary: {
@@ -90,6 +134,8 @@ export default function AnalyticsPage() {
                 recent_tasks: []
             });
         } finally {
+            const loadTime = Date.now() - startTime;
+            console.log(`⏱️ [ANALYTICS] Carga completada en ${loadTime}ms`);
             setLoading(false);
         }
     };
