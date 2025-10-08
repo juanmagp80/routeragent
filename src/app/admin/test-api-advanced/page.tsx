@@ -1,29 +1,21 @@
 "use client";
 
 import {
+    BarChart3,
     Brain,
     CheckCircle,
-    Clock,
-    Code,
-    Copy,
-    ExternalLink,
-    FileText,
-    Key,
-    Play,
-    Sparkles,
-    Target,
-    XCircle,
-    Zap,
-    BarChart3,
-    Settings,
-    Lightbulb,
-    TrendingUp,
     Cpu,
     DollarSign,
-    Timer
+    Key,
+    Lightbulb,
+    Play,
+    Settings,
+    Target,
+    Timer,
+    XCircle,
+    Zap
 } from "lucide-react";
-import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
 interface AdvancedTestRequest {
     input: string;
@@ -263,7 +255,7 @@ export default function AdvancedTestApiPage() {
                             <div>
                                 <h3 className="font-semibold text-blue-900 mb-1">Sistema Inteligente Activo</h3>
                                 <p className="text-blue-700 text-sm">
-                                    ✨ Análisis semántico profundo • 💰 Optimización de costos • 🎯 Selección contextual • 
+                                    ✨ Análisis semántico profundo • 💰 Optimización de costos • 🎯 Selección contextual •
                                     🚀 Load balancing • 🧠 Aprendizaje automático • 4 proveedores (OpenAI, Anthropic, Google, xAI)
                                 </p>
                             </div>
@@ -349,11 +341,10 @@ export default function AdvancedTestApiPage() {
                                         <button
                                             key={option.value}
                                             onClick={() => setTestRequest({ ...testRequest, priority: option.value as any })}
-                                            className={`p-3 text-center border rounded-lg transition-all ${
-                                                testRequest.priority === option.value
+                                            className={`p-3 text-center border rounded-lg transition-all ${testRequest.priority === option.value
                                                     ? 'border-blue-500 bg-blue-50 text-blue-700'
                                                     : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
-                                            }`}
+                                                }`}
                                         >
                                             <div className="font-medium text-sm">{option.label}</div>
                                             <div className="text-xs text-gray-500 mt-1">{option.desc}</div>
@@ -366,11 +357,10 @@ export default function AdvancedTestApiPage() {
                             <button
                                 onClick={runTest}
                                 disabled={loading || !testRequest.input.trim() || !apiKeyValue.trim()}
-                                className={`w-full flex items-center justify-center px-6 py-4 border border-transparent rounded-xl text-base font-bold text-white shadow-lg transition-all duration-200 ${
-                                    loading || !testRequest.input.trim() || !apiKeyValue.trim()
+                                className={`w-full flex items-center justify-center px-6 py-4 border border-transparent rounded-xl text-base font-bold text-white shadow-lg transition-all duration-200 ${loading || !testRequest.input.trim() || !apiKeyValue.trim()
                                         ? "bg-gray-400 cursor-not-allowed"
                                         : "bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 transform hover:scale-105"
-                                }`}
+                                    }`}
                             >
                                 {loading ? (
                                     <>
@@ -450,7 +440,7 @@ export default function AdvancedTestApiPage() {
                                         {/* Info de uso */}
                                         {testResponse.api_key_info && (
                                             <div className="text-sm text-gray-600">
-                                                Uso: {testResponse.api_key_info.usage_count}/{testResponse.api_key_info.usage_limit} 
+                                                Uso: {testResponse.api_key_info.usage_count}/{testResponse.api_key_info.usage_limit}
                                                 ({testResponse.api_key_info.plan})
                                             </div>
                                         )}
@@ -490,11 +480,10 @@ export default function AdvancedTestApiPage() {
                                         <button
                                             onClick={() => runTestSuite(suite)}
                                             disabled={runningSuite || !apiKeyValue.trim()}
-                                            className={`w-full px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                                                runningSuite || !apiKeyValue.trim()
+                                            className={`w-full px-3 py-2 rounded-lg text-sm font-medium transition-colors ${runningSuite || !apiKeyValue.trim()
                                                     ? "bg-gray-100 text-gray-400 cursor-not-allowed"
                                                     : "bg-blue-600 text-white hover:bg-blue-700"
-                                            }`}
+                                                }`}
                                         >
                                             {runningSuite && selectedSuite === suite.name ? (
                                                 <>
@@ -525,11 +514,10 @@ export default function AdvancedTestApiPage() {
 
                                 <div className="space-y-3">
                                     {suiteResults.map((result, index) => (
-                                        <div key={index} className={`p-3 rounded-lg border ${
-                                            result.success 
-                                                ? 'border-green-200 bg-green-50' 
+                                        <div key={index} className={`p-3 rounded-lg border ${result.success
+                                                ? 'border-green-200 bg-green-50'
                                                 : 'border-red-200 bg-red-50'
-                                        }`}>
+                                            }`}>
                                             <div className="flex items-center justify-between mb-1">
                                                 <span className="font-medium text-sm">
                                                     {result.name}
@@ -540,7 +528,7 @@ export default function AdvancedTestApiPage() {
                                                     <XCircle className="h-4 w-4 text-red-600" />
                                                 )}
                                             </div>
-                                            
+
                                             {result.success && result.result?.selected_model && (
                                                 <div className="text-xs text-gray-600">
                                                     <div>Modelo: <span className="font-medium">{result.result.selected_model}</span></div>

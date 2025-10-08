@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from 'react';
 import { supabase } from '@/config/database';
 import { useAuth } from '@/contexts/AuthContext';
+import { useEffect, useState } from 'react';
 
 export default function AuthDebugPage() {
     const [sessionInfo, setSessionInfo] = useState<any>(null);
@@ -34,7 +34,7 @@ export default function AuthDebugPage() {
     return (
         <div className="container mx-auto p-8">
             <h1 className="text-2xl font-bold mb-6">🔍 Auth Debug Information</h1>
-            
+
             <div className="space-y-6">
                 {/* Context User */}
                 <div className="bg-gray-100 p-4 rounded">
@@ -71,13 +71,13 @@ export default function AuthDebugPage() {
                 {/* Test API Call */}
                 <div className="bg-red-100 p-4 rounded">
                     <h2 className="font-semibold mb-2">🧪 Test API Call:</h2>
-                    <button 
+                    <button
                         className="bg-blue-500 text-white px-4 py-2 rounded"
                         onClick={async () => {
                             try {
                                 const token = await supabase.auth.getSession();
                                 const accessToken = token.data.session?.access_token;
-                                
+
                                 const response = await fetch('http://localhost:3002/v1/api-keys', {
                                     method: 'POST',
                                     headers: {

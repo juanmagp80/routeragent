@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
                 .eq('user_id', userId)
                 .order('created_at', { ascending: false })
                 .limit(10),
-            
+
             supabaseAdmin
                 .from('usage_records')
                 .select('id', { count: 'exact', head: true })

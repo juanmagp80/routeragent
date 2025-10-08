@@ -45,14 +45,14 @@ export class ModelRouter {
     private models: Model[] = [];
     private cacheService: CacheService;
     private aiProviderManager: AIProviderManager;
-    
+
     // ALGORITMO AVANZADO - Estado interno
     private performanceHistory: Map<string, ModelPerformanceHistory> = new Map();
     private loadBalanceWeights: Map<string, number> = new Map();
     private contextualPatterns: Map<string, any> = new Map();
     private userPreferenceLearning: Map<string, any> = new Map();
     private realTimeMetrics: Map<string, any> = new Map();
-    
+
     // Parámetros dinámicos que se auto-ajustan
     private adaptiveWeights = {
         cost: 0.25,
@@ -72,7 +72,7 @@ export class ModelRouter {
         this.initializePerformanceTracking();
         this.preWarmCache();
         this.startAdaptiveLearning();
-        
+
         console.log('🧠 WORLD-CLASS AI ROUTER initialized with advanced ML capabilities');
     }
 
@@ -105,7 +105,7 @@ export class ModelRouter {
 
     async routeTask(task: Task): Promise<RouteResult & { response?: string }> {
         const startTime = Date.now();
-        
+
         // 🧠 ANÁLISIS PROFUNDO DE CONTEXTO
         const taskContext = await this.analyzeTaskContext(task.input);
         console.log(`🎯 Deep context analysis: domain=${taskContext.domain}, intent=${taskContext.intent}, complexity=${taskContext.complexity_score}`);
@@ -132,13 +132,13 @@ export class ModelRouter {
             try {
                 // Tracking de performance en tiempo real
                 const requestStart = Date.now();
-                
+
                 const aiResponse: AIResponse = await this.aiProviderManager.makeRequest(
                     smartSelection.model.id,
                     task.input,
                     {
                         max_tokens: Math.min(
-                            this.calculateOptimalTokens(task.input, taskContext), 
+                            this.calculateOptimalTokens(task.input, taskContext),
                             smartSelection.model.max_tokens
                         ),
                         temperature: this.calculateOptimalTemperature(taskContext)
@@ -146,7 +146,7 @@ export class ModelRouter {
                 );
 
                 const requestTime = Date.now() - requestStart;
-                
+
                 result = {
                     selected_model: smartSelection.model.name,
                     cost: aiResponse.cost,
@@ -168,7 +168,7 @@ export class ModelRouter {
 
             } catch (error) {
                 console.error(`❌ Execution failed for ${smartSelection.model.name}:`, error);
-                
+
                 // 🛠️ AUTO-RECOVERY: Intentar con modelo de backup
                 const backupModel = await this.selectBackupModel(smartSelection, taskContext);
                 if (backupModel) {
@@ -186,11 +186,11 @@ export class ModelRouter {
 
         // 🎯 APRENDIZAJE CONTINUO - Cache inteligente con semántica
         this.cacheService.set(semanticCacheKey, taskContext.domain, result, task.priority);
-        
+
         // 📈 TRACK FINAL PERFORMANCE
         const totalTime = Date.now() - startTime;
         console.log(`🏆 WORLD-CLASS execution completed in ${totalTime}ms with model ${result.selected_model}`);
-        
+
         return result;
     }
 
@@ -433,10 +433,10 @@ export class ModelRouter {
         // Calcula la eficiencia costo-beneficio del modelo para el tipo de tarea
         const qualityPerCost = model.quality_rating / (model.cost_per_token * 10000);
         const speedPerCost = model.speed_rating / (model.cost_per_token * 10000);
-        
+
         // Ajustar por tipo de tarea
         const taskMultiplier = this.getTaskCostMultiplier(taskType);
-        
+
         return (qualityPerCost * 0.6 + speedPerCost * 0.4) * taskMultiplier;
     }
 
@@ -454,8 +454,8 @@ export class ModelRouter {
     }
 
     private selectModelWithCostOptimization(
-        modelScores: Array<{model: Model, score: number, costEfficiency: number}>, 
-        input: string, 
+        modelScores: Array<{ model: Model, score: number, costEfficiency: number }>,
+        input: string,
         taskType: string
     ): Model {
         // Si solo hay un modelo, devolverlo
@@ -465,15 +465,15 @@ export class ModelRouter {
 
         // Determinar complejidad de la tarea
         const taskComplexity = this.analyzeTaskComplexity(input);
-        
+
         // OPTIMIZACIÓN AGRESIVA DE COSTOS - Para todas las tareas que no requieren máxima calidad
         if ((taskComplexity === 'simple' || taskComplexity === 'medium') && modelScores.length >= 2) {
             // Tomar los top 4 modelos para mayor variabilidad
             const topModels = modelScores.slice(0, Math.min(4, modelScores.length));
-            
+
             // Ordenar por eficiencia de costo entre los top
             topModels.sort((a, b) => b.costEfficiency - a.costEfficiency);
-            
+
             // Selección más agresiva: 60% modelos eficientes, 40% mejor calidad
             const random = Math.random();
             if (random < 0.4) {
@@ -507,34 +507,34 @@ export class ModelRouter {
             console.log(`🎲 Selecting third-best model: ${modelScores[2].model.name} (variation for load balancing)`);
             return modelScores[2].model;
         }
-        
+
         return modelScores[0].model;
     }
 
     private analyzeTaskComplexity(input: string): 'simple' | 'medium' | 'complex' {
         const length = input.length;
         const complexity = input.toLowerCase();
-        
+
         // Indicadores de complejidad
         const complexIndicators = [
             'analiza', 'análisis', 'compara', 'evalúa', 'examina', 'investiga',
             'desarrolla', 'implementa', 'diseña', 'optimiza', 'debugging',
             'algorithm', 'architecture', 'performance', 'security'
         ];
-        
+
         const simpleIndicators = [
             'hola', 'qué tal', 'cómo', 'cuál', 'resume', 'traduce',
             'hello', 'what', 'how', 'which', 'summarize', 'translate'
         ];
-        
-        const hasComplexIndicators = complexIndicators.some(indicator => 
+
+        const hasComplexIndicators = complexIndicators.some(indicator =>
             complexity.includes(indicator)
         );
-        
-        const hasSimpleIndicators = simpleIndicators.some(indicator => 
+
+        const hasSimpleIndicators = simpleIndicators.some(indicator =>
             complexity.includes(indicator)
         );
-        
+
         // Clasificación MÁS AGRESIVA para optimización de costos
         if (length > 800 || hasComplexIndicators) {
             return 'complex';
@@ -566,16 +566,16 @@ export class ModelRouter {
 
     private async analyzeTaskContext(input: string): Promise<TaskContext> {
         const startTime = Date.now();
-        
+
         // 🎯 ANÁLISIS MULTI-DIMENSIONAL DE INTENCIÓN
         const intent = this.detectIntent(input);
         const domain = this.detectDomain(input);
         const complexity = this.calculateSemanticComplexity(input);
         const urgency = this.detectUrgency(input);
         const qualityReq = this.calculateQualityRequirement(input, domain);
-        
+
         console.log(`🧠 Context analysis took ${Date.now() - startTime}ms`);
-        
+
         return {
             domain,
             intent,
@@ -621,24 +621,24 @@ export class ModelRouter {
 
     private calculateSemanticComplexity(input: string): number {
         let complexity = 0;
-        
+
         // Longitud (peso: 0.2)
         complexity += Math.min(1, input.length / 500) * 0.2;
-        
+
         // Vocabulario técnico (peso: 0.3)
         const technicalTerms = input.match(/\b(algorithm|implementation|architecture|optimization|analysis|framework|methodology)\b/gi);
         complexity += Math.min(1, (technicalTerms?.length || 0) / 5) * 0.3;
-        
+
         // Estructura sintáctica (peso: 0.2)
         const sentences = input.split(/[.!?]+/).length;
         const avgWordsPerSentence = input.split(/\s+/).length / sentences;
         complexity += Math.min(1, avgWordsPerSentence / 20) * 0.2;
-        
+
         // Indicadores de complejidad (peso: 0.3)
         const complexIndicators = ['analyze', 'compare', 'implement', 'optimize', 'design', 'evaluate'];
         const matches = complexIndicators.filter(term => input.toLowerCase().includes(term)).length;
         complexity += Math.min(1, matches / 3) * 0.3;
-        
+
         return Math.min(1, complexity);
     }
 
@@ -649,7 +649,7 @@ export class ModelRouter {
 
     private calculateQualityRequirement(input: string, domain: string): number {
         let quality = 0.5; // Base quality
-        
+
         // Domain-specific quality requirements
         const domainQuality = {
             'technology': 0.8,  // Code needs precision
@@ -660,14 +660,14 @@ export class ModelRouter {
             'health': 0.9,     // Health needs precision
             'finance': 0.8     // Finance needs accuracy
         };
-        
+
         quality = domainQuality[domain] || 0.5;
-        
+
         // Adjust based on input indicators
         if (/(important|critical|professional|crucial|importante|critico|profesional)/i.test(input)) {
             quality += 0.2;
         }
-        
+
         return Math.min(1, quality);
     }
 
@@ -683,51 +683,51 @@ export class ModelRouter {
         if (!cached.timestamp || Date.now() - cached.timestamp > 1800000) { // 30 min
             return false;
         }
-        
+
         // For creative tasks, avoid cache to maintain freshness
         if (context.intent === 'creative') {
             return Math.random() < 0.1; // Only 10% cache hit for creative
         }
-        
+
         // For factual queries, cache is more reliable
         if (context.intent === 'question' && context.complexity_score < 0.5) {
             return Math.random() < 0.8; // 80% cache hit for simple questions
         }
-        
+
         return Math.random() < 0.6; // Default 60% cache hit
     }
 
     private async selectModelWithAI(task: Task, context: TaskContext): Promise<SmartModelScore> {
         // 🚀 ULTRA-INTELLIGENT MODEL SELECTION
         const modelScores: SmartModelScore[] = [];
-        
+
         for (const model of this.models.filter(m => m.availability)) {
             const score = await this.calculateAdvancedModelScore(model, task, context);
             modelScores.push(score);
         }
-        
+
         // Sort by final score
         modelScores.sort((a, b) => b.final_score - a.final_score);
-        
+
         // 🎲 SMART RANDOMIZATION based on confidence and cost optimization
         const topCandidates = modelScores.slice(0, Math.min(4, modelScores.length));
-        
+
         // Dynamic selection based on context
         if (context.urgency > 0.7) {
             // High urgency: prioritize speed
             return topCandidates.sort((a, b) => a.model.speed_rating - b.model.speed_rating)[0];
         }
-        
+
         if (context.quality_requirement > 0.8) {
             // High quality: prioritize top model
             return topCandidates[0];
         }
-        
+
         // Cost optimization with smart distribution
         const weights = [0.4, 0.3, 0.2, 0.1]; // Weighted random selection
         const random = Math.random();
         let cumulative = 0;
-        
+
         for (let i = 0; i < topCandidates.length; i++) {
             cumulative += weights[i] || 0.05;
             if (random < cumulative) {
@@ -735,44 +735,44 @@ export class ModelRouter {
                 return topCandidates[i];
             }
         }
-        
+
         return topCandidates[0];
     }
 
     private async calculateAdvancedModelScore(model: Model, task: Task, context: TaskContext): Promise<SmartModelScore> {
         const startTime = Date.now();
-        
+
         // 🧮 MULTI-DIMENSIONAL SCORING ALGORITHM
-        
+
         // 1. Base compatibility score
         const baseScore = this.calculateBaseScore(model, context);
-        
+
         // 2. Cost efficiency (dynamic based on user plan and usage)
         const costEfficiency = this.calculateDynamicCostEfficiency(model, context);
-        
+
         // 3. Performance history (learning from past interactions)
         const performanceHistory = this.getPerformanceHistoryScore(model.id);
-        
+
         // 4. Load balancing (distribute load intelligently)
         const loadBalance = this.calculateLoadBalanceScore(model.id);
-        
+
         // 5. Context matching (domain-specific optimization)
         const contextMatch = this.calculateContextMatchScore(model, context);
-        
+
         // 🎯 ADAPTIVE WEIGHT CALCULATION
         const adaptiveWeights = this.calculateAdaptiveWeights(context);
-        
-        const finalScore = 
+
+        const finalScore =
             (baseScore * adaptiveWeights.quality) +
             (costEfficiency * adaptiveWeights.cost) +
             (performanceHistory * adaptiveWeights.reliability) +
             (loadBalance * adaptiveWeights.speed) +
             (contextMatch * adaptiveWeights.context_match);
-        
+
         const confidence = this.calculateConfidence(model, context, finalScore);
-        
+
         console.log(`📊 ${model.name}: base=${baseScore.toFixed(2)} cost=${costEfficiency.toFixed(2)} perf=${performanceHistory.toFixed(2)} load=${loadBalance.toFixed(2)} context=${contextMatch.toFixed(2)} → ${finalScore.toFixed(3)}`);
-        
+
         return {
             model,
             base_score: baseScore,
@@ -788,31 +788,31 @@ export class ModelRouter {
     private calculateBaseScore(model: Model, context: TaskContext): number {
         // Enhanced base scoring
         let score = 0;
-        
+
         // Task type compatibility
         if (model.supported_tasks.includes(context.domain)) {
             score += 0.3;
         }
-        
+
         // Quality vs complexity matching
         const qualityMatch = Math.min(1, model.quality_rating / 10 * context.quality_requirement);
         score += qualityMatch * 0.4;
-        
+
         // Speed vs urgency matching
         const speedMatch = Math.min(1, model.speed_rating / 10 * context.urgency);
         score += speedMatch * 0.3;
-        
+
         return Math.min(1, score);
     }
 
     private calculateDynamicCostEfficiency(model: Model, context: TaskContext): number {
         // Advanced cost efficiency calculation
         const baseCostEfficiency = 1 - (model.cost_per_token * 10000 / 50); // Normalize to 0-1
-        
+
         // Adjust for task complexity - simple tasks can use cheaper models
-        const complexityAdjustment = context.complexity_score < 0.3 ? 1.2 : 
-                                   context.complexity_score > 0.7 ? 0.8 : 1.0;
-        
+        const complexityAdjustment = context.complexity_score < 0.3 ? 1.2 :
+            context.complexity_score > 0.7 ? 0.8 : 1.0;
+
         return Math.max(0, Math.min(1, baseCostEfficiency * complexityAdjustment));
     }
 
@@ -821,31 +821,31 @@ export class ModelRouter {
         if (!history || history.total_uses < 10) {
             return 0.5; // Neutral score for new models
         }
-        
+
         // Combine multiple performance metrics
         const reliabilityScore = history.success_rate;
         const latencyScore = Math.max(0, 1 - (history.avg_latency / 5000)); // Normalize latency
         const userSatisfactionScore = history.user_satisfaction;
-        
+
         return (reliabilityScore * 0.4 + latencyScore * 0.3 + userSatisfactionScore * 0.3);
     }
 
     private calculateLoadBalanceScore(modelId: string): number {
         const currentLoad = this.realTimeMetrics.get(modelId) || { requests: 0, avgLatency: 1000 };
         const maxLoad = 100; // Max requests per minute
-        
+
         // Prefer models with lower current load
         const loadScore = Math.max(0, 1 - (currentLoad.requests / maxLoad));
-        
+
         // Consider recent latency
         const latencyScore = Math.max(0, 1 - (currentLoad.avgLatency / 5000));
-        
+
         return (loadScore * 0.6 + latencyScore * 0.4);
     }
 
     private calculateContextMatchScore(model: Model, context: TaskContext): number {
         let score = 0;
-        
+
         // 🧠 WORLD-CLASS Domain-specific model preferences (updated with Claude)
         const domainPreferences = {
             'technology': ['GPT-4o', 'Grok Beta', 'Claude 3.5 Sonnet', 'GPT-4o Mini'],
@@ -858,63 +858,63 @@ export class ModelRouter {
             'summary': ['Claude 3 Haiku', 'Gemini 1.5 Flash', 'GPT-4o Mini'],
             'coding': ['GPT-4o', 'Grok Beta', 'Claude 3.5 Sonnet', 'GPT-4o Mini']
         };
-        
+
         const preferred = domainPreferences[context.domain] || domainPreferences['general'];
         const position = preferred.indexOf(model.name);
-        
+
         if (position !== -1) {
             score = 1 - (position * 0.2); // First choice = 1.0, second = 0.8, etc.
         } else {
             score = 0.3; // Default for non-preferred models
         }
-        
+
         return Math.max(0, score);
     }
 
     private calculateAdaptiveWeights(context: TaskContext): typeof this.adaptiveWeights {
         const weights = { ...this.adaptiveWeights };
-        
+
         // Adjust weights based on context
         if (context.urgency > 0.7) {
             weights.speed += 0.1;
             weights.cost -= 0.1;
         }
-        
+
         if (context.quality_requirement > 0.8) {
             weights.quality += 0.15;
             weights.cost -= 0.1;
             weights.speed -= 0.05;
         }
-        
+
         if (context.complexity_score < 0.3) {
             weights.cost += 0.15;
             weights.quality -= 0.1;
             weights.context_match -= 0.05;
         }
-        
+
         return weights;
     }
 
     private calculateConfidence(model: Model, context: TaskContext, finalScore: number): number {
         let confidence = finalScore;
-        
+
         // Boost confidence for well-known combinations
         const history = this.performanceHistory.get(model.id);
         if (history && history.total_uses > 50) {
             confidence *= 1.1;
         }
-        
+
         // Reduce confidence for mismatched contexts
         if (!model.supported_tasks.includes(context.domain)) {
             confidence *= 0.8;
         }
-        
+
         return Math.min(1, confidence);
     }
 
     private calculateOptimalTokens(input: string, context: TaskContext): number {
         const baseTokens = Math.ceil(input.length / 4) * 2; // Estimate input tokens * 2 for response
-        
+
         // Adjust based on task type
         const multipliers = {
             'summary': 0.5,      // Summaries are typically shorter
@@ -924,7 +924,7 @@ export class ModelRouter {
             'coding': 1.5,       // Code generation
             'question': 1.2      // Q&A responses
         };
-        
+
         const multiplier = multipliers[context.intent] || 1.0;
         return Math.min(4000, Math.max(100, Math.floor(baseTokens * multiplier)));
     }
@@ -939,14 +939,14 @@ export class ModelRouter {
             'summary': 0.3,      // Low for factual summaries
             'question': 0.5      // Moderate for Q&A
         };
-        
+
         const baseTemp = temperatures[context.intent] || 0.7;
-        
+
         // Adjust for quality requirements
         if (context.quality_requirement > 0.8) {
             return Math.max(0.1, baseTemp - 0.2); // Lower temperature for higher quality
         }
-        
+
         return baseTemp;
     }
 
@@ -960,16 +960,16 @@ export class ModelRouter {
             total_uses: 0,
             last_updated: new Date()
         };
-        
+
         // Update with exponential moving average for smoothing
         const alpha = 0.1; // Learning rate
         existing.avg_latency = existing.avg_latency * (1 - alpha) + metrics.latency * alpha;
         existing.success_rate = existing.success_rate * (1 - alpha) + (metrics.success ? 1 : 0) * alpha;
         existing.total_uses++;
         existing.last_updated = new Date();
-        
+
         this.performanceHistory.set(modelId, existing);
-        
+
         // Update real-time metrics
         const realTime = this.realTimeMetrics.get(modelId) || { requests: 0, avgLatency: 0 };
         realTime.requests++;
@@ -979,25 +979,25 @@ export class ModelRouter {
 
     private async selectBackupModel(failedSelection: SmartModelScore, context: TaskContext): Promise<Model | null> {
         // Find alternative model with different provider
-        const alternatives = this.models.filter(m => 
-            m.provider !== failedSelection.model.provider && 
+        const alternatives = this.models.filter(m =>
+            m.provider !== failedSelection.model.provider &&
             m.availability &&
             m.supported_tasks.includes(context.domain)
         );
-        
+
         if (alternatives.length === 0) return null;
-        
+
         // Select best alternative
-        const dummyTask: Task = { 
-            id: 'backup-selection', 
-            input: '', 
+        const dummyTask: Task = {
+            id: 'backup-selection',
+            input: '',
             created_at: new Date(),
             context: { domain: context.domain }
         };
         const scores = await Promise.all(
             alternatives.map(model => this.calculateAdvancedModelScore(model, dummyTask, context))
         );
-        
+
         scores.sort((a, b) => b.final_score - a.final_score);
         return scores[0].model;
     }
@@ -1014,13 +1014,13 @@ export class ModelRouter {
                 total_uses: 1,
                 last_updated: new Date()
             });
-            
+
             this.realTimeMetrics.set(model.id, {
                 requests: 0,
                 avgLatency: 1000 / model.speed_rating * 100
             });
         });
-        
+
         console.log('📊 Performance tracking initialized for all models');
     }
 
@@ -1030,7 +1030,7 @@ export class ModelRouter {
             this.adaptWeightsBasedOnPerformance();
             this.cleanupOldMetrics();
         }, 60000); // Every minute
-        
+
         console.log('🧠 Adaptive learning system started');
     }
 
@@ -1039,7 +1039,7 @@ export class ModelRouter {
         let totalCostSavings = 0;
         let totalPerformanceScore = 0;
         let sampleCount = 0;
-        
+
         this.performanceHistory.forEach((history, modelId) => {
             if (history.total_uses > 0) {
                 const model = this.models.find(m => m.id === modelId);
@@ -1050,11 +1050,11 @@ export class ModelRouter {
                 }
             }
         });
-        
+
         if (sampleCount > 100) { // Only adapt after sufficient data
             const avgCostSavings = totalCostSavings / sampleCount;
             const avgPerformance = totalPerformanceScore / sampleCount;
-            
+
             // Adapt weights based on outcomes
             if (avgCostSavings > 0.7 && avgPerformance > 0.9) {
                 // Great cost savings with good performance - increase cost weight
@@ -1071,13 +1071,13 @@ export class ModelRouter {
     private cleanupOldMetrics(): void {
         // Clean up old performance data (keep only last 7 days)
         const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-        
+
         this.performanceHistory.forEach((history, modelId) => {
             if (history.last_updated < cutoff && history.total_uses < 10) {
                 this.performanceHistory.delete(modelId);
             }
         });
-        
+
         // Reset real-time metrics every hour
         this.realTimeMetrics.forEach((metrics, modelId) => {
             metrics.requests = Math.floor(metrics.requests * 0.9); // Decay

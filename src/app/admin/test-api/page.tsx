@@ -1,7 +1,6 @@
 "use client";
 
 import {
-    Brain,
     CheckCircle,
     Clock,
     Code,
@@ -12,15 +11,12 @@ import {
     Play,
     Sparkles,
     Target,
+    TrendingUp,
     XCircle,
-    Zap,
-    BarChart3,
-    Settings,
-    Lightbulb,
-    TrendingUp
+    Zap
 } from "lucide-react";
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
 interface AdvancedTestRequest {
     input: string;
@@ -381,8 +377,8 @@ export default function AdvancedTestApiPage() {
                                 onClick={handleTestRequest}
                                 disabled={loading || !testRequest.prompt.trim()}
                                 className={`w-full flex items-center justify-center px-6 py-4 border border-transparent rounded-xl text-base font-bold text-white shadow-lg transition-all duration-200 transform ${loading || !testRequest.prompt.trim()
-                                        ? 'bg-gray-400 cursor-not-allowed'
-                                        : 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 hover:scale-105 focus:outline-none focus:ring-4 focus:ring-emerald-300'
+                                    ? 'bg-gray-400 cursor-not-allowed'
+                                    : 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 hover:scale-105 focus:outline-none focus:ring-4 focus:ring-emerald-300'
                                     }`}
                             >
                                 {loading ? (

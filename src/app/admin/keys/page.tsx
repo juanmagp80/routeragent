@@ -53,7 +53,7 @@ export default function ApiKeysPage() {
         pro: '10,000 requests',
         enterprise: 'Unlimited'
     };
-    
+
     // Límites de API keys por plan (alineado con la base de datos)
     const apiKeyLimits = {
         free: 3,      // Plan gratuito: máximo 3 API keys (según DB)
@@ -105,8 +105,8 @@ export default function ApiKeysPage() {
                     console.log('✅ [API-KEYS] Métricas cargadas:', metricsResult.value.requests);
                     setTotalUsage(metricsResult.value.requests);
                 } else {
-                    const errorMsg = metricsResult.status === 'rejected' 
-                        ? metricsResult.reason 
+                    const errorMsg = metricsResult.status === 'rejected'
+                        ? metricsResult.reason
                         : metricsResult.value?.error || 'Unknown error';
                     console.warn('⚠️ [API-KEYS] Error cargando métricas:', errorMsg);
                     setTotalUsage(0);

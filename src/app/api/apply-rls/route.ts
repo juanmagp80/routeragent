@@ -10,20 +10,20 @@ const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 export async function POST(request: NextRequest) {
     try {
         console.log('🔧 [APPLY-RLS] Aplicando políticas RLS directamente en Supabase...');
-        
+
         // Verificar primero las tablas existentes
         console.log('🔍 Verificando tablas existentes...');
-        
+
         // Test 1: Verificar usage_records
         const { data: usageRecordsTest, error: recordsError } = await supabaseAdmin
             .from('usage_records')
             .select('count', { count: 'exact', head: true })
             .limit(1);
 
-        console.log('📊 Test usage_records:', { 
-            exists: !recordsError, 
+        console.log('📊 Test usage_records:', {
+            exists: !recordsError,
             error: recordsError?.message,
-            count: usageRecordsTest 
+            count: usageRecordsTest
         });
 
         // Test 2: Verificar usage_logs
@@ -32,10 +32,10 @@ export async function POST(request: NextRequest) {
             .select('count', { count: 'exact', head: true })
             .limit(1);
 
-        console.log('📊 Test usage_logs:', { 
-            exists: !logsError, 
+        console.log('📊 Test usage_logs:', {
+            exists: !logsError,
             error: logsError?.message,
-            count: usageLogsTest 
+            count: usageLogsTest
         });
 
         // Test 3: Verificar api_keys
@@ -44,10 +44,10 @@ export async function POST(request: NextRequest) {
             .select('count', { count: 'exact', head: true })
             .limit(1);
 
-        console.log('📊 Test api_keys:', { 
-            exists: !keysError, 
+        console.log('📊 Test api_keys:', {
+            exists: !keysError,
             error: keysError?.message,
-            count: apiKeysTest 
+            count: apiKeysTest
         });
 
         // Test 4: Verificar users
@@ -56,10 +56,10 @@ export async function POST(request: NextRequest) {
             .select('count', { count: 'exact', head: true })
             .limit(1);
 
-        console.log('📊 Test users:', { 
-            exists: !usersError, 
+        console.log('📊 Test users:', {
+            exists: !usersError,
             error: usersError?.message,
-            count: usersTest 
+            count: usersTest
         });
 
         // Test 5: Consulta específica con el usuario target

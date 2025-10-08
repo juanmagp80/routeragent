@@ -232,7 +232,7 @@ export class BackendService {
      */
     async createApiKey(request: CreateApiKeyRequest): Promise<ApiKeyData> {
         console.log('🔄 Starting createApiKey process...');
-        
+
         const user = await this.getCurrentUser();
         if (!user) {
             console.error('❌ User not authenticated in createApiKey');

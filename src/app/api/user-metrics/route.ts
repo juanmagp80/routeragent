@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
         const totalRequests = usageRecords?.length || 0;
         const totalCost = usageRecords?.reduce((sum, record) => sum + parseFloat(record.cost || '0'), 0) || 0;
         const activeKeys = apiKeys?.filter(key => key.is_active).length || 0;
-        const avgLatency = usageRecords?.length > 0 
+        const avgLatency = usageRecords?.length > 0
             ? usageRecords.reduce((sum, record) => sum + (parseInt(record.latency_ms) || 0), 0) / usageRecords.length
             : 0;
 

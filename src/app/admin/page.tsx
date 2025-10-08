@@ -3,7 +3,7 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { getQuickMetrics, QuickMetrics } from "@/services/quickMetrics";
 import { getUserMetrics, getUserStats, UserMetrics, UserStats } from "@/services/userMetrics";
-import { BarChart3, Key, Sparkles, TrendingUp, User, Cpu } from "lucide-react";
+import { BarChart3, Cpu, Key, Sparkles, TrendingUp, User } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "../../config/database";
 
@@ -484,10 +484,10 @@ export default function DashboardPage() {
                                     <div className="text-right">
                                         <div className="flex items-center space-x-2">
                                             <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${activity.status === 'completed'
-                                                    ? 'bg-green-100 text-green-800'
-                                                    : activity.status === 'failed'
-                                                        ? 'bg-red-100 text-red-800'
-                                                        : 'bg-yellow-100 text-yellow-800'
+                                                ? 'bg-green-100 text-green-800'
+                                                : activity.status === 'failed'
+                                                    ? 'bg-red-100 text-red-800'
+                                                    : 'bg-yellow-100 text-yellow-800'
                                                 }`}>
                                                 {activity.status === 'completed' ? '✓ Completado' :
                                                     activity.status === 'failed' ? '✗ Error' : '⏳ Procesando'}
