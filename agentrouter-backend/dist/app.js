@@ -23,8 +23,8 @@ if (!process.env.SUPABASE_URL) {
     console.error('❌ SUPABASE_URL not found in environment variables');
     process.exit(1);
 }
-if (!process.env.SUPABASE_KEY) {
-    console.error('❌ SUPABASE_KEY not found in environment variables');
+if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    console.error('❌ SUPABASE_SERVICE_ROLE_KEY not found in environment variables');
     process.exit(1);
 }
 console.log('✅ Stripe key loaded:', process.env.STRIPE_SECRET_KEY?.substring(0, 12) + '...');
@@ -36,7 +36,7 @@ else {
     console.log('✅ Resend key loaded:', process.env.RESEND_API_KEY?.substring(0, 12) + '...');
 }
 console.log('✅ Supabase URL loaded:', process.env.SUPABASE_URL?.substring(0, 30) + '...');
-console.log('✅ Supabase Key loaded:', process.env.SUPABASE_KEY?.substring(0, 20) + '...');
+console.log('✅ Supabase Service Key loaded:', process.env.SUPABASE_SERVICE_ROLE_KEY?.substring(0, 20) + '...');
 // Inicializar Stripe
 const stripe = new stripe_1.default(process.env.STRIPE_SECRET_KEY, {
     apiVersion: '2023-10-16',

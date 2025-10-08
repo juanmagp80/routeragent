@@ -4,34 +4,48 @@ exports.LogService = void 0;
 const database_1 = require("../config/database");
 class LogService {
     async logUsage(logEntry, apiKeyId) {
+        console.log('📊 [LOG SERVICE] Iniciando logUsage con:', {
+            user_id: logEntry.user_id,
+            model_used: logEntry.model_used,
+            cost: logEntry.cost,
+            api_key_id: apiKeyId
+        });
         try {
+            const logData = {
+                ...logEntry,
+                api_key_id: apiKeyId || null,
+                created_at: new Date().toISOString()
+            };
+            console.log('📊 [LOG SERVICE] Datos a insertar:', logData);
             // Insertar en usage_records (tabla principal para métricas)
             const { error: recordError } = await database_1.supabase
                 .from('usage_records')
-                .insert([{
-                    ...logEntry,
-                    api_key_id: apiKeyId || null,
-                    created_at: new Date().toISOString()
-                }]);
+                .insert([logData]);
             if (recordError) {
-                console.error('Usage record error:', recordError);
-                throw new Error(`Failed to log usage record: ${recordError.message}`);
+                console.error('❌ [LOG SERVICE] Usage record error:', recordError);
+                // No lanzar error, intentar con usage_logs
+            }
+            else {
+                console.log('✅ [LOG SERVICE] Successfully inserted into usage_records');
             }
             // También mantener el log en usage_logs para compatibilidad
             const { error: logError } = await database_1.supabase
                 .from('usage_logs')
-                .insert([{
-                    ...logEntry,
-                    api_key_id: apiKeyId || null,
-                    created_at: new Date().toISOString()
-                }]);
+                .insert([logData]);
             if (logError) {
-                console.warn('Log error (non-critical):', logError);
+                console.error('❌ [LOG SERVICE] Usage logs error:', logError);
+                // Si fallan ambas tablas, entonces sí lanzar error
+                if (recordError) {
+                    throw new Error(`Failed to log to both tables. Records: ${recordError.message}, Logs: ${logError.message}`);
+                }
             }
-            console.log('Successfully logged usage to Supabase (usage_records and usage_logs)');
+            else {
+                console.log('✅ [LOG SERVICE] Successfully inserted into usage_logs');
+            }
+            console.log('✅ [LOG SERVICE] Usage logging completed successfully');
         }
         catch (error) {
-            console.error('Error logging usage:', error);
+            console.error('❌ [LOG SERVICE] Error logging usage:', error);
             // En producción podrías implementar retry o fallback
             throw error;
         }

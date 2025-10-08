@@ -7,7 +7,7 @@ const notificationService_1 = require("../services/notificationService");
 const apiKeyService = new apiKeyService_1.ApiKeyService();
 // Initialize Supabase client for dev functions
 const supabaseUrl = process.env.SUPABASE_URL || '';
-const supabaseServiceKey = process.env.SUPABASE_KEY || '';
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 const supabase = (0, supabase_js_1.createClient)(supabaseUrl, supabaseServiceKey);
 // Crear nueva API Key
 const createApiKey = async (req, res) => {
@@ -30,13 +30,17 @@ const createApiKey = async (req, res) => {
         }
         // Obtener user_id del token JWT
         const userId = req.user?.id;
+        console.log('🔍 User ID from token:', userId);
         if (!userId) {
+            console.error('❌ No user ID found in token');
             return res.status(401).json({
                 error: 'User not authenticated',
                 success: false
             });
         }
+        console.log('🔄 Calling apiKeyService.generateApiKey...');
         const { apiKey, rawKey } = await apiKeyService.generateApiKey(userId, name, apiKeyPlan, usage_limit);
+        console.log('✅ API key generated successfully:', apiKey.id);
         // 📧 Enviar notificación de nueva API key creada
         try {
             await notificationService_1.notificationService.send({
@@ -71,10 +75,13 @@ const createApiKey = async (req, res) => {
         });
     }
     catch (error) {
-        console.error('Error creating API key:', error);
+        console.error('❌ Error creating API key:', error);
+        console.error('❌ Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+        console.error('❌ Error message:', error instanceof Error ? error.message : error);
         res.status(500).json({
             error: 'Failed to create API key',
-            success: false
+            success: false,
+            details: process.env.NODE_ENV === 'development' ? error instanceof Error ? error.message : error : undefined
         });
     }
 };
@@ -302,8 +309,8 @@ const listApiKeysDev = async (req, res) => {
 exports.listApiKeysDev = listApiKeysDev;
 const createApiKeyDev = async (req, res) => {
     try {
-        const userId = '3a942f65-25e7-4de3-84cb-3df0268ff759'; // Usuario fijo para desarrollo
-        const { name, plan = 'pro' } = req.body; // Usar plan Pro por defecto
+        const { name, plan = 'free', user_id } = req.body; // ✅ Usar user_id del body y plan free por defecto
+        const userId = user_id || '3a942f65-25e7-4de3-84cb-3df0268ff759'; // Fallback al usuario de desarrollo
         if (!name) {
             return res.status(400).json({
                 error: 'Name is required',
@@ -326,9 +333,9 @@ const createApiKeyDev = async (req, res) => {
         }
         // Límites de claves por plan
         const keyLimits = {
-            free: 1,
-            starter: 3,
-            pro: 5,
+            free: 3, // ✅ Corregido: plan free permite 3 API keys
+            starter: 5, // ✅ Ajustado: starter permite 5 API keys  
+            pro: 10, // ✅ Ajustado: pro permite 10 API keys
             enterprise: 20
         };
         const currentKeyCount = existingKeys?.length || 0;

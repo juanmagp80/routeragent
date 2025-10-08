@@ -321,12 +321,12 @@ export class ApiKeyService {
                 currentPlan = userData.subscription_plan;
             }
 
-            // Definir límites de API keys por plan
+            // Definir límites de API keys por plan (alineado con el controller)
             const planLimits = {
-                free: 1,
-                starter: 1,
-                pro: 5,
-                enterprise: -1 // Ilimitado
+                free: 3,          // ✅ Corregido: plan free permite 3 API keys
+                starter: 5,       // ✅ Ajustado: starter permite 5 API keys  
+                pro: 10,          // ✅ Ajustado: pro permite 10 API keys
+                enterprise: -1    // Ilimitado
             };
 
             const maxKeys = planLimits[currentPlan as keyof typeof planLimits] || 1;

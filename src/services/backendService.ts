@@ -92,9 +92,11 @@ export class BackendService {
     private async getAuthToken(): Promise<string | null> {
         try {
             const { data: { session } } = await supabase.auth.getSession();
+            console.log('🔐 Auth session:', session ? 'Found' : 'Not found');
+            console.log('🔑 Access token:', session?.access_token ? 'Present' : 'Missing');
             return session?.access_token || null;
         } catch (error) {
-            console.error('Error getting auth token:', error);
+            console.error('❌ Error getting auth token:', error);
             return null;
         }
     }
@@ -105,9 +107,10 @@ export class BackendService {
     private async getCurrentUser() {
         try {
             const { data: { user } } = await supabase.auth.getUser();
+            console.log('👤 Current user:', user ? `${user.email} (${user.id})` : 'Not authenticated');
             return user;
         } catch (error) {
-            console.error('Error getting current user:', error);
+            console.error('❌ Error getting current user:', error);
             return null;
         }
     }
@@ -228,11 +231,15 @@ export class BackendService {
      * Crea una nueva API key
      */
     async createApiKey(request: CreateApiKeyRequest): Promise<ApiKeyData> {
+        console.log('🔄 Starting createApiKey process...');
+        
         const user = await this.getCurrentUser();
         if (!user) {
-            throw new Error('User not authenticated');
+            console.error('❌ User not authenticated in createApiKey');
+            throw new Error('User not authenticated - please log in first');
         }
 
+        console.log('✅ User authenticated, proceeding with API key creation');
         request.user_id = user.id;
 
         const response = await this.makeRequest<{ api_key: ApiKeyData; success: boolean }>('/v1/api-keys', {

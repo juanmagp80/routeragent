@@ -12,48 +12,59 @@ const apiKeyService = new ApiKeyService();
 // Mock de modelos (en producción esto vendría de una base de datos)
 const mockModels = [
     {
-        id: "gpt-4",
-        name: "gpt-4",
+        id: "gpt-4o",
+        name: "GPT-4o",
         provider: "openai",
-        cost_per_token: 0.03,
+        cost_per_token: 0.005,
         max_tokens: 128000,
         speed_rating: 8,
-        quality_rating: 9,
+        quality_rating: 10,
         availability: true,
-        supported_tasks: ["summary", "translation", "analysis", "general"]
+        supported_tasks: ["summary", "translation", "analysis", "general", "coding"]
     },
     {
-        id: "claude-3",
-        name: "claude-3",
-        provider: "anthropic",
-        cost_per_token: 0.015,
-        max_tokens: 200000,
-        speed_rating: 7,
+        id: "gpt-4o-mini",
+        name: "GPT-4o Mini",
+        provider: "openai",
+        cost_per_token: 0.00015,
+        max_tokens: 128000,
+        speed_rating: 9,
         quality_rating: 8,
         availability: true,
+        supported_tasks: ["summary", "translation", "analysis", "general", "coding"]
+    },
+    {
+        id: "claude-3-sonnet",
+        name: "Claude 3 Sonnet",
+        provider: "anthropic",
+        cost_per_token: 0.003,
+        max_tokens: 200000,
+        speed_rating: 7,
+        quality_rating: 9,
+        availability: true,
+        supported_tasks: ["summary", "translation", "analysis", "general", "coding"]
+    },
+    {
+        id: "gemini-1.5-flash",
+        name: "Gemini 1.5 Flash",
+        provider: "google",
+        cost_per_token: 0.000001,
+        max_tokens: 1000000,
+        speed_rating: 10,
+        quality_rating: 7,
+        availability: true,
         supported_tasks: ["summary", "translation", "analysis", "general"]
     },
     {
-        id: "mistral-7b",
-        name: "mistral-7b",
-        provider: "mistral",
-        cost_per_token: 0.002,
-        max_tokens: 32000,
-        speed_rating: 9,
-        quality_rating: 7,
-        availability: true,
-        supported_tasks: ["summary", "translation", "general"]
-    },
-    {
-        id: "llama-3",
-        name: "llama-3",
-        provider: "meta",
-        cost_per_token: 0.001,
-        max_tokens: 8000,
+        id: "grok-beta",
+        name: "Grok Beta",
+        provider: "xai",
+        cost_per_token: 0.005,
+        max_tokens: 131072,
         speed_rating: 6,
-        quality_rating: 6,
+        quality_rating: 8,
         availability: true,
-        supported_tasks: ["summary", "translation", "general"]
+        supported_tasks: ["summary", "translation", "analysis", "general", "coding"]
     }
 ];
 
@@ -81,7 +92,7 @@ export const routeTask = async (req: Request, res: Response) => {
 
         // Registrar uso en Supabase
         const usageRecord: Omit<UsageRecord, 'id' | 'created_at'> = {
-            user_id: task.context?.user_id || null,
+            user_id: req.apiKey?.user_id || task.context?.user_id || null,
             model_used: result.selected_model,
             cost: result.cost,
             latency_ms: Math.round(result.estimated_time), // Convertir a entero
@@ -89,6 +100,13 @@ export const routeTask = async (req: Request, res: Response) => {
             prompt_preview: task.input.substring(0, 100) + (task.input.length > 100 ? '...' : ''),
             capabilities: task.context?.capabilities || []
         };
+
+        console.log('📊 [USAGE RECORD] Preparando registro:', {
+            user_id: usageRecord.user_id,
+            model_used: usageRecord.model_used,
+            cost: usageRecord.cost,
+            api_key_id: req.apiKey?.id || null
+        });
 
         try {
             // Pasar el api_key_id al logService para que se pueda rastrear por usuario

@@ -1,12 +1,11 @@
 "use client";
 
-import { ApiKeyData, backendServiceDev } from "@/services/backendServiceDev";
 import {
+    Brain,
     CheckCircle,
     Clock,
     Code,
     Copy,
-    DollarSign,
     ExternalLink,
     FileText,
     Key,
@@ -14,59 +13,129 @@ import {
     Sparkles,
     Target,
     XCircle,
-    Zap
+    Zap,
+    BarChart3,
+    Settings,
+    Lightbulb,
+    TrendingUp
 } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 
-interface TestRequest {
-    prompt: string;
-    task_type: string;
-    priority: string;
+interface AdvancedTestRequest {
+    input: string;
+    priority: 'cost' | 'balanced' | 'performance';
+    max_tokens?: number;
 }
 
-interface TestResponse {
+interface AdvancedTestResponse {
     success: boolean;
     error?: string;
     selected_model?: string;
     cost?: number;
-    provider?: string;
+    estimated_time?: number;
+    task_type?: string;
     response?: string;
-    processing_time?: number;
-    total_usage?: number;
-    plan_limit?: number;
+    api_key_info?: {
+        usage_count: number;
+        usage_limit: number;
+        plan: string;
+    };
     [key: string]: any;
 }
 
-export default function TestApiPage() {
-    const [keys, setKeys] = useState<ApiKeyData[]>([]);
-    const [selectedKeyId, setSelectedKeyId] = useState<string>("");
+interface TestSuite {
+    name: string;
+    description: string;
+    tests: {
+        name: string;
+        input: string;
+        priority: 'cost' | 'balanced' | 'performance';
+        expectedModel?: string[];
+    }[];
+}
+
+export default function AdvancedTestApiPage() {
     const [apiKeyValue, setApiKeyValue] = useState<string>("");
     const [loading, setLoading] = useState(false);
-    const [testRequest, setTestRequest] = useState<TestRequest>({
-        prompt: "¿Cuál es la capital de Francia?",
-        task_type: "general",
-        priority: "cost"
+    const [testRequest, setTestRequest] = useState<AdvancedTestRequest>({
+        input: "¿Cuál es la capital de Francia?",
+        priority: "balanced"
     });
-    const [testResponse, setTestResponse] = useState<TestResponse | null>(null);
+    const [testResponse, setTestResponse] = useState<AdvancedTestResponse | null>(null);
     const [showResponse, setShowResponse] = useState(false);
+    const [selectedSuite, setSelectedSuite] = useState<string>("");
+    const [suiteResults, setSuiteResults] = useState<any[]>([]);
+    const [runningSuite, setRunningSuite] = useState(false);
 
-    // Fetch API keys
-    const fetchKeys = async () => {
-        try {
-            const response = await backendServiceDev.getApiKeys();
-            setKeys(response.api_keys || []);
-            if (response.api_keys && response.api_keys.length > 0) {
-                setSelectedKeyId(response.api_keys[0].id);
-            }
-        } catch (error) {
-            console.error('Error fetching API keys:', error);
+    // Test suites para probar el algoritmo avanzado
+    const testSuites = [
+        {
+            name: "Optimización de Costos",
+            description: "Prueba cómo el algoritmo optimiza costos para diferentes tipos de tareas",
+            icon: DollarSign,
+            tests: [
+                {
+                    name: "Pregunta Simple",
+                    input: "¿Qué hora es?",
+                    priority: "cost" as const,
+                    expectedTypes: ["Gemini 1.5 Flash", "Claude 3 Haiku", "GPT-4o Mini"]
+                },
+                {
+                    name: "Resumen Básico",
+                    input: "Resume esta información en 2 líneas",
+                    priority: "cost" as const,
+                    expectedTypes: ["Claude 3 Haiku", "Gemini 1.5 Flash"]
+                }
+            ]
+        },
+        {
+            name: "Tareas Creativas",
+            description: "Verifica que elige modelos adecuados para creatividad",
+            icon: Sparkles,
+            tests: [
+                {
+                    name: "Historia Creativa",
+                    input: "Escribe una historia original sobre un robot que sueña",
+                    priority: "performance" as const,
+                    expectedTypes: ["Claude 3.5 Sonnet", "GPT-4o"]
+                },
+                {
+                    name: "Poesía",
+                    input: "Crea un poema sobre el océano",
+                    priority: "balanced" as const,
+                    expectedTypes: ["Claude 3.5 Sonnet", "GPT-4o", "Gemini 1.5 Pro"]
+                }
+            ]
+        },
+        {
+            name: "Distribución Inteligente",
+            description: "Prueba la variabilidad y distribución inteligente del algoritmo",
+            icon: TrendingUp,
+            tests: [
+                {
+                    name: "Consulta General 1",
+                    input: "¿Puedes ayudarme con información básica?",
+                    priority: "balanced" as const,
+                    expectedTypes: ["Variado"]
+                },
+                {
+                    name: "Consulta General 2",
+                    input: "Necesito asistencia con una pregunta",
+                    priority: "balanced" as const,
+                    expectedTypes: ["Variado"]
+                },
+                {
+                    name: "Consulta General 3",
+                    input: "Dame información sobre este tema",
+                    priority: "balanced" as const,
+                    expectedTypes: ["Variado"]
+                }
+            ]
         }
-    };
+    ];
 
-    useEffect(() => {
-        fetchKeys();
-    }, []);
+    // No necesitamos cargar API keys, el usuario las ingresará manualmente
 
     // Hacer request de prueba
     const handleTestRequest = async () => {
@@ -75,21 +144,31 @@ export default function TestApiPage() {
             return;
         }
 
+        if (!apiKeyValue.trim()) {
+            setTestResponse({
+                success: false,
+                error: 'Por favor ingresa tu API key para hacer la prueba'
+            });
+            setShowResponse(true);
+            return;
+        }
+
         setLoading(true);
         setTestResponse(null);
         setShowResponse(false);
 
         try {
-            // Hacer request al endpoint de prueba (sin autenticación)
-            const response = await fetch('http://localhost:3002/v1/route-test', {
+            // Hacer request al endpoint real con autenticación, forzando GPT-4o
+            const response = await fetch('http://localhost:3002/v1/route', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${apiKeyValue}`
                 },
                 body: JSON.stringify({
                     input: testRequest.prompt,
                     task_type: testRequest.task_type,
-                    priority: testRequest.priority
+                    preferred_model: "GPT-4o"
                 })
             });
 
@@ -98,14 +177,11 @@ export default function TestApiPage() {
             setTestResponse(data);
             setShowResponse(true);
 
-            // Actualizar la lista de keys para reflejar el nuevo uso
-            await fetchKeys();
-
         } catch (error) {
             console.error('Error making test request:', error);
             setTestResponse({
                 success: false,
-                error: 'Error de conexión. Verifica que el backend esté ejecutándose.'
+                error: 'Error de conexión. Verifica que el backend esté ejecutándose en puerto 3002.'
             });
             setShowResponse(true);
         } finally {
@@ -161,11 +237,7 @@ export default function TestApiPage() {
         { value: "summarization", label: "Resumen", icon: "📄" }
     ];
 
-    const priorities = [
-        { value: "cost", label: "Costo", desc: "Más económico", icon: DollarSign, color: "text-green-600" },
-        { value: "speed", label: "Velocidad", desc: "Más rápido", icon: Zap, color: "text-yellow-600" },
-        { value: "quality", label: "Calidad", desc: "Mejor resultado", icon: Target, color: "text-purple-600" }
-    ];
+
 
     return (
         <div className="space-y-8">
@@ -187,7 +259,7 @@ export default function TestApiPage() {
                             <div className="flex items-center mt-6 space-x-4">
                                 <div className="flex items-center bg-white/20 rounded-lg px-4 py-2 backdrop-blur-sm">
                                     <Key className="h-4 w-4 mr-2" />
-                                    <span className="text-sm font-medium">{keys.length} keys disponibles</span>
+                                    <span className="text-sm font-medium">Usa tus API keys</span>
                                 </div>
                                 <div className="flex items-center bg-white/20 rounded-lg px-4 py-2 backdrop-blur-sm">
                                     <Sparkles className="h-4 w-4 mr-2" />
@@ -241,37 +313,32 @@ export default function TestApiPage() {
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                         {/* Formulario de prueba */}
                         <div className="space-y-6">
-                            {/* Selección de API Key */}
+                            {/* Ingreso de API Key */}
                             <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-6 border border-blue-100">
                                 <label className="block text-sm font-bold text-gray-900 mb-3 flex items-center">
                                     <Key className="h-4 w-4 mr-2 text-blue-600" />
-                                    API Key de Referencia
+                                    Tu API Key
                                 </label>
-                                <select
-                                    value={selectedKeyId}
-                                    onChange={(e) => setSelectedKeyId(e.target.value)}
-                                    className="w-full border-2 border-blue-200 rounded-xl shadow-sm py-3 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm bg-white"
-                                >
-                                    <option value="">Selecciona una API Key</option>
-                                    {keys.map((key) => (
-                                        <option key={key.id} value={key.id}>
-                                            {key.name} ({key.key_prefix}***) - {key.usage_count} usos
-                                        </option>
-                                    ))}
-                                </select>
+                                <input
+                                    type="password"
+                                    value={apiKeyValue}
+                                    onChange={(e) => setApiKeyValue(e.target.value)}
+                                    placeholder="ar_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                                    className="w-full border-2 border-blue-200 rounded-xl shadow-sm py-3 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm bg-white font-mono"
+                                />
                                 <p className="mt-2 text-xs text-blue-600 font-medium">
-                                    Solo para referencia. Ingresa la clave completa abajo.
+                                    Ingresa tu API key completa para hacer pruebas reales. Ve a "Claves API" para gestionar tus keys.
                                 </p>
                             </div>
 
                             {/* Información de modo prueba */}
-                            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                            <div className="bg-green-50 border border-green-200 rounded-xl p-4">
                                 <div className="flex items-center mb-2">
-                                    <FileText className="h-4 w-4 mr-2 text-blue-600" />
-                                    <span className="text-sm font-bold text-blue-900">Modo de Prueba</span>
+                                    <Zap className="h-4 w-4 mr-2 text-green-600" />
+                                    <span className="text-sm font-bold text-green-900">Pruebas Reales</span>
                                 </div>
-                                <p className="text-xs text-blue-700">
-                                    Esta página usa el endpoint de prueba sin autenticación. No necesitas una API key para probar la funcionalidad básica.
+                                <p className="text-xs text-green-700">
+                                    Esta página usa el endpoint real de producción. Los requests consumirán tu cuota de API usando siempre GPT-4o.
                                 </p>
                             </div>
 
@@ -307,42 +374,7 @@ export default function TestApiPage() {
                                 </select>
                             </div>
 
-                            {/* Priority */}
-                            <div>
-                                <label className="block text-sm font-bold text-gray-900 mb-3">
-                                    Prioridad de Optimización
-                                </label>
-                                <div className="grid grid-cols-1 gap-3">
-                                    {priorities.map((priority) => {
-                                        const IconComponent = priority.icon;
-                                        return (
-                                            <label
-                                                key={priority.value}
-                                                className={`flex items-center p-4 border-2 rounded-xl cursor-pointer transition-all duration-200 ${testRequest.priority === priority.value
-                                                        ? 'border-blue-500 bg-blue-50'
-                                                        : 'border-gray-200 hover:border-gray-300 bg-white'
-                                                    }`}
-                                            >
-                                                <input
-                                                    type="radio"
-                                                    name="priority"
-                                                    value={priority.value}
-                                                    checked={testRequest.priority === priority.value}
-                                                    onChange={(e) => setTestRequest({ ...testRequest, priority: e.target.value })}
-                                                    className="sr-only"
-                                                />
-                                                <div className={`mr-3 ${priority.color}`}>
-                                                    <IconComponent className="h-5 w-5" />
-                                                </div>
-                                                <div>
-                                                    <div className="font-semibold text-gray-900">{priority.label}</div>
-                                                    <div className="text-sm text-gray-600">{priority.desc}</div>
-                                                </div>
-                                            </label>
-                                        );
-                                    })}
-                                </div>
-                            </div>
+
 
                             {/* Botón de prueba */}
                             <button
@@ -409,15 +441,15 @@ export default function TestApiPage() {
 
                                         {/* Métricas */}
                                         {testResponse?.success && (
-                                            <div className="grid grid-cols-2 gap-4">
-                                                {testResponse.cost && (
-                                                    <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3">
+                                            <div className="grid grid-cols-1 gap-4">
+                                                {testResponse.selected_model && (
+                                                    <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
                                                         <div className="flex items-center">
-                                                            <DollarSign className="h-4 w-4 text-emerald-600 mr-2" />
-                                                            <div className="text-xs font-medium text-emerald-800">Costo</div>
+                                                            <Target className="h-4 w-4 text-purple-600 mr-2" />
+                                                            <div className="text-xs font-medium text-purple-800">Modelo Usado</div>
                                                         </div>
-                                                        <div className="text-lg font-bold text-emerald-900">
-                                                            ${testResponse.cost.toFixed(4)}
+                                                        <div className="text-sm font-bold text-purple-900">
+                                                            {testResponse.selected_model}
                                                         </div>
                                                     </div>
                                                 )}
@@ -425,21 +457,10 @@ export default function TestApiPage() {
                                                     <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
                                                         <div className="flex items-center">
                                                             <Clock className="h-4 w-4 text-blue-600 mr-2" />
-                                                            <div className="text-xs font-medium text-blue-800">Tiempo</div>
+                                                            <div className="text-xs font-medium text-blue-800">Tiempo de Respuesta</div>
                                                         </div>
                                                         <div className="text-lg font-bold text-blue-900">
                                                             {testResponse.processing_time}ms
-                                                        </div>
-                                                    </div>
-                                                )}
-                                                {testResponse.selected_model && (
-                                                    <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 col-span-2">
-                                                        <div className="flex items-center">
-                                                            <Target className="h-4 w-4 text-purple-600 mr-2" />
-                                                            <div className="text-xs font-medium text-purple-800">Modelo</div>
-                                                        </div>
-                                                        <div className="text-sm font-bold text-purple-900">
-                                                            {testResponse.selected_model}
                                                         </div>
                                                     </div>
                                                 )}
@@ -508,7 +529,7 @@ export default function TestApiPage() {
                                 <p className="font-bold text-emerald-800 mb-2">⚡ **Pruebas en Tiempo Real:**</p>
                                 <ul className="list-disc list-inside space-y-1 text-emerald-700 text-sm">
                                     <li>Cada prueba usa tu cuota mensual de requests</li>
-                                    <li>Verás el costo real y tiempo de procesamiento</li>
+                                    <li>Verás el modelo usado y tiempo de procesamiento</li>
                                     <li>Perfecto para validar tu integración antes de producción</li>
                                 </ul>
                             </div>

@@ -10,6 +10,7 @@ export interface UserMetrics {
     cost: number;
     limit: number;
     apiKeysCount: number;
+    uniqueModels: number;
     recentActivity: ActivityRecord[];
 }
 
@@ -73,15 +74,15 @@ export async function getUserMetrics(userId: string): Promise<UserMetrics> {
 
                 // Query 2: Obtener actividad reciente (solo últimas 10)
                 supabase
-                    .from('usage_logs')
-                    .select('id, task_type, model_used, cost, created_at, status, tokens_used')
+                    .from('usage_records')
+                    .select('id, model_used, cost, created_at, tokens_used, latency_ms')
                     .eq('user_id', userId)
                     .order('created_at', { ascending: false })
                     .limit(10),
 
                 // Query 3: Suma total de costos
                 supabase
-                    .from('usage_logs')
+                    .from('usage_records')
                     .select('cost')
                     .eq('user_id', userId),
 
@@ -94,7 +95,7 @@ export async function getUserMetrics(userId: string): Promise<UserMetrics> {
 
                 // Query 5: Contar total de requests
                 supabase
-                    .from('usage_logs')
+                    .from('usage_records')
                     .select('id', { count: 'exact', head: true })
                     .eq('user_id', userId)
             ]),
@@ -122,11 +123,11 @@ export async function getUserMetrics(userId: string): Promise<UserMetrics> {
             const activities = activityResult.value.data || [];
             recentActivity = activities.map(activity => ({
                 id: activity.id,
-                task_type: activity.task_type || 'unknown',
+                task_type: 'general', // usage_records no tiene task_type, usar valor por defecto
                 model_used: activity.model_used || 'unknown',
                 cost: parseFloat(activity.cost || '0'),
                 created_at: activity.created_at,
-                status: activity.status || 'completed',
+                status: 'completed', // usage_records no tiene status, usar valor por defecto
                 tokens_used: activity.tokens_used
             }));
         } else {
@@ -165,11 +166,15 @@ export async function getUserMetrics(userId: string): Promise<UserMetrics> {
             activityCount: recentActivity.length
         });
 
+        // Calcular modelos únicos
+        const uniqueModels = new Set(recentActivity.map(activity => activity.model_used).filter(Boolean));
+
         return {
             requests: totalRequests,
             cost: parseFloat(totalCost.toFixed(2)),
             limit: userLimit,
             apiKeysCount,
+            uniqueModels: uniqueModels.size,
             recentActivity
         };
 
@@ -183,6 +188,7 @@ export async function getUserMetrics(userId: string): Promise<UserMetrics> {
             cost: 0,
             limit: 1000,
             apiKeysCount: 0,
+            uniqueModels: 0,
             recentActivity: []
         };
     }

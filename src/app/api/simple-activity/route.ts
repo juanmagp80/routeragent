@@ -23,17 +23,29 @@ export async function GET(request: NextRequest) {
 
         console.log('📊 [SIMPLE-ACTIVITY] Cargando actividad para:', userId);
 
-        // Solo obtener actividad reciente con admin - usando columnas que sabemos que existen
-        const { data: recentActivity, error: activityError } = await supabaseAdmin
-            .from('usage_logs')
-            .select('id, model_used, cost, created_at, latency_ms, tokens_used')
-            .eq('user_id', userId)
-            .order('created_at', { ascending: false })
-            .limit(10);
+        // Obtener actividad reciente y contar total por separado
+        const [recentActivityResult, totalCountResult] = await Promise.all([
+            supabaseAdmin
+                .from('usage_records')
+                .select('id, model_used, cost, created_at, latency_ms, tokens_used')
+                .eq('user_id', userId)
+                .order('created_at', { ascending: false })
+                .limit(10),
+            
+            supabaseAdmin
+                .from('usage_records')
+                .select('id', { count: 'exact', head: true })
+                .eq('user_id', userId)
+        ]);
+
+        const { data: recentActivity, error: activityError } = recentActivityResult;
+        const { count: totalCount, error: countError } = totalCountResult;
 
         console.log('📋 [SIMPLE-ACTIVITY] Resultado:', {
-            error: activityError,
-            count: recentActivity?.length || 0,
+            activityError,
+            countError,
+            recentCount: recentActivity?.length || 0,
+            totalCount: totalCount || 0,
             data: recentActivity
         });
 
@@ -58,7 +70,8 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({
             success: true,
             activity: formattedActivity,
-            count: formattedActivity.length,
+            count: totalCount || 0,
+            recentCount: formattedActivity.length,
             timestamp: new Date().toISOString()
         });
 

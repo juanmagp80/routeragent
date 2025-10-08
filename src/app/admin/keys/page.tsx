@@ -3,7 +3,6 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { useNotifications } from "@/hooks/useNotifications";
 import { backendService, type ApiKeyData, type CreateApiKeyRequest } from "@/services/backendService";
-import { getUserMetrics } from "@/services/userMetrics";
 import {
     Activity,
     BarChart3,
@@ -31,6 +30,7 @@ export default function ApiKeysPage() {
     const [keys, setKeys] = useState<ApiKeyData[]>([]);
     const [totalUsage, setTotalUsage] = useState<number>(0);
     const [planLimit, setPlanLimit] = useState<number>(0);
+    const [apiKeyLimit, setApiKeyLimit] = useState<number>(3);
     const [loading, setLoading] = useState(true);
     const [showCreateForm, setShowCreateForm] = useState(false);
     const [newKey, setNewKey] = useState({ name: "" });
@@ -39,8 +39,8 @@ export default function ApiKeysPage() {
     const { user } = useAuth();
     const { showSuccess, showError, confirm } = useNotifications();
 
-    // Obtener plan del usuario actual
-    const userPlan = user?.plan || 'pro';
+    // Obtener plan del usuario actual (por defecto 'free')
+    const userPlan = user?.plan || 'free';
     const planNames = {
         free: 'Gratuito',
         starter: 'Starter',
@@ -52,6 +52,14 @@ export default function ApiKeysPage() {
         starter: '5,000 requests',
         pro: '10,000 requests',
         enterprise: 'Unlimited'
+    };
+    
+    // Límites de API keys por plan (alineado con la base de datos)
+    const apiKeyLimits = {
+        free: 3,      // Plan gratuito: máximo 3 API keys (según DB)
+        starter: 5,   // Plan starter: máximo 5 API keys  
+        pro: 10,      // Plan pro: máximo 10 API keys
+        enterprise: 25 // Plan enterprise: máximo 25 API keys
     };
 
     // Fetch API keys con timeout y mejor manejo de errores
@@ -74,13 +82,14 @@ export default function ApiKeysPage() {
             }, 8000);
 
             try {
-                // Cargar API keys y métricas en paralelo
+                // Cargar API keys, métricas e info del usuario en paralelo
                 const results = await Promise.allSettled([
                     backendService.getApiKeys(),
-                    getUserMetrics(user.id)
+                    fetch(`/api/user-metrics?userId=${user.id}`).then(res => res.json()),
+                    fetch(`/api/user-info?userId=${user.id}`).then(res => res.json())
                 ]);
 
-                const [keysResult, metricsResult] = results;
+                const [keysResult, metricsResult, userInfoResult] = results;
 
                 // Procesar API keys
                 if (keysResult.status === 'fulfilled') {
@@ -92,12 +101,25 @@ export default function ApiKeysPage() {
                 }
 
                 // Procesar métricas
-                if (metricsResult.status === 'fulfilled') {
+                if (metricsResult.status === 'fulfilled' && metricsResult.value.success) {
                     console.log('✅ [API-KEYS] Métricas cargadas:', metricsResult.value.requests);
                     setTotalUsage(metricsResult.value.requests);
                 } else {
-                    console.warn('⚠️ [API-KEYS] Error cargando métricas:', metricsResult.reason);
+                    const errorMsg = metricsResult.status === 'rejected' 
+                        ? metricsResult.reason 
+                        : metricsResult.value?.error || 'Unknown error';
+                    console.warn('⚠️ [API-KEYS] Error cargando métricas:', errorMsg);
                     setTotalUsage(0);
+                }
+
+                // Procesar información del usuario
+                if (userInfoResult.status === 'fulfilled' && userInfoResult.value.success) {
+                    const userInfo = userInfoResult.value.user;
+                    console.log('✅ [API-KEYS] Info de usuario cargada:', userInfo.plan, 'límite:', userInfo.api_key_limit);
+                    setApiKeyLimit(userInfo.api_key_limit || 3);
+                } else {
+                    console.warn('⚠️ [API-KEYS] Error cargando info de usuario:', userInfoResult);
+                    setApiKeyLimit(apiKeyLimits[userPlan as keyof typeof apiKeyLimits] || 3);
                 }
 
                 // Establecer límite del plan
@@ -204,18 +226,18 @@ export default function ApiKeysPage() {
                         <div className="flex items-center space-x-4">
                             <div className="text-right">
                                 <div className="text-sm text-gray-500">Claves activas</div>
-                                <div className="text-lg font-semibold text-gray-900">{keys.length} de 5</div>
+                                <div className="text-lg font-semibold text-gray-900">{keys.length} de {apiKeyLimit}</div>
                             </div>
                             <button
                                 onClick={() => setShowCreateForm(!showCreateForm)}
-                                disabled={keys.length >= 5}
-                                className={`inline-flex items-center px-4 py-2 rounded-md text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${keys.length >= 5
+                                disabled={keys.length >= apiKeyLimit}
+                                className={`inline-flex items-center px-4 py-2 rounded-md text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${keys.length >= apiKeyLimit
                                     ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                                     : 'bg-emerald-600 text-white hover:bg-emerald-700 focus:ring-emerald-500'
                                     }`}
                             >
                                 <Plus className="mr-2 h-4 w-4" />
-                                {keys.length >= 5 ? 'Límite alcanzado' : 'Nueva clave'}
+                                {keys.length >= apiKeyLimit ? 'Límite alcanzado' : 'Nueva clave'}
                             </button>
                         </div>
                     </div>
@@ -228,7 +250,7 @@ export default function ApiKeysPage() {
                     <div className="flex items-center justify-between">
                         <div>
                             <p className="text-sm font-medium text-gray-600">Claves API</p>
-                            <p className="text-2xl font-semibold text-gray-900">{keys.length} de 5</p>
+                            <p className="text-2xl font-semibold text-gray-900">{keys.length} de {apiKeyLimit}</p>
                         </div>
                         <div className="h-8 w-8 bg-emerald-100 rounded-lg flex items-center justify-center group-hover:bg-emerald-200 transition-colors duration-300">
                             <Key className="h-4 w-4 text-emerald-600 group-hover:scale-110 transition-transform duration-300" />
@@ -237,16 +259,16 @@ export default function ApiKeysPage() {
                     <div className="mt-4">
                         <div className="flex items-center justify-between text-sm">
                             <span className="text-gray-500">Plan {planNames[userPlan as keyof typeof planNames]}</span>
-                            <span className="text-gray-900">{((keys.length / 5) * 100).toFixed(0)}%</span>
+                            <span className="text-gray-900">{((keys.length / apiKeyLimit) * 100).toFixed(0)}%</span>
                         </div>
                         <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
                             <div
                                 className="bg-emerald-600 h-2 rounded-full transition-all duration-300"
-                                style={{ width: `${(keys.length / 5) * 100}%` }}
+                                style={{ width: `${(keys.length / apiKeyLimit) * 100}%` }}
                             ></div>
                         </div>
                     </div>
-                    {keys.length >= 5 && (
+                    {keys.length >= apiKeyLimit && (
                         <div className="mt-3 text-xs text-amber-600 bg-amber-50 rounded-md p-2">
                             Límite alcanzado
                         </div>

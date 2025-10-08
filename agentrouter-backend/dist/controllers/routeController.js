@@ -73,7 +73,7 @@ const routeTask = async (req, res) => {
         const result = await modelRouter.routeTask(task);
         // Registrar uso en Supabase
         const usageRecord = {
-            user_id: task.context?.user_id || null,
+            user_id: req.apiKey?.user_id || task.context?.user_id || null,
             model_used: result.selected_model,
             cost: result.cost,
             latency_ms: Math.round(result.estimated_time), // Convertir a entero
@@ -81,6 +81,12 @@ const routeTask = async (req, res) => {
             prompt_preview: task.input.substring(0, 100) + (task.input.length > 100 ? '...' : ''),
             capabilities: task.context?.capabilities || []
         };
+        console.log('📊 [USAGE RECORD] Preparando registro:', {
+            user_id: usageRecord.user_id,
+            model_used: usageRecord.model_used,
+            cost: usageRecord.cost,
+            api_key_id: req.apiKey?.id || null
+        });
         try {
             // Pasar el api_key_id al logService para que se pueda rastrear por usuario
             const apiKeyId = req.apiKey?.id || null;

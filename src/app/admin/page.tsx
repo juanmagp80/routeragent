@@ -3,7 +3,7 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { getQuickMetrics, QuickMetrics } from "@/services/quickMetrics";
 import { getUserMetrics, getUserStats, UserMetrics, UserStats } from "@/services/userMetrics";
-import { BarChart3, DollarSign, Key, Sparkles, TrendingUp, User } from "lucide-react";
+import { BarChart3, Key, Sparkles, TrendingUp, User, Cpu } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "../../config/database";
 
@@ -118,7 +118,7 @@ export default function DashboardPage() {
                     console.log('🔍 Intentando carga directa con cliente autenticado...');
 
                     // Consultas directas con cliente autenticado
-                    const [apiKeysResult, activityResult, logsResult] = await Promise.all([
+                    const [apiKeysResult, activityResult, logsResult, totalRequestsResult] = await Promise.all([
                         supabase
                             .from('api_keys')
                             .select('id', { count: 'exact', head: true })
@@ -135,27 +135,39 @@ export default function DashboardPage() {
                         supabase
                             .from('usage_logs')
                             .select('cost, latency_ms')
+                            .eq('user_id', user.id),
+
+                        supabase
+                            .from('usage_logs')
+                            .select('id', { count: 'exact', head: true })
                             .eq('user_id', user.id)
                     ]);
 
                     console.log('📊 Resultados consultas directas:', {
                         apiKeys: { count: apiKeysResult.count, error: apiKeysResult.error },
                         activity: { count: activityResult.data?.length, error: activityResult.error },
-                        logs: { count: logsResult.data?.length, error: logsResult.error }
+                        logs: { count: logsResult.data?.length, error: logsResult.error },
+                        totalRequests: { count: totalRequestsResult.count, error: totalRequestsResult.error }
                     });
 
-                    if (!apiKeysResult.error && !activityResult.error && !logsResult.error) {
+                    if (!apiKeysResult.error && !activityResult.error && !logsResult.error && !totalRequestsResult.error) {
                         // Procesar datos exitosos
                         const totalCost = logsResult.data?.reduce((sum, log) => sum + parseFloat(log.cost || '0'), 0) || 0;
                         const avgLatency = logsResult.data && logsResult.data.length > 0
                             ? Math.round(logsResult.data.reduce((sum, log) => sum + (log.latency_ms || 0), 0) / logsResult.data.length)
                             : 0;
 
+                        // Calcular modelos únicos
+                        const uniqueModels = new Set(activityResult.data?.map(activity => activity.model_used).filter(Boolean) || []);
+
+                        console.log('🔍 totalRequestsResult.count:', totalRequestsResult.count);
+
                         const directMetrics = {
-                            requests: logsResult.data?.length || 0,
+                            requests: totalRequestsResult.count || 0,
                             cost: parseFloat(totalCost.toFixed(4)),
                             limit: userData?.api_key_limit ? userData.api_key_limit * 1000 : 1000,
                             apiKeysCount: apiKeysResult.count || 0,
+                            uniqueModels: uniqueModels.size,
                             recentActivity: activityResult.data?.map(activity => ({
                                 id: activity.id,
                                 task_type: activity.task_type || 'unknown',
@@ -168,9 +180,9 @@ export default function DashboardPage() {
                         };
 
                         const directStats = {
-                            totalRequests: logsResult.data?.length || 0,
+                            totalRequests: totalRequestsResult.count || 0,
                             totalCost: totalCost,
-                            requestsThisMonth: logsResult.data?.length || 0,
+                            requestsThisMonth: totalRequestsResult.count || 0,
                             costThisMonth: totalCost,
                             avgResponseTime: avgLatency,
                             mostUsedModel: 'GPT-4o Mini'
@@ -195,12 +207,23 @@ export default function DashboardPage() {
                         if (activityData.success && activityData.activity) {
                             console.log('✅ Actividad cargada con endpoint working:', activityData.count, 'registros');
 
+                            // Obtener el número real de API keys activas del usuario
+                            const { count: realApiKeysCount } = await supabase
+                                .from('api_keys')
+                                .select('id', { count: 'exact', head: true })
+                                .eq('user_id', user.id)
+                                .eq('is_active', true);
+
+                            // Calcular modelos únicos del endpoint de respaldo
+                            const uniqueModelsBackup = new Set(activityData.activity.map((activity: any) => activity.model_used).filter(Boolean));
+
                             // Crear métricas básicas con la actividad que funciona
                             const workingMetrics = {
                                 requests: activityData.count,
                                 cost: activityData.activity.reduce((sum: number, activity: any) => sum + activity.cost, 0),
                                 limit: userData?.api_key_limit ? userData.api_key_limit * 1000 : 1000,
-                                apiKeysCount: 1, // Sabemos que tiene al menos 1 API key activa
+                                apiKeysCount: realApiKeysCount || 0,
+                                uniqueModels: uniqueModelsBackup.size,
                                 recentActivity: activityData.activity
                             };
 
@@ -420,20 +443,21 @@ export default function DashboardPage() {
                     </div>
                 </div>
 
-                <div className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-lg hover:border-emerald-300 transition-all duration-300 group">
+                <div className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-lg hover:border-blue-300 transition-all duration-300 group">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-sm font-medium text-gray-600">Costo Total</p>
-                            <p className="text-2xl font-semibold text-gray-900">${metrics?.cost?.toFixed(4) || '0.0000'}</p>
+                            <p className="text-sm font-medium text-gray-600">Modelos Usados</p>
+                            <p className="text-2xl font-semibold text-gray-900">{metrics?.uniqueModels || '0'}</p>
                         </div>
-                        <div className="h-8 w-8 bg-emerald-100 rounded-lg flex items-center justify-center group-hover:bg-emerald-200 transition-colors duration-300">
-                            <DollarSign className="h-4 w-4 text-emerald-600 group-hover:scale-110 transition-transform duration-300" />
+                        <div className="h-8 w-8 bg-blue-100 rounded-lg flex items-center justify-center group-hover:bg-blue-200 transition-colors duration-300">
+                            <Cpu className="h-4 w-4 text-blue-600 group-hover:scale-110 transition-transform duration-300" />
                         </div>
                     </div>
                     <div className="mt-2">
-                        <p className="text-xs text-gray-500">Gastado en total</p>
+                        <p className="text-xs text-gray-500">Modelos diferentes</p>
                     </div>
                 </div>
+
             </div>
 
             {/* Actividad Reciente */}
@@ -468,7 +492,7 @@ export default function DashboardPage() {
                                                 {activity.status === 'completed' ? '✓ Completado' :
                                                     activity.status === 'failed' ? '✗ Error' : '⏳ Procesando'}
                                             </span>
-                                            <span className="text-sm text-gray-600">${activity.cost.toFixed(4)}</span>
+
                                         </div>
                                         <p className="text-sm text-gray-500 mt-1">
                                             {(() => {
